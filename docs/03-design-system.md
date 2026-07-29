@@ -68,6 +68,21 @@ xs = 4dp   sm = 8dp   md = 16dp   lg = 24dp   xl = 32dp
 - Estilo outline, trazo simple, dentro de un círculo de fondo pastel (tono suave del color semántico de la acción).
 - Tamaño estándar: 24dp (dentro de círculo de 40dp).
 
+## 5.b Criterios para pantallas que NO están en Figma
+
+Las capturas cubren 7 pantallas. Todo lo que se acordó después (gestión de grupos, detalle de compensación por persona, diálogos de gasto y tarea) se diseñó siguiendo estas reglas, para que no se note la costura ([Duda #27](02-decisiones.md)):
+
+1. **Hoja inferior antes que pantalla nueva.** Si la acción es sobre algo que el usuario ya está mirando, va en un `showModalBottomSheet` con `showDragHandle`. Abrir una pantalla completa rompe el contexto y obliga a volver.
+2. **Confirmación explícita para lo destructivo o en cascada.** Cancelar un evento, abandonar un grupo o saldar todas las deudas con alguien piden confirmación en un `AlertDialog`, con el botón peligroso en `AppColors.danger`.
+3. **Nada de componentes nuevos si ya hay uno.** Reutilizar `AvatarStack`, `StatusBadge`, `EventCard`, `ActivityFeedItem`. Un patrón nuevo se agrega a este documento antes de usarse.
+4. **El color nunca solo.** Los montos y estados llevan siempre texto además del color (§6).
+5. **Los montos, con su color semántico**: verde a favor, rojo en contra, ámbar pendiente. Una flecha ↑/↓ ayuda a leer el sentido de un vistazo.
+6. **Explicar la cuenta cuando no es obvia.** Si un número es el resultado de una compensación, se muestra de dónde sale (ej. "Compensado: debés $500 y te deben $300").
+
+### Ejemplo aplicado: detalle de compensación por persona
+
+Es la pantalla más nueva y sigue las 6 reglas: hoja inferior, avatar + nombre + neto grande en color semántico, chip explicando la compensación, desglose en filas con flecha y color por sentido, y un botón primario "Saldar todo" que confirma antes de ejecutar.
+
 ## 6. Accesibilidad (a respetar en la implementación, no visto explícitamente en las capturas)
 
 - Contraste mínimo AA para texto sobre Background/Surface.

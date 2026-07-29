@@ -8,6 +8,7 @@ import '../../core/widgets/event_card.dart';
 import '../../core/widgets/status_badge.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../home/home_providers.dart';
+import 'person_detail_sheet.dart';
 
 enum _Filtro { todo, meDeben, debo }
 
@@ -158,6 +159,9 @@ class BalancesScreen extends ConsumerWidget {
                                 'pendiente' => l10n.balancesOweYou,
                                 _ => l10n.balancesStateSettled,
                               },
+                              // FR9 — el monto de la fila ya viene compensado
+                              // entre eventos; el detalle muestra el desglose.
+                              onTap: () => mostrarDetalleConPersona(context, saldo.id),
                             ),
                         ],
                       ),

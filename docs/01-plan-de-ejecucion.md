@@ -402,10 +402,16 @@ Tareas: firma de la app, ficha de Play Console, subida del primer build, smoke t
 | HU-15 | Como sistema, quiero calcular y simplificar las deudas del evento (motor tipo Splitwise) | Alta | XL | HU-13, HU-14 |
 | HU-16 | Como usuario, quiero ver mi balance neto agregado de todos mis eventos | Alta | L | HU-15 |
 | HU-17 | Como usuario, quiero ver mis saldos por amigo con estado Pagar/Pendiente/Saldado | Alta | M | HU-15 |
-| HU-18 | Como deudor, quiero marcar una deuda como saldada | Alta | S | HU-15 |
+| HU-18 | Como deudor, quiero marcar una deuda puntual como saldada desde el evento | Alta | S | HU-15 |
 | HU-19 | Como organizador, quiero cerrar los gastos de un evento (bloquear nuevas cargas) | Media | S | HU-15 |
+| HU-47 | Como usuario, quiero ver el desglose por evento de lo que me debe o le debo a una persona | Alta | M | HU-16 |
+| HU-48 | Como usuario, quiero saldar toda la relación con una persona de una sola vez | Alta | M | HU-47 |
 
 **HU-15 — Motor de simplificación de deudas** (la historia más riesgosa del backlog). AC: dado el conjunto de `GASTO`/`GASTO_ACREEDOR`/`GASTO_DEUDOR` de un evento, calcula el número mínimo de transacciones que saldan todo (netting); persiste en `DEUDA_SIMPLIFICADA`, recalcula ante cada alta/baja de gasto; tests unitarios con casos conocidos (2, 3, 5+ participantes, decimales) — crítico por NFR#4.
+
+**HU-47 — Desglose por persona (FR9).** AC: tocar una persona en Balances abre el detalle con todas las deudas que hay con ella, indicando de qué evento viene cada una y en qué sentido; muestra el neto compensado y, si hubo compensación, cuánto se debía en cada dirección. Tocar un evento del desglose navega a ese evento.
+
+**HU-48 — Saldar la relación completa (FR9).** AC: desde el detalle, "Saldar todo" pide confirmación y marca como saldadas **todas** las deudas pendientes con esa persona, en ambos sentidos y en todos los eventos; cada evento afectado registra la actividad y actualiza su estado (pasa a `finalizado` si no le queda deuda). Dentro de un evento esta acción no existe: allí solo se salda la deuda puntual (HU-18).
 
 ### SCRUM-12 — Registro de tareas de evento (17/09 – 30/09)
 | ID | Historia | Prioridad | Est. | Dependencias |
@@ -516,7 +522,7 @@ Para que ningún requerimiento del charter quede sin dueño. Estado al 2026-07-2
 | FR6 | Invitación a evento | SCRUM-7 | HU-02 | ✅ Implementado |
 | FR7 | Registro de gastos (múltiples acreedores y deudores) | SCRUM-11 | HU-13, HU-14 | ⚠️ Backend completo; la UI hoy permite un solo pagador |
 | FR8 | Registro de tareas | SCRUM-12 | HU-20 a HU-23 | ✅ Implementado |
-| FR9 | Cálculo de deudas entre eventos | SCRUM-11 | HU-15, HU-16 | ⚠️ Ver nota abajo |
+| FR9 | Cálculo de deudas entre eventos | SCRUM-11 | HU-15, HU-16, HU-47, HU-48 | ✅ Compensación cruzada implementada ([Duda #26](02-decisiones.md)) |
 | FR10 | Espacio de chat por grupo | SCRUM-13 | HU-24, HU-25 | ✅ Reinterpretado como log de actividad ([Duda #9](02-decisiones.md)) |
 | FR11 | Registro de cuenta | SCRUM-14 | HU-27 | ⏳ Pendiente |
 | FR12 | Gestión de identidad en la plataforma | SCRUM-14 | HU-28 a HU-30 | ⏳ Pendiente |
@@ -527,8 +533,14 @@ Para que ningún requerimiento del charter quede sin dueño. Estado al 2026-07-2
 | FR17 | Historial de reuniones pasadas | SCRUM-16 | HU-26 | ✅ Implementado |
 | FR18 | IA para auto-generación de eventos | SCRUM-17 | HU-42, HU-43, HU-44b | ⏳ Pendiente (endpoint 501) |
 
-> **Nota sobre FR9 — "cálculo de deudas *entre eventos*".** Hoy el motor simplifica las deudas **dentro de cada evento**, y la pantalla Balances **agrega** los saldos de todos los eventos por persona. Lo que NO hace es *compensar* deudas cruzadas entre eventos distintos (si en el asado le debo $500 a Marcos y en el cine él me debe $300, se ven como dos deudas, no como una de $200).
-> **Pendiente de definición:** confirmar si el charter pedía esa compensación cruzada. Técnicamente es alcanzable — el motor ya recibe una lista de movimientos y no le importa de qué evento vienen —, pero cambia la UX (¿cómo se salda una deuda que junta varios eventos?) y hay que decidirlo antes de tocarlo.
+> **FR9 — "cálculo de deudas *entre eventos*" (resuelto, [Duda #26](02-decisiones.md)).** El alcance cambia según dónde estés parado:
+>
+> | Dónde | Qué se ve | Qué se salda |
+> |---|---|---|
+> | Dentro de un evento | Solo las deudas de ese evento, sin compensar | Una deuda puntual (HU-18) |
+> | Pantalla Balances | El neto **compensado** con cada persona, entre todos los eventos | Toda la relación, en cascada |
+>
+> Si en el asado le debo $500 a Marcos y en el cine él me debe $300, Balances muestra una sola línea de $200. Al saldarla, **las dos deudas originales quedan saldadas** y cada evento afectado actualiza su estado.
 
 ### Requerimientos no funcionales
 

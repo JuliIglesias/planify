@@ -29,6 +29,14 @@ export interface DeudaRepository {
   reemplazarEvento(eventoId: string, deudas: NuevaDeuda[]): Promise<DeudaSimplificada[]>;
 
   marcarSaldada(id: string, cuando: Date): Promise<DeudaSimplificada>;
+
+  /**
+   * Salda varias deudas de una sola vez, atómicamente.
+   * Lo necesita la compensación cruzada (FR9): saldar con una persona cierra
+   * todas las deudas que hay con ella, de todos los eventos, en un solo paso.
+   */
+  marcarSaldadasEnLote(ids: string[], cuando: Date): Promise<number>;
+
   contarPendientes(eventoId: string): Promise<number>;
   contarTotal(eventoId: string): Promise<number>;
 }

@@ -303,6 +303,75 @@ class DeudaEvento {
   }
 }
 
+/// Una deuda concreta de un evento, dentro del detalle con una persona (FR9).
+class DeudaDeEvento {
+  const DeudaDeEvento({
+    required this.id,
+    required this.eventoId,
+    required this.eventoNombre,
+    required this.monto,
+    required this.yoDebo,
+  });
+
+  final String id;
+  final String eventoId;
+  final String eventoNombre;
+  final String monto;
+
+  /// `true` si en ESE evento la deuda es mía hacia la otra persona.
+  final bool yoDebo;
+
+  factory DeudaDeEvento.fromJson(Map<String, dynamic> json) => DeudaDeEvento(
+        id: json['id'] as String,
+        eventoId: json['eventoId'] as String? ?? '',
+        eventoNombre: json['eventoNombre'] as String? ?? '',
+        monto: json['monto'] as String? ?? '0.00',
+        yoDebo: json['yoDebo'] as bool? ?? false,
+      );
+}
+
+/// Relación completa con una persona: qué se debe en cada evento y cuánto
+/// queda después de compensar (FR9).
+class DetalleConPersona {
+  const DetalleConPersona({
+    required this.personaId,
+    required this.nombre,
+    required this.monto,
+    required this.estado,
+    required this.totalQueDebo,
+    required this.totalQueMeDebe,
+    required this.deudas,
+  });
+
+  final String personaId;
+  final String nombre;
+
+  /// Neto ya compensado, siempre positivo. El signo lo da [estado].
+  final String monto;
+  final String estado;
+  final String totalQueDebo;
+  final String totalQueMeDebe;
+  final List<DeudaDeEvento> deudas;
+
+  bool get estaSaldado => estado == 'saldado';
+
+  /// Hay compensación real cuando hay deudas en los dos sentidos.
+  bool get hayCompensacion =>
+      deudas.any((d) => d.yoDebo) && deudas.any((d) => !d.yoDebo);
+
+  factory DetalleConPersona.fromJson(Map<String, dynamic> json) => DetalleConPersona(
+        personaId: json['personaId'] as String? ?? '',
+        nombre: json['nombre'] as String? ?? '',
+        monto: json['monto'] as String? ?? '0.00',
+        estado: json['estado'] as String? ?? 'saldado',
+        totalQueDebo: json['totalQueDebo'] as String? ?? '0.00',
+        totalQueMeDebe: json['totalQueMeDebe'] as String? ?? '0.00',
+        deudas: ((json['deudas'] as List<dynamic>?) ?? [])
+            .map((d) => DeudaDeEvento.fromJson(d as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
 class ActividadLog {
   const ActividadLog({
     required this.id,

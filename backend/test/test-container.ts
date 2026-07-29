@@ -68,7 +68,9 @@ export function createTestContainer(): TestContainer {
   const disponibilidad = new FakeDisponibilidadRepository();
   const tareas = new FakeTareaRepository();
   const gastos = new FakeGastoRepository();
-  const deudas = new FakeDeudaRepository();
+  // Recibe los participantes para poder resolver nombre y usuarioId de cada
+  // parte, que es lo que agrupa la compensación cruzada (FR9).
+  const deudas = new FakeDeudaRepository(participantes);
   const logs = new FakeLogActividadRepository();
 
   const activityLog = new ActivityLogService(logs, participantes, clock);

@@ -438,4 +438,30 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get homeNoActivity => 'Todavía no hay actividad';
+
+  @override
+  String get balancesSettleAll => 'Saldar todo';
+
+  @override
+  String balancesSettleAllConfirm(String nombre) {
+    return 'Se va a marcar como saldada tu deuda con $nombre.';
+  }
+
+  @override
+  String balancesSettleAllConfirmMulti(String nombre, int count) {
+    return 'Se van a saldar las $count deudas que tenés con $nombre, en todos los eventos.';
+  }
+
+  @override
+  String get balancesBreakdown => 'DETALLE POR EVENTO';
+
+  @override
+  String balancesNoDebtsWith(String nombre) {
+    return 'No tenés deudas pendientes con $nombre';
+  }
+
+  @override
+  String balancesCompensationHint(String debo, String meDeben) {
+    return 'Compensado: debés \$$debo y te deben \$$meDeben';
+  }
 }

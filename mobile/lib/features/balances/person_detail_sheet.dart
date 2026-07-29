@@ -1,0 +1,298 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/models/models.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/avatar_stack.dart';
+import '../../core/widgets/status_badge.dart';
+import '../../l10n/generated/app_localizations.dart';
+import '../events/event_detail_screen.dart';
+import '../home/home_providers.dart';
+import 'data/balances_repository.dart';
+
+/// FR9 — detalle de la relación con una persona, desde la pantalla Balances.
+///
+/// Muestra el desglose por evento y el neto ya compensado. Saldar desde acá
+/// cierra las deudas de **todos** los eventos con esa persona ([Duda #26]).
+/// Dentro de un evento, en cambio, se opera solo sobre las deudas de ese evento.
+Future<void> mostrarDetalleConPersona(BuildContext context, String personaId) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => _DetallePersonaSheet(personaId: personaId),
+  );
+}
+
+final _detalleProvider = FutureProvider.family<DetalleConPersona, String>(
+  (ref, personaId) => ref.watch(balancesRepositoryProvider).detalleConPersona(personaId),
+);
+
+class _DetallePersonaSheet extends ConsumerStatefulWidget {
+  const _DetallePersonaSheet({required this.personaId});
+
+  final String personaId;
+
+  @override
+  ConsumerState<_DetallePersonaSheet> createState() => _DetallePersonaSheetState();
+}
+
+class _DetallePersonaSheetState extends ConsumerState<_DetallePersonaSheet> {
+  bool _saldando = false;
+
+  Future<void> _saldarTodo(DetalleConPersona detalle) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.balancesSettleAll),
+        content: Text(
+          detalle.deudas.length > 1
+              ? l10n.balancesSettleAllConfirmMulti(detalle.nombre, detalle.deudas.length)
+              : l10n.balancesSettleAllConfirm(detalle.nombre),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.commonConfirm),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmado != true) return;
+
+    setState(() => _saldando = true);
+    try {
+      await ref.read(balancesRepositoryProvider).saldarConPersona(widget.personaId);
+      if (!mounted) return;
+      invalidateListas(ref);
+      Navigator.pop(context);
+    } catch (err) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$err')));
+        setState(() => _saldando = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final detalle = ref.watch(_detalleProvider(widget.personaId));
+
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: detalle.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(AppSpacing.xl),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (err, _) => Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Text('$err'),
+          ),
+          data: (d) => _Contenido(
+            detalle: d,
+            saldando: _saldando,
+            onSaldarTodo: () => _saldarTodo(d),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Contenido extends StatelessWidget {
+  const _Contenido({
+    required this.detalle,
+    required this.saldando,
+    required this.onSaldarTodo,
+  });
+
+  final DetalleConPersona detalle;
+  final bool saldando;
+  final VoidCallback onSaldarTodo;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    final estado = switch (detalle.estado) {
+      'pagar' => SaldoEstado.pagar,
+      'pendiente' => SaldoEstado.pendiente,
+      _ => SaldoEstado.saldado,
+    };
+    final color = switch (estado) {
+      SaldoEstado.pagar => AppColors.danger,
+      SaldoEstado.pendiente => AppColors.warning,
+      SaldoEstado.saldado => AppColors.success,
+    };
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // ── Encabezado: persona y neto compensado ──────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            0,
+            AppSpacing.md,
+            AppSpacing.md,
+          ),
+          child: Column(
+            children: [
+              AvatarStack(nombres: [detalle.nombre], radius: 28),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                detalle.nombre,
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                detalle.estaSaldado
+                    ? l10n.balancesStateSettled
+                    : estado == SaldoEstado.pagar
+                        ? l10n.balancesYouOwe
+                        : l10n.balancesOweYou,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              Text(
+                '\$${detalle.monto}',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+
+              // Solo tiene sentido explicar la cuenta si hubo compensación.
+              if (detalle.hayCompensacion) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.swap_horiz, size: 16, color: AppColors.primary),
+                      const SizedBox(width: AppSpacing.xs),
+                      Flexible(
+                        child: Text(
+                          l10n.balancesCompensationHint(
+                            detalle.totalQueDebo,
+                            detalle.totalQueMeDebe,
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        const Divider(height: 1),
+
+        // ── Desglose por evento ────────────────────────────────────────────
+        Flexible(
+          child: detalle.deudas.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Text(
+                    l10n.balancesNoDebtsWith(detalle.nombre),
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                )
+              : ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        AppSpacing.xs,
+                        AppSpacing.md,
+                        AppSpacing.sm,
+                      ),
+                      child: Text(
+                        l10n.balancesBreakdown,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ),
+                    for (final deuda in detalle.deudas)
+                      ListTile(
+                        dense: true,
+                        leading: Icon(
+                          deuda.yoDebo ? Icons.arrow_upward : Icons.arrow_downward,
+                          size: 18,
+                          color: deuda.yoDebo ? AppColors.danger : AppColors.success,
+                        ),
+                        title: Text(deuda.eventoNombre),
+                        subtitle: Text(
+                          deuda.yoDebo ? l10n.balancesYouOwe : l10n.balancesOweYou,
+                        ),
+                        trailing: Text(
+                          '\$${deuda.monto}',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: deuda.yoDebo ? AppColors.danger : AppColors.success,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => EventDetailScreen(eventoId: deuda.eventoId),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+        ),
+
+        // ── Acción principal ───────────────────────────────────────────────
+        if (detalle.deudas.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: saldando ? null : onSaldarTodo,
+                icon: saldando
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.price_check),
+                label: Text(l10n.balancesSettleAll),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}

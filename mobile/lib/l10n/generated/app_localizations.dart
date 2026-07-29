@@ -877,6 +877,42 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Todavía no hay actividad'**
   String get homeNoActivity;
+
+  /// No description provided for @balancesSettleAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Saldar todo'**
+  String get balancesSettleAll;
+
+  /// No description provided for @balancesSettleAllConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Se va a marcar como saldada tu deuda con {nombre}.'**
+  String balancesSettleAllConfirm(String nombre);
+
+  /// No description provided for @balancesSettleAllConfirmMulti.
+  ///
+  /// In es, this message translates to:
+  /// **'Se van a saldar las {count} deudas que tenés con {nombre}, en todos los eventos.'**
+  String balancesSettleAllConfirmMulti(String nombre, int count);
+
+  /// No description provided for @balancesBreakdown.
+  ///
+  /// In es, this message translates to:
+  /// **'DETALLE POR EVENTO'**
+  String get balancesBreakdown;
+
+  /// No description provided for @balancesNoDebtsWith.
+  ///
+  /// In es, this message translates to:
+  /// **'No tenés deudas pendientes con {nombre}'**
+  String balancesNoDebtsWith(String nombre);
+
+  /// No description provided for @balancesCompensationHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Compensado: debés \${debo} y te deben \${meDeben}'**
+  String balancesCompensationHint(String debo, String meDeben);
 }
 
 class _AppLocalizationsDelegate

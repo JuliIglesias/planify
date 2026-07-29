@@ -318,6 +318,29 @@ export class FakeGastoRepository implements R.GastoRepository {
 export class FakeDeudaRepository implements R.DeudaRepository {
   deudas: D.DeudaSimplificada[] = [];
 
+  /**
+   * Opcional: con el repo de participantes, las deudas resuelven el nombre y
+   * el `usuarioId` reales de cada parte. Hace falta para probar la
+   * compensación cruzada (FR9), que agrupa por usuario registrado.
+   */
+  constructor(private readonly participantes?: FakeParticipanteRepository) {}
+
+  /** Atajo para armar una deuda en un test. */
+  agregar(parcial: Partial<D.DeudaSimplificada> = {}): D.DeudaSimplificada {
+    const deuda: D.DeudaSimplificada = {
+      id: nuevoId('deu'),
+      eventoId: 'evt-1',
+      deudorParticipanteId: 'part-1',
+      acreedorParticipanteId: 'part-2',
+      monto: '100.00',
+      estado: 'pendiente',
+      saldadoEn: null,
+      ...parcial,
+    };
+    this.deudas.push(deuda);
+    return deuda;
+  }
+
   async findById(id: string) {
     return this.deudas.find((d) => d.id === id) ?? null;
   }
@@ -350,6 +373,18 @@ export class FakeDeudaRepository implements R.DeudaRepository {
     return deuda;
   }
 
+  async marcarSaldadasEnLote(ids: string[], cuando: Date) {
+    let saldadas = 0;
+    for (const deuda of this.deudas) {
+      if (ids.includes(deuda.id) && deuda.estado !== 'saldado') {
+        deuda.estado = 'saldado';
+        deuda.saldadoEn = cuando;
+        saldadas++;
+      }
+    }
+    return saldadas;
+  }
+
   async contarPendientes(eventoId: string) {
     return this.deudas.filter((d) => d.eventoId === eventoId && d.estado !== 'saldado').length;
   }
@@ -359,14 +394,19 @@ export class FakeDeudaRepository implements R.DeudaRepository {
 
   private conPersonas = (d: D.DeudaSimplificada): R.DeudaConPersonas => ({
     ...d,
-    deudor: { id: d.deudorParticipanteId, nombre: d.deudorParticipanteId, usuarioId: null },
-    acreedor: {
-      id: d.acreedorParticipanteId,
-      nombre: d.acreedorParticipanteId,
-      usuarioId: null,
-    },
-    eventoNombre: 'Evento',
+    deudor: this.persona(d.deudorParticipanteId),
+    acreedor: this.persona(d.acreedorParticipanteId),
+    eventoNombre: `Evento ${d.eventoId}`,
   });
+
+  private persona(participanteId: string) {
+    const p = this.participantes?.participantes.find((x) => x.id === participanteId);
+    return {
+      id: participanteId,
+      nombre: p?.nombreDisplay ?? participanteId,
+      usuarioId: p?.usuarioId ?? null,
+    };
+  }
 }
 
 export class FakeTareaRepository implements R.TareaRepository {

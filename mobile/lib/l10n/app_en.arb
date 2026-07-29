@@ -248,5 +248,45 @@
       }
     }
   },
-  "homeNoActivity": "No activity yet"
+  "homeNoActivity": "No activity yet",
+  "balancesSettleAll": "Settle all",
+  "balancesSettleAllConfirm": "Your debt with {nombre} will be marked as settled.",
+  "balancesSettleAllConfirmMulti": "This will settle all {count} debts you have with {nombre}, across every event.",
+  "balancesBreakdown": "BREAKDOWN BY EVENT",
+  "balancesNoDebtsWith": "You have no pending debts with {nombre}",
+  "balancesCompensationHint": "Offset: you owe ${debo} and you are owed ${meDeben}",
+  "@balancesSettleAllConfirm": {
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "@balancesSettleAllConfirmMulti": {
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@balancesNoDebtsWith": {
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "@balancesCompensationHint": {
+    "placeholders": {
+      "debo": {
+        "type": "String"
+      },
+      "meDeben": {
+        "type": "String"
+      }
+    }
+  }
 }

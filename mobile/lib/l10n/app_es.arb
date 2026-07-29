@@ -248,5 +248,45 @@
       }
     }
   },
-  "homeNoActivity": "Todavía no hay actividad"
+  "homeNoActivity": "Todavía no hay actividad",
+  "balancesSettleAll": "Saldar todo",
+  "balancesSettleAllConfirm": "Se va a marcar como saldada tu deuda con {nombre}.",
+  "balancesSettleAllConfirmMulti": "Se van a saldar las {count} deudas que tenés con {nombre}, en todos los eventos.",
+  "balancesBreakdown": "DETALLE POR EVENTO",
+  "balancesNoDebtsWith": "No tenés deudas pendientes con {nombre}",
+  "balancesCompensationHint": "Compensado: debés ${debo} y te deben ${meDeben}",
+  "@balancesSettleAllConfirm": {
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "@balancesSettleAllConfirmMulti": {
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@balancesNoDebtsWith": {
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "@balancesCompensationHint": {
+    "placeholders": {
+      "debo": {
+        "type": "String"
+      },
+      "meDeben": {
+        "type": "String"
+      }
+    }
+  }
 }

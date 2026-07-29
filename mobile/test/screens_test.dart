@@ -162,6 +162,78 @@ void main() {
     });
   });
 
+  group('Balances — compensación cruzada (FR9)', () {
+    testWidgets('tocar una persona abre el detalle con el desglose por evento',
+        (tester) async {
+      usarPantallaAlta(tester);
+      final balances = FakeBalancesRepository(
+        balance: const Balance(
+          balanceNeto: '-200.00',
+          meDeben: '300.00',
+          debo: '500.00',
+          saldos: [
+            SaldoPorPersona(
+              id: 'usr-marcos',
+              nombre: 'Marcos',
+              monto: '200.00',
+              estado: 'pagar',
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(appDePrueba(const BalancesScreen(), balances: balances));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Marcos').first);
+      await tester.pumpAndSettle();
+
+      expect(balances.llamadas, contains('detalle:usr-marcos'));
+      // El desglose muestra las dos deudas que se compensaron.
+      expect(find.text('Asado'), findsOneWidget);
+      expect(find.text('Cine'), findsOneWidget);
+      // Los montos aparecen tanto en el desglose como en el resumen de atrás.
+      expect(find.text(r'$500.00'), findsWidgets);
+      expect(find.text(r'$300.00'), findsWidgets);
+      // Y el neto compensado.
+      expect(find.text(r'$200.00'), findsWidgets);
+    });
+
+    testWidgets('saldar todo cierra las deudas de todos los eventos', (tester) async {
+      usarPantallaAlta(tester);
+      final balances = FakeBalancesRepository(
+        balance: const Balance(
+          balanceNeto: '-200.00',
+          meDeben: '300.00',
+          debo: '500.00',
+          saldos: [
+            SaldoPorPersona(
+              id: 'usr-marcos',
+              nombre: 'Marcos',
+              monto: '200.00',
+              estado: 'pagar',
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(appDePrueba(const BalancesScreen(), balances: balances));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Marcos').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.balancesSettleAll));
+      await tester.pumpAndSettle();
+
+      // Pide confirmación antes de saldar en cascada.
+      expect(find.text(l10n.balancesSettleAllConfirmMulti('Marcos', 2)), findsOneWidget);
+      await tester.tap(find.text(l10n.commonConfirm));
+      await tester.pumpAndSettle();
+
+      expect(balances.llamadas, contains('saldarPersona:usr-marcos'));
+    });
+  });
+
   group('HistoryScreen (HU-26)', () {
     testWidgets('agrupa por mes y muestra el estado de saldo', (tester) async {
       final events = FakeEventsRepository(

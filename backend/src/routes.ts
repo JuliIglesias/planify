@@ -301,6 +301,29 @@ export function createRoutes(c: Container): Router {
     }),
   );
 
+  // FR9 — compensación cruzada: el desglose por evento de la relación con una
+  // persona, y saldarla completa. Solo desde Balances; dentro de un evento se
+  // opera sobre las deudas de ese evento ([Duda #26](docs/02-decisiones.md)).
+  router.get(
+    '/me/balance/:personaId',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(
+        await c.debts.detalleConPersona(exigirUsuario(req), String(req.params.personaId)),
+      );
+    }),
+  );
+
+  router.post(
+    '/me/balance/:personaId/settle',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(
+        await c.debts.saldarConPersona(exigirUsuario(req), String(req.params.personaId)),
+      );
+    }),
+  );
+
   // ── SCRUM-13 · Log de actividad del evento ──────────────────────────────
   router.get(
     '/events/:id/activity-log',

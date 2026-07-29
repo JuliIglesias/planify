@@ -89,6 +89,17 @@ export class PrismaDeudaRepository implements DeudaRepository {
     return toDeuda(row);
   }
 
+  async marcarSaldadasEnLote(ids: string[], cuando: Date): Promise<number> {
+    if (ids.length === 0) return 0;
+
+    const { count } = await this.prisma.deudaSimplificada.updateMany({
+      where: { id: { in: ids } },
+      data: { estado: 'saldado', saldadoEn: cuando },
+    });
+
+    return count;
+  }
+
   async contarPendientes(eventoId: string): Promise<number> {
     return this.prisma.deudaSimplificada.count({
       where: { eventoId, estado: { not: 'saldado' } },

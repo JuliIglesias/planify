@@ -437,4 +437,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeNoActivity => 'No activity yet';
+
+  @override
+  String get balancesSettleAll => 'Settle all';
+
+  @override
+  String balancesSettleAllConfirm(String nombre) {
+    return 'Your debt with $nombre will be marked as settled.';
+  }
+
+  @override
+  String balancesSettleAllConfirmMulti(String nombre, int count) {
+    return 'This will settle all $count debts you have with $nombre, across every event.';
+  }
+
+  @override
+  String get balancesBreakdown => 'BREAKDOWN BY EVENT';
+
+  @override
+  String balancesNoDebtsWith(String nombre) {
+    return 'You have no pending debts with $nombre';
+  }
+
+  @override
+  String balancesCompensationHint(String debo, String meDeben) {
+    return 'Offset: you owe \$$debo and you are owed \$$meDeben';
+  }
 }

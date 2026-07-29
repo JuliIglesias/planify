@@ -235,17 +235,38 @@
 
 **Fecha:** 2026-07-29
 
-## Duda #26 — Alcance de FR9 "cálculo de deudas entre eventos" (ABIERTA)
-**Contexto:** el charter lista como FR9 "Cálculo de deudas entre eventos". La implementación actual simplifica las deudas **dentro de cada evento** y la pantalla Balances **agrega** los saldos de todos los eventos por persona.
+## Duda #26 — Alcance de FR9 "cálculo de deudas entre eventos" (RESUELTA)
+**Contexto:** el charter lista como FR9 "Cálculo de deudas entre eventos". La primera implementación simplificaba las deudas dentro de cada evento y solo **agregaba** los saldos en Balances, sin compensar entre eventos distintos.
 
-**Lo que NO hace hoy:** compensar deudas cruzadas entre eventos distintos. Si en el asado le debo $500 a Marcos y en el cine él me debe $300, se ven como dos deudas separadas en vez de una neta de $200.
+**Decisión del usuario (2026-07-29): SÍ se compensan las deudas cruzadas**, con este alcance por pantalla:
 
-**Pregunta abierta:** ¿el charter pedía esa compensación cruzada, o alcanza con la agregación que ya existe?
+| Dónde | Qué se ve | Qué se puede saldar |
+|---|---|---|
+| **Dentro de un evento** | Solo las deudas de ese evento, sin compensar | Una deuda puntual de ese evento (HU-18) |
+| **Pantalla Balances** (bottom bar) | El **neto compensado** con cada persona, entre todos los eventos | Toda la relación con esa persona, de una |
 
-**Impacto si se pide la compensación:**
-- Técnicamente es alcanzable sin rehacer nada: el motor (`debt-engine.ts`) recibe una lista de movimientos y no le importa de qué evento vienen.
-- Lo que sí cambia es la UX: hay que definir **cómo se salda** una deuda que resume varios eventos, y qué muestra el historial de cada evento cuando su deuda quedó compensada con otro.
+**Regla de cascada:** saldar desde Balances marca como saldadas **todas** las deudas pendientes con esa persona, en ambos sentidos y en todos los eventos. Cada evento afectado recibe su entrada en el log y actualiza su estado (pasa a `finalizado` si no le queda deuda pendiente).
 
-**Estado:** pendiente de definición. No bloquea nada de lo que está construido.
+**Ejemplo:** si en el asado le debo $500 a Marcos y en el cine él me debe $300, Balances muestra una sola línea: le debo $200. Al saldarla, las dos deudas originales quedan saldadas.
+
+**Implementación:**
+- Backend: `DebtsService.detalleConPersona()` y `saldarConPersona()`; endpoints `GET /me/balance/:personaId` y `POST /me/balance/:personaId/settle`.
+- Mobile: tocar una persona en Balances abre una hoja con el desglose por evento, el neto compensado y el botón "Saldar todo" (con confirmación).
+- 11 tests cubren la compensación, la simetría entre las dos personas, la cascada, el aislamiento respecto de terceros y que dentro del evento se siga viendo solo lo del evento.
+
+**Agrupación:** por `usuarioId` para registrados; los anónimos se agrupan por `participanteId`, porque su identidad no sobrevive al evento ([Duda #5](#duda-5--alcance-de-autenticación-en-el-mvp)).
+
+**Fecha:** 2026-07-29
+
+## Duda #27 — UX de las pantallas que no están en Figma
+**Contexto:** las capturas de Figma cubren 7 pantallas. Varias funcionalidades acordadas después (gestión de grupos, detalle de compensación por persona, diálogos de gasto y tarea) no tienen diseño.
+
+**Decisión del usuario:** queda a criterio del desarrollo, respetando el lenguaje visual de las pantallas que sí están diseñadas.
+
+**Criterios que se aplicaron:**
+- **Hojas inferiores** (`showModalBottomSheet`) para acciones sobre un ítem que ya se está mirando — no romper el contexto con una pantalla nueva.
+- Se reutilizan los componentes existentes: `AvatarStack`, `StatusBadge`, cards con radio 16dp, y los colores semánticos del design system (verde a favor, rojo en contra, ámbar pendiente).
+- **Confirmación explícita** antes de cualquier acción destructiva o en cascada (cancelar evento, abandonar grupo, saldar todo).
+- Los montos siempre con su color semántico y con texto que aclare el sentido, nunca solo el color.
 
 **Fecha:** 2026-07-29

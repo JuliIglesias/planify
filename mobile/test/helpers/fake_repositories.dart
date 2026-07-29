@@ -204,14 +204,57 @@ class FakeActivityLogRepository implements ActivityLogRepository {
 }
 
 class FakeBalancesRepository implements BalancesRepository {
-  FakeBalancesRepository({this.balance = Balance.empty, this.deudas = const []});
+  FakeBalancesRepository({
+    this.balance = Balance.empty,
+    this.deudas = const [],
+    DetalleConPersona? detalle,
+  }) : detalle = detalle ?? detalleDeEjemplo();
 
   Balance balance;
   List<DeudaEvento> deudas;
+  DetalleConPersona detalle;
   final List<String> llamadas = [];
+
+  /// Escenario típico de compensación cruzada (FR9): debo $500 en el asado y
+  /// me deben $300 en el cine, así que quedan $200 a pagar.
+  static DetalleConPersona detalleDeEjemplo() => const DetalleConPersona(
+        personaId: 'usr-marcos',
+        nombre: 'Marcos',
+        monto: '200.00',
+        estado: 'pagar',
+        totalQueDebo: '500.00',
+        totalQueMeDebe: '300.00',
+        deudas: [
+          DeudaDeEvento(
+            id: 'd1',
+            eventoId: 'e1',
+            eventoNombre: 'Asado',
+            monto: '500.00',
+            yoDebo: true,
+          ),
+          DeudaDeEvento(
+            id: 'd2',
+            eventoId: 'e2',
+            eventoNombre: 'Cine',
+            monto: '300.00',
+            yoDebo: false,
+          ),
+        ],
+      );
 
   @override
   Future<Balance> miBalance() async => balance;
+
+  @override
+  Future<DetalleConPersona> detalleConPersona(String personaId) async {
+    llamadas.add('detalle:$personaId');
+    return detalle;
+  }
+
+  @override
+  Future<void> saldarConPersona(String personaId) async {
+    llamadas.add('saldarPersona:$personaId');
+  }
 
   @override
   Future<List<DeudaEvento>> deudasDelEvento(String eventoId) async => deudas;

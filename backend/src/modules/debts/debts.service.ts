@@ -27,6 +27,33 @@ export interface BalanceUsuario {
   saldos: SaldoPorPersona[];
 }
 
+/** Una deuda concreta de un evento, dentro del detalle con una persona. */
+export interface DeudaDeEvento {
+  id: string;
+  eventoId: string;
+  eventoNombre: string;
+  monto: string;
+  /** `true` si en ESE evento la deuda es mía hacia la otra persona. */
+  yoDebo: boolean;
+}
+
+/**
+ * Desglose de la relación con una persona: qué se debe en cada evento y cuánto
+ * queda después de compensar (FR9).
+ */
+export interface DetalleConPersona {
+  personaId: string;
+  nombre: string;
+  /** Neto ya compensado, siempre en positivo. El signo lo da `estado`. */
+  monto: string;
+  estado: 'pagar' | 'pendiente' | 'saldado';
+  /** Lo que yo le debo, sin compensar. */
+  totalQueDebo: string;
+  /** Lo que ella me debe, sin compensar. */
+  totalQueMeDebe: string;
+  deudas: DeudaDeEvento[];
+}
+
 /**
  * SCRUM-11 — HU-15 a HU-18. La aritmética vive en `debt-engine.ts` (pura y
  * testeable); esta clase se ocupa de leer, persistir y aplicar las reglas de
@@ -152,7 +179,128 @@ export class DebtsService {
     };
   }
 
-  /** HU-18 — marcar una deuda como saldada. */
+  /**
+   * FR9 — desglose de la relación con una persona: qué se debe en cada evento
+   * y cuánto queda después de compensar.
+   *
+   * Ojo con la diferencia de alcance (decisión del usuario, [Duda #26]):
+   * - Dentro de un evento se ven SOLO las deudas de ese evento (`listarDelEvento`).
+   * - En la pantalla Balances se ve el neto compensado entre todos los eventos.
+   */
+  async detalleConPersona(usuarioId: string, personaId: string): Promise<DetalleConPersona> {
+    const { misIds, deudas } = await this.deudasPendientesCon(usuarioId, personaId);
+
+    let deboCents = 0;
+    let meDebenCents = 0;
+    const detalle: DeudaDeEvento[] = [];
+    let nombre = '';
+
+    for (const deuda of deudas) {
+      const montoCents = toCents(deuda.monto);
+      const yoDebo = misIds.has(deuda.deudorParticipanteId);
+
+      if (yoDebo) deboCents += montoCents;
+      else meDebenCents += montoCents;
+
+      nombre = yoDebo ? deuda.acreedor.nombre : deuda.deudor.nombre;
+
+      detalle.push({
+        id: deuda.id,
+        eventoId: deuda.eventoId,
+        eventoNombre: deuda.eventoNombre,
+        monto: deuda.monto,
+        yoDebo,
+      });
+    }
+
+    const netoCents = meDebenCents - deboCents;
+
+    return {
+      personaId,
+      nombre,
+      monto: fromCents(Math.abs(netoCents)),
+      estado: netoCents === 0 ? 'saldado' : netoCents < 0 ? 'pagar' : 'pendiente',
+      totalQueDebo: fromCents(deboCents),
+      totalQueMeDebe: fromCents(meDebenCents),
+      deudas: detalle,
+    };
+  }
+
+  /**
+   * FR9 — saldar la relación completa con una persona desde la pantalla
+   * Balances: cierra **todas** las deudas pendientes con ella, en ambos
+   * sentidos y de todos los eventos, y actualiza el estado de cada evento
+   * afectado (decisión del usuario, [Duda #26]).
+   */
+  async saldarConPersona(
+    usuarioId: string,
+    personaId: string,
+  ): Promise<{ saldadas: number; eventosAfectados: string[] }> {
+    const { misIds, deudas } = await this.deudasPendientesCon(usuarioId, personaId);
+
+    if (deudas.length === 0) {
+      throw new BadRequestError('No hay deudas pendientes con esa persona');
+    }
+
+    const ahora = this.clock.now();
+    const saldadas = await this.deudas.marcarSaldadasEnLote(
+      deudas.map((d) => d.id),
+      ahora,
+    );
+
+    // Una entrada de log por evento afectado, con el participante que soy yo
+    // en ese evento como actor.
+    const eventosAfectados = [...new Set(deudas.map((d) => d.eventoId))];
+
+    for (const eventoId of eventosAfectados) {
+      const deudasDelEvento = deudas.filter((d) => d.eventoId === eventoId);
+      const actor = misIds.has(deudasDelEvento[0].deudorParticipanteId)
+        ? deudasDelEvento[0].deudorParticipanteId
+        : deudasDelEvento[0].acreedorParticipanteId;
+
+      await this.log.registrar({
+        eventoId,
+        tipo: ActivityType.deudaSaldada,
+        actorParticipanteId: actor,
+        payload: {
+          compensacionCruzada: true,
+          deudas: deudasDelEvento.length,
+        },
+      });
+
+      await this.actualizarEstadoEvento(eventoId);
+    }
+
+    return { saldadas, eventosAfectados };
+  }
+
+  /**
+   * Deudas pendientes entre el usuario y otra persona, a través de todos los
+   * eventos. `personaId` es el `usuarioId` de un registrado o el
+   * `participanteId` de un anónimo (los anónimos no tienen identidad global,
+   * ver [Duda #5]).
+   */
+  private async deudasPendientesCon(
+    usuarioId: string,
+    personaId: string,
+  ): Promise<{ misIds: Set<string>; deudas: DeudaConPersonas[] }> {
+    const participaciones = await this.participantes.listByUsuario(usuarioId);
+    const misIds = new Set(participaciones.map((p) => p.id));
+
+    const todas = await this.deudas.listByParticipantes([...misIds]);
+
+    const deudas = todas.filter((deuda) => {
+      if (deuda.estado === 'saldado') return false;
+
+      const soyDeudor = misIds.has(deuda.deudorParticipanteId);
+      const otro = soyDeudor ? deuda.acreedor : deuda.deudor;
+      return (otro.usuarioId ?? otro.id) === personaId;
+    });
+
+    return { misIds, deudas };
+  }
+
+  /** HU-18 — marcar una deuda puntual como saldada (desde el evento). */
   async saldar(deudaId: string, participanteId: string): Promise<DeudaSimplificada> {
     const deuda = await this.deudas.findById(deudaId);
     if (!deuda) throw new NotFoundError('Deuda no encontrada');

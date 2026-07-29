@@ -1,0 +1,204 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/event_card.dart';
+import '../../core/widgets/status_badge.dart';
+import '../../l10n/generated/app_localizations.dart';
+import '../home/home_providers.dart';
+
+enum _Filtro { todo, meDeben, debo }
+
+/// Riverpod 3 sacó StateProvider; para estado local simple se usa un Notifier.
+class _FiltroBalance extends Notifier<_Filtro> {
+  @override
+  _Filtro build() => _Filtro.todo;
+
+  void set(_Filtro filtro) => state = filtro;
+}
+
+final _filtroBalanceProvider =
+    NotifierProvider<_FiltroBalance, _Filtro>(_FiltroBalance.new);
+
+/// Balances — balance neto + saldos por amigo (mockup "Balances").
+class BalancesScreen extends ConsumerWidget {
+  const BalancesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final balance = ref.watch(balanceProvider);
+    final filtro = ref.watch(_filtroBalanceProvider);
+
+    return RefreshIndicator(
+      onRefresh: () async => ref.invalidate(balanceProvider),
+      child: ListView(
+        children: [
+          AppHeader(titulo: l10n.balancesTitle),
+          balance.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(AppSpacing.xl),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (err, _) => AsyncStateView(
+              icon: Icons.cloud_off,
+              mensaje: l10n.commonError,
+              detalle: l10n.commonErrorHint,
+            ),
+            data: (b) {
+              final netoPositivo = !b.balanceNeto.trim().startsWith('-');
+
+              final saldosFiltrados = b.saldos.where((s) {
+                return switch (filtro) {
+                  _Filtro.todo => true,
+                  _Filtro.meDeben => s.estado == 'pendiente',
+                  _Filtro.debo => s.estado == 'pagar',
+                };
+              }).toList();
+
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    child: Column(
+                      children: [
+                        Text(
+                          l10n.balancesNet,
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                        ),
+                        Text(
+                          '${netoPositivo ? '+' : ''}\$${b.balanceNeto}',
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: netoPositivo ? AppColors.success : AppColors.danger,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _MiniResumen(
+                            label: l10n.balancesOwedToMe,
+                            monto: b.meDeben,
+                            color: AppColors.success,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: _MiniResumen(
+                            label: l10n.balancesIOwe,
+                            monto: b.debo,
+                            color: AppColors.danger,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    child: SegmentedButton<_Filtro>(
+                      segments: [
+                        ButtonSegment(value: _Filtro.todo, label: Text(l10n.balancesAll)),
+                        ButtonSegment(
+                          value: _Filtro.meDeben,
+                          label: Text(l10n.balancesOwedToMe),
+                        ),
+                        ButtonSegment(value: _Filtro.debo, label: Text(l10n.balancesIOwe)),
+                      ],
+                      selected: {filtro},
+                      onSelectionChanged: (s) =>
+                          ref.read(_filtroBalanceProvider.notifier).set(s.first),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        l10n.balancesPerFriend,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  if (saldosFiltrados.isEmpty)
+                    AsyncStateView(
+                      icon: Icons.account_balance_wallet_outlined,
+                      mensaje: l10n.balancesEmpty,
+                      detalle: l10n.balancesEmptyHint,
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: Column(
+                        children: [
+                          for (final saldo in saldosFiltrados)
+                            BalanceRow(
+                              nombre: saldo.nombre,
+                              monto: '\$${saldo.monto}',
+                              estado: switch (saldo.estado) {
+                                'pagar' => SaldoEstado.pagar,
+                                'pendiente' => SaldoEstado.pendiente,
+                                _ => SaldoEstado.saldado,
+                              },
+                              estadoLabel: switch (saldo.estado) {
+                                'pagar' => l10n.balancesYouOwe,
+                                'pendiente' => l10n.balancesOweYou,
+                                _ => l10n.balancesStateSettled,
+                              },
+                            ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniResumen extends StatelessWidget {
+  const _MiniResumen({required this.label, required this.monto, required this.color});
+
+  final String label;
+  final String monto;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Column(
+          children: [
+            Text(label, style: Theme.of(context).textTheme.labelSmall),
+            Text(
+              '\$$monto',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

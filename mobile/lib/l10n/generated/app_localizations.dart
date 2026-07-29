@@ -1,0 +1,800 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
+
+import 'app_localizations_en.dart';
+import 'app_localizations_es.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'generated/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
+
+  static AppLocalizations? of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations);
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('es'),
+  ];
+
+  /// No description provided for @appName.
+  ///
+  /// In es, this message translates to:
+  /// **'Planify'**
+  String get appName;
+
+  /// No description provided for @appTagline.
+  ///
+  /// In es, this message translates to:
+  /// **'Juntadas sin estrés'**
+  String get appTagline;
+
+  /// No description provided for @loginUserOrEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Usuario o Email'**
+  String get loginUserOrEmail;
+
+  /// No description provided for @loginPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña'**
+  String get loginPassword;
+
+  /// No description provided for @loginForgotPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Olvidaste tu contraseña?'**
+  String get loginForgotPassword;
+
+  /// No description provided for @loginSubmit.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresar'**
+  String get loginSubmit;
+
+  /// No description provided for @loginOr.
+  ///
+  /// In es, this message translates to:
+  /// **'o'**
+  String get loginOr;
+
+  /// No description provided for @loginContinueAnonymous.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar como Anónimo'**
+  String get loginContinueAnonymous;
+
+  /// No description provided for @loginNoAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'¿No tienes una cuenta?'**
+  String get loginNoAccount;
+
+  /// No description provided for @loginCreateAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear cuenta'**
+  String get loginCreateAccount;
+
+  /// No description provided for @loginComingSoon.
+  ///
+  /// In es, this message translates to:
+  /// **'Próximamente'**
+  String get loginComingSoon;
+
+  /// No description provided for @loginError.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos iniciar sesión. Revisá tus datos.'**
+  String get loginError;
+
+  /// No description provided for @loginAnonymousHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Para entrar como anónimo necesitás un link de invitación a un evento.'**
+  String get loginAnonymousHint;
+
+  /// No description provided for @navHome.
+  ///
+  /// In es, this message translates to:
+  /// **'Inicio'**
+  String get navHome;
+
+  /// No description provided for @navGroups.
+  ///
+  /// In es, this message translates to:
+  /// **'Grupos'**
+  String get navGroups;
+
+  /// No description provided for @navBalances.
+  ///
+  /// In es, this message translates to:
+  /// **'Saldos'**
+  String get navBalances;
+
+  /// No description provided for @navProfile.
+  ///
+  /// In es, this message translates to:
+  /// **'Perfil'**
+  String get navProfile;
+
+  /// No description provided for @homeGreeting.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Hola, {nombre}!'**
+  String homeGreeting(String nombre);
+
+  /// No description provided for @homeOwedToMe.
+  ///
+  /// In es, this message translates to:
+  /// **'Me deben'**
+  String get homeOwedToMe;
+
+  /// No description provided for @homeIOwe.
+  ///
+  /// In es, this message translates to:
+  /// **'Debo'**
+  String get homeIOwe;
+
+  /// No description provided for @homeUpcomingEvents.
+  ///
+  /// In es, this message translates to:
+  /// **'Próximos eventos'**
+  String get homeUpcomingEvents;
+
+  /// No description provided for @homeSeeAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver todas'**
+  String get homeSeeAll;
+
+  /// No description provided for @homeRecentActivity.
+  ///
+  /// In es, this message translates to:
+  /// **'Actividad reciente'**
+  String get homeRecentActivity;
+
+  /// No description provided for @homeNoEvents.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no tenés eventos'**
+  String get homeNoEvents;
+
+  /// No description provided for @homeNoEventsHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Creá el primero con el botón +'**
+  String get homeNoEventsHint;
+
+  /// No description provided for @groupsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Grupos'**
+  String get groupsTitle;
+
+  /// No description provided for @groupsNoGroups.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no tenés grupos'**
+  String get groupsNoGroups;
+
+  /// No description provided for @groupsNoGroupsHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Se crean solos cuando armás un evento'**
+  String get groupsNoGroupsHint;
+
+  /// No description provided for @groupsNewEvent.
+  ///
+  /// In es, this message translates to:
+  /// **'NUEVO'**
+  String get groupsNewEvent;
+
+  /// No description provided for @groupsConfirmed.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} confirmados'**
+  String groupsConfirmed(int count);
+
+  /// No description provided for @groupsPendingTasks.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} tareas pendientes'**
+  String groupsPendingTasks(int count);
+
+  /// No description provided for @groupsExpenses.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} gastos'**
+  String groupsExpenses(int count);
+
+  /// No description provided for @groupsNoUpcoming.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin eventos próximos'**
+  String get groupsNoUpcoming;
+
+  /// No description provided for @balancesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Saldos'**
+  String get balancesTitle;
+
+  /// No description provided for @balancesNet.
+  ///
+  /// In es, this message translates to:
+  /// **'BALANCE NETO'**
+  String get balancesNet;
+
+  /// No description provided for @balancesAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Todo'**
+  String get balancesAll;
+
+  /// No description provided for @balancesOwedToMe.
+  ///
+  /// In es, this message translates to:
+  /// **'Me deben'**
+  String get balancesOwedToMe;
+
+  /// No description provided for @balancesIOwe.
+  ///
+  /// In es, this message translates to:
+  /// **'Debo'**
+  String get balancesIOwe;
+
+  /// No description provided for @balancesPerFriend.
+  ///
+  /// In es, this message translates to:
+  /// **'Saldos por amigo'**
+  String get balancesPerFriend;
+
+  /// No description provided for @balancesEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No tenés saldos pendientes'**
+  String get balancesEmpty;
+
+  /// No description provided for @balancesEmptyHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuando cargues gastos van a aparecer acá'**
+  String get balancesEmptyHint;
+
+  /// No description provided for @balancesStatePay.
+  ///
+  /// In es, this message translates to:
+  /// **'Pagar'**
+  String get balancesStatePay;
+
+  /// No description provided for @balancesStatePending.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendiente'**
+  String get balancesStatePending;
+
+  /// No description provided for @balancesStateSettled.
+  ///
+  /// In es, this message translates to:
+  /// **'Saldado'**
+  String get balancesStateSettled;
+
+  /// No description provided for @balancesOweYou.
+  ///
+  /// In es, this message translates to:
+  /// **'Te debe'**
+  String get balancesOweYou;
+
+  /// No description provided for @balancesYouOwe.
+  ///
+  /// In es, this message translates to:
+  /// **'Le debés'**
+  String get balancesYouOwe;
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Perfil'**
+  String get profileTitle;
+
+  /// No description provided for @profileWeeklyAvailability.
+  ///
+  /// In es, this message translates to:
+  /// **'Disponibilidad Semanal'**
+  String get profileWeeklyAvailability;
+
+  /// No description provided for @profileAvailabilityHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Tocá los bloques para marcar tus ratos libres'**
+  String get profileAvailabilityHint;
+
+  /// No description provided for @profileHistory.
+  ///
+  /// In es, this message translates to:
+  /// **'Historial de eventos'**
+  String get profileHistory;
+
+  /// No description provided for @profileLogout.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar sesión'**
+  String get profileLogout;
+
+  /// No description provided for @historyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Historial de eventos'**
+  String get historyTitle;
+
+  /// No description provided for @historyEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay eventos pasados'**
+  String get historyEmpty;
+
+  /// No description provided for @historyToPay.
+  ///
+  /// In es, this message translates to:
+  /// **'Por pagar'**
+  String get historyToPay;
+
+  /// No description provided for @historyYourShare.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu aporte'**
+  String get historyYourShare;
+
+  /// No description provided for @eventCreateTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo evento'**
+  String get eventCreateTitle;
+
+  /// No description provided for @eventStep1Title.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué sale?'**
+  String get eventStep1Title;
+
+  /// No description provided for @eventStep2Title.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Con quién?'**
+  String get eventStep2Title;
+
+  /// No description provided for @eventNameLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre del evento'**
+  String get eventNameLabel;
+
+  /// No description provided for @eventNameHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Asado en lo de Marcos'**
+  String get eventNameHint;
+
+  /// No description provided for @eventPlaceLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Dónde es?'**
+  String get eventPlaceLabel;
+
+  /// No description provided for @eventPlaceHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Casa de Juli'**
+  String get eventPlaceHint;
+
+  /// No description provided for @eventNext.
+  ///
+  /// In es, this message translates to:
+  /// **'Siguiente'**
+  String get eventNext;
+
+  /// No description provided for @eventBack.
+  ///
+  /// In es, this message translates to:
+  /// **'Atrás'**
+  String get eventBack;
+
+  /// No description provided for @eventCreate.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear evento'**
+  String get eventCreate;
+
+  /// No description provided for @eventExistingGroup.
+  ///
+  /// In es, this message translates to:
+  /// **'Usar un grupo existente'**
+  String get eventExistingGroup;
+
+  /// No description provided for @eventNewGroup.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear un grupo nuevo'**
+  String get eventNewGroup;
+
+  /// No description provided for @eventNewGroupName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre del grupo'**
+  String get eventNewGroupName;
+
+  /// No description provided for @eventCreateError.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos crear el evento'**
+  String get eventCreateError;
+
+  /// No description provided for @eventDateComesLater.
+  ///
+  /// In es, this message translates to:
+  /// **'La fecha se define después, cuando todos carguen su disponibilidad'**
+  String get eventDateComesLater;
+
+  /// No description provided for @eventDetailAvailability.
+  ///
+  /// In es, this message translates to:
+  /// **'Disponibilidad del grupo'**
+  String get eventDetailAvailability;
+
+  /// No description provided for @eventDetailConfirmSchedule.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar horario'**
+  String get eventDetailConfirmSchedule;
+
+  /// No description provided for @eventDetailMyAvailability.
+  ///
+  /// In es, this message translates to:
+  /// **'Mi disponibilidad'**
+  String get eventDetailMyAvailability;
+
+  /// No description provided for @eventDetailSaveAvailability.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar disponibilidad'**
+  String get eventDetailSaveAvailability;
+
+  /// No description provided for @eventDetailAttendance.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Vas?'**
+  String get eventDetailAttendance;
+
+  /// No description provided for @eventDetailGoing.
+  ///
+  /// In es, this message translates to:
+  /// **'Voy'**
+  String get eventDetailGoing;
+
+  /// No description provided for @eventDetailNotGoing.
+  ///
+  /// In es, this message translates to:
+  /// **'No voy'**
+  String get eventDetailNotGoing;
+
+  /// No description provided for @eventDetailTasks.
+  ///
+  /// In es, this message translates to:
+  /// **'Tareas'**
+  String get eventDetailTasks;
+
+  /// No description provided for @eventDetailNoTasks.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay tareas'**
+  String get eventDetailNoTasks;
+
+  /// No description provided for @eventDetailAddTask.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar tarea'**
+  String get eventDetailAddTask;
+
+  /// No description provided for @eventDetailTaskTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué hay que hacer?'**
+  String get eventDetailTaskTitle;
+
+  /// No description provided for @eventDetailTakeTask.
+  ///
+  /// In es, this message translates to:
+  /// **'Tomar'**
+  String get eventDetailTakeTask;
+
+  /// No description provided for @eventDetailCompleteTask.
+  ///
+  /// In es, this message translates to:
+  /// **'Listo'**
+  String get eventDetailCompleteTask;
+
+  /// No description provided for @eventDetailTaskDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Completada'**
+  String get eventDetailTaskDone;
+
+  /// No description provided for @eventDetailTaskUnassigned.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin asignar'**
+  String get eventDetailTaskUnassigned;
+
+  /// No description provided for @eventDetailActivityLog.
+  ///
+  /// In es, this message translates to:
+  /// **'Log de Actividad'**
+  String get eventDetailActivityLog;
+
+  /// No description provided for @eventDetailQuickActions.
+  ///
+  /// In es, this message translates to:
+  /// **'Acciones rápidas'**
+  String get eventDetailQuickActions;
+
+  /// No description provided for @eventDetailAddExpense.
+  ///
+  /// In es, this message translates to:
+  /// **'Gasto'**
+  String get eventDetailAddExpense;
+
+  /// No description provided for @eventDetailExpenseDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué compraste?'**
+  String get eventDetailExpenseDescription;
+
+  /// No description provided for @eventDetailExpenseAmount.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto'**
+  String get eventDetailExpenseAmount;
+
+  /// No description provided for @eventDetailCancelEvent.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar evento'**
+  String get eventDetailCancelEvent;
+
+  /// No description provided for @eventDetailNoActivity.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no pasó nada en este evento'**
+  String get eventDetailNoActivity;
+
+  /// No description provided for @activityEventCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} creó el evento'**
+  String activityEventCreated(String actor);
+
+  /// No description provided for @activityScheduleConfirmed.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} confirmó el horario'**
+  String activityScheduleConfirmed(String actor);
+
+  /// No description provided for @activityExpenseAdded.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} agregó un gasto'**
+  String activityExpenseAdded(String actor);
+
+  /// No description provided for @activityDebtSettled.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} saldó su deuda'**
+  String activityDebtSettled(String actor);
+
+  /// No description provided for @activityTaskCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} creó una tarea'**
+  String activityTaskCreated(String actor);
+
+  /// No description provided for @activityTaskAssigned.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} se asignó una tarea'**
+  String activityTaskAssigned(String actor);
+
+  /// No description provided for @activityTaskCompleted.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} completó una tarea'**
+  String activityTaskCompleted(String actor);
+
+  /// No description provided for @activityJoined.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} se unió al evento'**
+  String activityJoined(String actor);
+
+  /// No description provided for @activityAttendance.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} confirmó su asistencia'**
+  String activityAttendance(String actor);
+
+  /// No description provided for @activityAvailability.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} cargó su disponibilidad'**
+  String activityAvailability(String actor);
+
+  /// No description provided for @activityCancelled.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} canceló el evento'**
+  String activityCancelled(String actor);
+
+  /// No description provided for @commonSave.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar'**
+  String get commonSave;
+
+  /// No description provided for @commonCancel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar'**
+  String get commonCancel;
+
+  /// No description provided for @commonAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar'**
+  String get commonAdd;
+
+  /// No description provided for @commonRetry.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar'**
+  String get commonRetry;
+
+  /// No description provided for @commonError.
+  ///
+  /// In es, this message translates to:
+  /// **'Algo salió mal'**
+  String get commonError;
+
+  /// No description provided for @commonErrorHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisá que el backend esté corriendo'**
+  String get commonErrorHint;
+
+  /// No description provided for @commonLoading.
+  ///
+  /// In es, this message translates to:
+  /// **'Cargando…'**
+  String get commonLoading;
+
+  /// No description provided for @commonToBeDefined.
+  ///
+  /// In es, this message translates to:
+  /// **'A definir'**
+  String get commonToBeDefined;
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) =>
+      <String>['en', 'es'].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'en':
+      return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+  }
+
+  throw FlutterError(
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
+}

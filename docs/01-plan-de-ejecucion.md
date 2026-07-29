@@ -1,5 +1,16 @@
 # Planify — Plan de Ejecución (Fase 2)
 
+> ## ⚠️ Fuente de verdad
+>
+> **El Project Charter (PDF) y las épicas de Jira mandan sobre este documento.**
+> Si algo acá contradice al charter o a Jira, gana el charter/Jira y este documento se corrige.
+>
+> - **Charter:** `entrega 2 PC.pdf` — objetivo, alcance, requerimientos, hitos, presupuesto y riesgos.
+> - **Jira:** [`planify2026.atlassian.net`](https://planify2026.atlassian.net), proyecto `SCRUM` — 17 épicas con sus fechas. **Ninguna fecha de Jira se modificó ni se debe modificar sin consultar.**
+>
+> Este plan es la bajada técnica de esas dos fuentes: cómo se construye lo que ellas definen.
+> Última verificación contra Jira en vivo: **2026-07-29** (las 17 épicas y sus fechas coinciden).
+
 > Basado en [00-entendimiento.md](00-entendimiento.md), [00-ui-entendimiento.md](00-ui-entendimiento.md) y todas las decisiones registradas en [02-decisiones.md](02-decisiones.md). Design system detallado en [03-design-system.md](03-design-system.md).
 
 ## 1. Decisiones técnicas cerradas
@@ -9,7 +20,7 @@
 | Mobile | **Flutter (Dart)** | Ya presupuestado en el charter (capacitación Udemy) — [Duda #7](02-decisiones.md) |
 | State management (mobile) | **Riverpod** | Más robusto y testeable que Provider/setState, es el estándar actual recomendado por el equipo de Flutter — buena práctica transferible |
 | Cliente HTTP (mobile) | **Dio** | Interceptors nativos para adjuntar token de sesión/auth y manejar errores centralizado |
-| Backend | **Node.js + Express (TypeScript)** | Cambio pedido por el usuario (reemplaza a NestJS) — más minimalista, sin DI/decoradores, curva de aprendizaje más simple para el equipo; arquitectura en capas (routes → controllers → services) se organiza a mano por convención de carpetas |
+| Backend | **Node.js + Express (TypeScript)** | Cambio pedido por el usuario (reemplaza a NestJS) — más minimalista y sin decoradores; la inyección de dependencias se hace a mano en `container.ts`, que es explícito y fácil de seguir para un equipo júnior ([Duda #18](02-decisiones.md) y [#23](02-decisiones.md)) |
 | ORM | **Prisma** | Migraciones declarativas fáciles de leer/revisar en PR, type-safety end-to-end, curva de aprendizaje baja — funciona igual de bien con Express que con Nest |
 | Base de datos | **PostgreSQL en RDS** | Transacciones ACID necesarias para el algoritmo de simplificación de deudas ([Duda #3](02-decisiones.md), opción B) y NFR#4 (exactitud financiera) |
 | Infraestructura | **AWS EC2 + RDS**, apagados fuera de testing/demo | Decisión pedagógica explícita — [Duda #8 revisada](02-decisiones.md) |
@@ -18,8 +29,8 @@
 | Notificaciones push | **SNS/Pinpoint (AWS)** | Consistente con backend en AWS — [Duda #10](02-decisiones.md) |
 | Contenedores | **Docker + docker-compose** | Portabilidad dev↔EC2, facilita "prender/apagar" el ambiente sin reinstalar nada |
 | Empaquetado/despliegue Android | **Play Store — pista de testing interno** durante todo el proyecto | Coincide con supuesto de distribución vía Play Store sin publicación pública real |
-| Testing backend | **Jest + Supertest** | Estándar de facto en Node/Express, buena integración con CI |
-| Testing mobile | **flutter_test + mocktail** | Testing oficial de Flutter, mocktail es más simple de aprender que mockito clásico |
+| Testing backend | **Jest + Supertest + fakes propios** | Los fakes en memoria (`test/fakes.ts`) implementan las interfaces de repositorio: los tests corren **sin base de datos**, incluida la API completa vía Supertest |
+| Testing mobile | **flutter_test + fakes propios** | Mismo criterio: `test/helpers/fake_repositories.dart` implementa las interfaces, así que las pantallas se prueban **sin red**. No hace falta una librería de mocking |
 | CI/CD | **GitHub Actions** | Gratuito, buena integración con EC2 vía SSH/Docker, curva de aprendizaje razonable para el equipo |
 | Internacionalización | **flutter_localizations + archivos `.arb` (ES/EN)** | Estándar oficial de Flutter para i18n, exactamente lo pedido en [Duda #15](02-decisiones.md) (texto no acoplado al código) |
 | Motor de IA (SCRUM-17, auto-generación de eventos) | **Gemini API (Google)** | Acceso gratuito vía la facultad — [Duda #21](02-decisiones.md), cubre el parseo de lenguaje natural sin costo contra el presupuesto de IA/APIs |
@@ -32,47 +43,60 @@
 **Capas:**
 - **Mobile (Flutter):** Presentación (screens/widgets) → Riverpod (state) → **Repositorios por feature (interfaz + implementación Dio)** → API REST.
 - **Backend (Node + Express):** Routes → Services (lógica de negocio) → **Interfaces de repositorio (`src/domain`)** → Implementaciones Prisma (`src/infrastructure`) → PostgreSQL.
-
-**Regla clave:** los servicios dependen de **interfaces**, nunca de Prisma. El único archivo que decide qué implementación concreta se usa es `backend/src/container.ts` (composition root). Migrar a Cognito, cambiar de ORM o agregar un caché es tocar ese archivo y la carpeta `infrastructure/`, sin abrir ni un servicio.
 - **Infraestructura (AWS):** EC2 (contenedor Docker con la API) + RDS Postgres + Cognito (auth registrados) + SNS/Pinpoint (push) + S3 opcional (avatares).
 - **CI/CD:** GitHub Actions construye, testea y despliega a EC2.
+
+**Regla clave:** los servicios dependen de **interfaces**, nunca de Prisma. El único archivo que decide qué implementación concreta se usa es `backend/src/container.ts` (composition root). Migrar a Cognito, cambiar de ORM o agregar un caché es tocar ese archivo y la carpeta `infrastructure/`, sin abrir ni un servicio.
 
 ```mermaid
 flowchart TB
     subgraph Mobile["📱 Flutter App (Android)"]
-        UI[Presentación<br/>Screens & Widgets]
-        STATE[Riverpod<br/>State Management]
-        REPO[Repositories]
-        NET[Dio<br/>HTTP Client]
-        UI --> STATE --> REPO --> NET
+        UI[Pantallas y widgets]
+        STATE[Riverpod<br/>providers]
+        IREPO["Repositorios (interfaces)<br/>uno por feature"]
+        DIOIMPL[Implementación Dio]
+        UI --> STATE --> IREPO
+        IREPO -.implementa.-> DIOIMPL
     end
 
-    subgraph AWSENV["☁️ AWS — ambiente demo/staging (encendido bajo demanda)"]
-        API[Express API<br/>Docker sobre EC2]
+    subgraph AWSENV["☁️ AWS — ambiente demo (encendido bajo demanda)"]
+        subgraph BACKEND["Express API · Docker sobre EC2"]
+            ROUTES[routes.ts<br/>handlers delgados]
+            SERVICES["modules/*<br/>lógica de negocio"]
+            IPORTS["domain/repositories<br/>interfaces (ports)"]
+            PRISMAIMPL["infrastructure/prisma<br/>único que conoce el ORM"]
+            ROUTES --> SERVICES --> IPORTS
+            IPORTS -.implementa.-> PRISMAIMPL
+        end
         DB[(PostgreSQL<br/>RDS)]
-        API --> DB
+        PRISMAIMPL --> DB
     end
 
-    COGNITO[(Cognito<br/>Auth usuarios registrados)]
-    SNS[SNS / Pinpoint<br/>Push Notifications]
-    S3[(S3<br/>Avatares/Assets — opcional)]
+    CONTAINER["container.ts<br/>composition root:<br/>decide qué implementación usa cada servicio"]
+    CONTAINER -.cablea.-> BACKEND
 
-    NET -->|HTTPS REST + JWT| API
-    API --> COGNITO
-    API --> SNS
-    API -.-> S3
+    COGNITO[(Cognito<br/>auth registrados · SCRUM-14)]
+    SNS[SNS / Pinpoint<br/>push · SCRUM-15]
+    GEMINI[Gemini API<br/>generación por IA · SCRUM-17]
+
+    DIOIMPL -->|HTTPS REST + JWT| ROUTES
+    SERVICES -.-> COGNITO
+    SERVICES -.-> SNS
+    SERVICES -.-> GEMINI
 
     subgraph CICD["🔧 CI/CD — GitHub Actions"]
-        BUILD[Build, Lint & Test]
-        DEPLOY[Deploy a EC2]
+        BUILD[Lint, build y test]
+        DEPLOY[Deploy manual a EC2]
         BUILD --> DEPLOY
     end
-    DEPLOY -.->|docker-compose up| API
+    DEPLOY -.->|docker-compose up| BACKEND
 ```
 
-**Módulos del backend (Express, organizados por convención de carpetas — sin DI):** `auth`, `users`, `groups`, `events`, `participants`, `invitations`, `availability`, `tasks`, `expenses`, `debts`, `activity-log`, `notifications`. Cada módulo sigue el patrón `*.routes.ts` → `*.controller.ts` → `*.service.ts`.
+**Módulos del backend** (`src/modules/`, cada uno con su servicio; las rutas están centralizadas en `routes.ts`): `auth`, `participants`, `invitations`, `events` (comandos + consultas), `availability`, `groups`, `tasks`, `expenses`, `debts` (incluye `debt-engine.ts`, aritmética pura), `activity-log`.
 
-**Features del mobile (Flutter):** `auth` (anónimo + registrado), `home`, `groups`, `events` (creación 2 pasos, disponibilidad/heatmap, asistencia), `expenses`, `tasks`, `activity_log`, `balances`, `history`, `profile`.
+**Features del mobile** (`lib/features/`, cada una con su carpeta `data/` de repositorios): `auth`, `home`, `groups`, `events` (creación en 2 pasos, disponibilidad/heatmap, asistencia, tareas, gastos y log de actividad), `balances`, `history`, `profile`.
+
+> Gastos, tareas y log de actividad **no tienen carpeta propia en mobile**: viven dentro de `events/` porque siempre se usan en el contexto de un evento y comparten su pantalla. Es una desviación deliberada respecto de la estructura que planteaba la versión original de este documento.
 
 ## 3. Modelo de datos
 
@@ -398,8 +422,10 @@ Tareas técnicas comunes: endpoints CRUD `tasks`, estados `no_asignado/pendiente
 |---|---|---|---|---|
 | HU-44 | Como equipo, queremos publicar un build con gastos y tareas en la pista de testing interno | Alta | S | SCRUM-11, SCRUM-12 |
 
-### SCRUM-13 — Log de actividad del evento (01/10 – 14/10)
-> Reinterpretada: no es "chat de grupo" sino el **feed/log de actividad dentro de un evento** ([Duda #9](02-decisiones.md), [Duda #20](02-decisiones.md)).
+### SCRUM-13 — Chat de grupo (01/10 – 14/10)
+> **Nombre en Jira: "Chat de grupo"** (se respeta el título original del charter).
+> **Alcance real acordado:** no es mensajería libre sino el **feed/log de actividad dentro de un evento** ([Duda #9](02-decisiones.md), [Duda #20](02-decisiones.md)). El charter mismo excluye "mensajería avanzada en tiempo real" del alcance.
+> Si el equipo prefiere que el título de Jira refleje el alcance real, hay que renombrar la épica allá — **este documento no cambia nombres de Jira por su cuenta.**
 
 | ID | Historia | Prioridad | Est. | Dependencias |
 |---|---|---|---|---|
@@ -474,6 +500,70 @@ Tareas técnicas: cliente Gemini API en el backend (módulo `ai-events`), diseñ
 | HU-B4 | Coincidencias de disponibilidad entre amigos (FR15) fuera del contexto de un evento puntual | Backlog | Charter FR15 |
 | HU-B5 | Almacenamiento de ubicaciones usuales como favoritos reutilizables (FR16 completo) | Backlog | Charter FR16 |
 
+## 5.b Trazabilidad: requerimientos del charter → épica
+
+Para que ningún requerimiento del charter quede sin dueño. Estado al 2026-07-29.
+
+### Requerimientos funcionales
+
+| # | Requerimiento (charter) | Épica | Historias | Estado |
+|---|---|---|---|---|
+| FR1 | Creación de cuenta anónima | SCRUM-7 | HU-01, HU-03 | ✅ Implementado |
+| FR2 | Creación de eventos | SCRUM-8 | HU-06 | ✅ Implementado |
+| FR3 | Configuración de disponibilidad semanal | SCRUM-9 | HU-07 | ✅ Implementado |
+| FR4 | Confirmación de asistencia | SCRUM-10 | HU-10 | ✅ Implementado |
+| FR5 | Creación de grupos | SCRUM-8 | HU-04, HU-05 | ✅ Implementado |
+| FR6 | Invitación a evento | SCRUM-7 | HU-02 | ✅ Implementado |
+| FR7 | Registro de gastos (múltiples acreedores y deudores) | SCRUM-11 | HU-13, HU-14 | ⚠️ Backend completo; la UI hoy permite un solo pagador |
+| FR8 | Registro de tareas | SCRUM-12 | HU-20 a HU-23 | ✅ Implementado |
+| FR9 | Cálculo de deudas entre eventos | SCRUM-11 | HU-15, HU-16 | ⚠️ Ver nota abajo |
+| FR10 | Espacio de chat por grupo | SCRUM-13 | HU-24, HU-25 | ✅ Reinterpretado como log de actividad ([Duda #9](02-decisiones.md)) |
+| FR11 | Registro de cuenta | SCRUM-14 | HU-27 | ⏳ Pendiente |
+| FR12 | Gestión de identidad en la plataforma | SCRUM-14 | HU-28 a HU-30 | ⏳ Pendiente |
+| FR13 | Gestión de amigos | SCRUM-14 | HU-31 | ⏳ Pendiente (miembros de grupo sí: HU-32/33/34) |
+| FR14 | Notificaciones de actividad | SCRUM-15 | HU-35 | ⏳ Pendiente (endpoint 501) |
+| FR15 | Coincidencias de disponibilidad entre amigos | — | HU-B4 | 🔵 Backlog opcional |
+| FR16 | Almacenamiento de ubicaciones usuales | — | HU-B5 | 🔵 Backlog opcional (hoy es texto libre, [Duda #14](02-decisiones.md)) |
+| FR17 | Historial de reuniones pasadas | SCRUM-16 | HU-26 | ✅ Implementado |
+| FR18 | IA para auto-generación de eventos | SCRUM-17 | HU-42, HU-43, HU-44b | ⏳ Pendiente (endpoint 501) |
+
+> **Nota sobre FR9 — "cálculo de deudas *entre eventos*".** Hoy el motor simplifica las deudas **dentro de cada evento**, y la pantalla Balances **agrega** los saldos de todos los eventos por persona. Lo que NO hace es *compensar* deudas cruzadas entre eventos distintos (si en el asado le debo $500 a Marcos y en el cine él me debe $300, se ven como dos deudas, no como una de $200).
+> **Pendiente de definición:** confirmar si el charter pedía esa compensación cruzada. Técnicamente es alcanzable — el motor ya recibe una lista de movimientos y no le importa de qué evento vienen —, pero cambia la UX (¿cómo se salda una deuda que junta varios eventos?) y hay que decidirlo antes de tocarlo.
+
+### Requerimientos no funcionales
+
+| # | Requerimiento (charter) | Dónde se cumple | Estado |
+|---|---|---|---|
+| NFR1 | Lanzamiento en Play Store | SCRUM-18/19/20/21 | ⏳ Pendiente (falta build y cuenta de desarrollador) |
+| NFR2 | Restricción de funcionalidades por tipo de usuario | `middlewares/guards.ts` + `exigirOrganizador` | ✅ Implementado y testeado |
+| NFR3 | Creación de evento en 2 pasos | `create_event_screen.dart` | ✅ Implementado |
+| NFR4 | Exactitud financiera en el cálculo de deudas | `debt-engine.ts` (centavos enteros) | ✅ Implementado, 17 tests |
+| NFR5 | UI compatible con guidelines de Android/iOS | Material 3 + design system | ✅ Implementado |
+| NFR6 | Compatibilidad con múltiples idiomas | `.arb` ES/EN, sin textos hardcodeados | ✅ Arquitectura lista; el MVP sale en español ([F5](02-decisiones.md)) |
+| NFR7 | Cifrado en tránsito y en reposo | `helmet` + CORS en la app | ⚠️ Falta HTTPS/TLS real — depende del despliegue en EC2 (ver `infra/README.md`) |
+| NFR8 | Notificaciones al 99% en < 60s | SCRUM-15 | ⏳ Pendiente. Solo aplica mientras el ambiente esté encendido ([Duda #8](02-decisiones.md)) |
+| NFR9 | Soportar 2.000 usuarios concurrentes/día | Arquitectura | ✅ Objetivo de diseño, sin testing de carga ([Duda #11](02-decisiones.md)) |
+
+### Requerimientos del proyecto (los 11 del charter)
+
+| # | Requerimiento | Cómo se cumple | Estado |
+|---|---|---|---|
+| RP1 | MVP al inicio de la 2da semana del 2do sprint | Hito 09/09 = vencimiento de SCRUM-9 | 🟢 En plan |
+| RP2 | Desarrolladores con conocimientos intermedios | Fuera del alcance técnico — lo gestiona la dirección del proyecto | — |
+| RP3 | Capacitar al equipo en el stack | SCRUM-5 + [`04-notas-de-implementacion.md`](04-notas-de-implementacion.md) | 🟢 Material listo |
+| RP4 | Definición clara de la arquitectura | §2 y §4 de este documento | ✅ |
+| RP5 | Desarrollar el flujo central sin desbordar el alcance | Backlog opcional separado y marcado como no comprometido | ✅ |
+| RP6 | Trabajar dentro de los costos del presupuesto | AWS Free Tier + Gemini gratis vía facultad ([Duda #21](02-decisiones.md)) | ✅ Sin gasto adicional |
+| RP7 | Probar cada funcionalidad de forma incremental | 58 tests backend + 24 mobile, sin base de datos | ✅ |
+| RP8 | Publicar una versión funcional y documentada | Documentación en `docs/`; falta el despliegue | ⏳ Parcial |
+| RP9 | Trazabilidad de tareas, tiempos y entregables | Jira + esta matriz + bitácora de decisiones | ✅ |
+| RP10 | Mantener el proyecto dentro del plazo de 4 meses | Fechas de Jira sin modificar (06/08 → 12/11) | 🟢 En plan |
+| RP11 | Metodología híbrida (sprints + planificación predictiva) | Épicas con fechas fijas (predictivo) + backlog priorizado por historia (ágil) | ✅ |
+
+### Nota sobre la higiene de Jira
+
+El proyecto tiene además **SCRUM-1 a SCRUM-4** (`Tarea 1`, `Tarea 2`, `Tarea 3`, `Subtarea 2.1`): son los ítems de ejemplo que Jira crea al abrir un proyecto nuevo, no trabajo real. Conviene borrarlos para que el board quede limpio de cara a la entrega. **No los toqué** porque modificar Jira sin consultar no corresponde.
+
 ## 6. Plan por sprints (vista de alto nivel — el detalle vive en la sección 5, por épica de Jira)
 
 > Los sprints del charter ahora son solo una agrupación de referencia; **la fuente de verdad de fechas es Jira** (17 épicas, ver sección 5).
@@ -521,13 +611,22 @@ Una historia está terminada si:
 - Si la historia toca textos visibles, están en el archivo de i18n (no hardcodeados)
 - La documentación relevante (README del módulo, comentario de arquitectura si aplica) está actualizada
 
-## 10. Checklist de arranque — primeros 5 pasos concretos
+## 10. Checklist de arranque — estado al 2026-07-29
 
-1. **Crear el monorepo** con la estructura de carpetas de la sección 4 (`mobile/`, `backend/`, `infra/`, `.github/`) + README raíz con instrucciones de setup.
-2. **Provisionar AWS** (cuenta Free Tier, EC2, RDS Postgres, Cognito básico) siguiendo pasos documentados en `infra/README.md` — validar que entra dentro del Free Tier de 12 meses.
-3. **Inicializar el proyecto Flutter** con Riverpod + Dio + el tema base del design system ([03-design-system.md](03-design-system.md): colores, tipografía, spacing).
-4. **Inicializar Express + Prisma**, escribir el primer `schema.prisma` (Usuario, Grupo, Evento, Participante, Invitación) y correr la primera migración contra RDS.
-5. **Configurar GitHub Actions** (lint + test en cada PR) y documentar el flujo de deploy manual a EC2 (docker-compose up) para la primera demo interna.
+| # | Paso | Estado |
+|---|---|---|
+| 1 | Crear el monorepo (`mobile/`, `backend/`, `infra/`, `.github/`) + README | ✅ Hecho |
+| 2 | **Provisionar AWS** (Free Tier: EC2, RDS Postgres, Cognito) | ❌ **Bloqueado** — requiere la cuenta AWS del equipo. Pasos en [`infra/README.md`](../infra/README.md) |
+| 3 | Inicializar Flutter con Riverpod + Dio + design system | ✅ Hecho |
+| 4 | Inicializar Express + Prisma, `schema.prisma` y migración | ⚠️ Schema y migración SQL generados; **la migración nunca se aplicó** contra una base real |
+| 5 | GitHub Actions (lint + test por PR) + deploy documentado | ✅ Workflows listos; falta crear el repo remoto y cargar los secrets |
+
+**Próximos pasos concretos, en orden:**
+1. Instalar Docker y levantar el entorno local: `docker compose -f infra/docker-compose.yml up --build`
+2. Aplicar la migración y el seed: `npx prisma migrate dev` + `npm run seed` desde `backend/`
+3. Correr la app contra ese backend y validar el flujo completo del MVP a mano
+4. Provisionar AWS y desplegar el ambiente demo
+5. Crear el repo en GitHub, pushear y cargar los secrets de CI
 
 ---
 
@@ -535,4 +634,19 @@ Una historia está terminada si:
 
 Stack: **Flutter** (mobile) + **Node/Express/Prisma/PostgreSQL en AWS EC2+RDS** (backend), **Cognito** para auth registrada, **SNS/Pinpoint** para push, **Gemini API** (gratis vía facultad) para la generación de eventos por IA. Ambiente único que se prende solo para testing/demos. Backlog reestructurado para calzar exacto con las **17 épicas ya cargadas en Jira** (`planify2026.atlassian.net/SCRUM`), sin modificar ninguna fecha. **MVP inicial cierra el 09/09** (2da semana del Sprint 2, hito de SCRUM-9): el anónimo nunca crea eventos, solo se une por link — crear eventos requiere loguearse como un usuario organizador "fake" precargado por seed; disponibilidad+heatmap, confirmación de horario/asistencia, publicado en Play Store el 16/09. **Todo lo que sigue después del MVP (SCRUM-11 a SCRUM-21, hasta 12/11) es alcance comprometido del proyecto, no backlog opcional**: gastos + motor de deudas tipo Splitwise (mayor riesgo técnico), tareas, log de actividad del evento (ex "chat de grupo", reinterpretado), historial, auth completa, amigos/grupos, notificaciones, i18n ES/EN desde el día 1 en cada épica, y SCRUM-17 (IA de auto-generación de eventos vía Gemini, obligatoria aunque primera en caerse si hay atraso general). Testing/documentación/cierre van distribuidos en cada épica, no al final. El único backlog real "si sobra tiempo" son 4 historias sin épica en Jira (mensajería libre, geolocalización, disponibilidad entre amigos fuera de eventos, ubicaciones favoritas).
 
-**Quedo esperando tu aprobación final del plan así reestructurado.**
+---
+
+## Estado de ejecución (2026-07-29)
+
+Plan **aprobado y en ejecución**. Lo construido hasta ahora:
+
+- **SCRUM-6 a SCRUM-13 y SCRUM-16** tienen backend y UI funcionando, con **58 tests de backend y 24 de mobile** que corren sin base de datos ni red.
+- La arquitectura se desacopló siguiendo SOLID ([Duda #23](02-decisiones.md)): un cambio se hace en un solo lugar, con la tabla "dónde tocar según qué cambie" en §4.
+- Las trampas técnicas encontradas están documentadas en [`04-notas-de-implementacion.md`](04-notas-de-implementacion.md) para que el equipo no las repita.
+
+**Bloqueantes que dependen del equipo, no del código:**
+1. Nada corrió todavía contra una base de datos real (falta Docker + `prisma migrate dev`).
+2. AWS sin provisionar.
+3. Repositorio remoto sin crear.
+
+**Pendiente de definición de producto:** el alcance exacto de FR9 (¿las deudas se compensan *entre* eventos distintos?) — ver la nota en §5.b.

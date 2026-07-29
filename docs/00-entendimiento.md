@@ -1,6 +1,12 @@
 # Planify — Entendimiento del Project Charter
 
-> Fuente: `entrega 2 PC (1).pdf` (31 páginas). Este documento es un resumen estructurado, no reemplaza al charter original.
+> ## ⚠️ Este documento NO es la fuente de verdad
+>
+> La fuente de verdad es el **Project Charter en PDF** (`entrega 2 PC.pdf`, 31 páginas) junto con las **épicas de Jira**. Esto es solo un resumen estructurado para poder trabajar con el contenido sin abrir el PDF cada vez.
+>
+> **Ante cualquier diferencia, gana el charter.** Si encontrás una, corregí este documento.
+
+**Cobertura:** las 16 secciones de abajo cubren las 31 páginas del charter (objetivo, visión, problema, métricas, stakeholders, requerimientos funcionales/no funcionales/de proyecto, alcance, fuera de alcance, supuestos, entregables, WBS, hitos, cronograma, recursos, presupuesto, factibilidad, riesgos negativos y positivos, y agentes de IA).
 
 ## 1. Objetivo
 

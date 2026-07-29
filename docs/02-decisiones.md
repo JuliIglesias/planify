@@ -1,6 +1,17 @@
-# Planify — Bitácora de decisiones (Fase 1)
+# Planify — Bitácora de decisiones
 
-> Se completa a medida que el usuario responde cada duda planteada en la Fase 1 de análisis. Formato: pregunta → decisión → justificación → fecha.
+> Registro de cada duda planteada durante el análisis y qué se decidió.
+> Formato: pregunta → decisión → justificación → fecha.
+>
+> ## Jerarquía de fuentes de verdad
+>
+> 1. **Project Charter (PDF)** y **épicas de Jira** — mandan sobre todo lo demás.
+> 2. **Esta bitácora** — resuelve lo que el charter dejaba ambiguo o no cubría.
+> 3. **[Plan de ejecución](01-plan-de-ejecucion.md)** — la bajada técnica de 1 y 2.
+>
+> Las decisiones de acá **no contradicen** al charter: lo completan. Cuando una
+> reinterpreta algo (como FR10 "chat de grupo" → log de actividad), queda dicho
+> explícitamente en la entrada correspondiente.
 
 ## Duda #1 — Jerarquía Grupo ↔ Evento
 **Pregunta:** ¿Un evento siempre pertenece a un grupo, o puede ser standalone?
@@ -209,3 +220,32 @@
 **Compromiso:** cada vez que alguien pierda más de ~20 minutos con un problema de herramientas o entorno, se agrega una entrada. Es el documento con más valor práctico para alguien que recién arranca.
 
 **Fecha:** 2026-07-28
+
+## Duda #25 — Jerarquía de fuentes de verdad
+**Pedido del usuario:** "la verdad máxima la tiene el PDF del project charter junto con las épicas de Jira (las mismas que aparecen en el project charter)".
+
+**Decisión:** el **charter en PDF** y las **épicas de Jira** son la fuente de verdad del proyecto. Los documentos de `docs/` son derivados: si alguno contradice al charter o a Jira, se corrige el documento, nunca al revés.
+
+**Consecuencias prácticas:**
+- **Ninguna fecha de Jira se modifica** sin consultarlo antes (ya estaba acordado en [Duda #20](#duda-20--alineación-del-backlog-con-las-épicas-reales-de-jira-planify2026atlassiannet-proyecto-scrum)).
+- **Los nombres de las épicas se respetan tal como están en Jira.** Por eso SCRUM-13 sigue titulada "Chat de grupo" en el plan, aunque su alcance real acordado sea el log de actividad del evento ([Duda #9](#duda-9--naturaleza-del-chat-fr10)). Si el equipo quiere que el título refleje el alcance, hay que renombrarla en Jira.
+- El plan de ejecución incorpora una **matriz de trazabilidad** (§5.b) que mapea los 18 requerimientos funcionales, los 9 no funcionales y los 11 del proyecto contra su épica, para que ninguno quede sin dueño.
+
+**Verificación:** el 2026-07-29 se contrastaron las 17 épicas de Jira contra el plan — coinciden todas, con sus fechas de inicio y fin.
+
+**Fecha:** 2026-07-29
+
+## Duda #26 — Alcance de FR9 "cálculo de deudas entre eventos" (ABIERTA)
+**Contexto:** el charter lista como FR9 "Cálculo de deudas entre eventos". La implementación actual simplifica las deudas **dentro de cada evento** y la pantalla Balances **agrega** los saldos de todos los eventos por persona.
+
+**Lo que NO hace hoy:** compensar deudas cruzadas entre eventos distintos. Si en el asado le debo $500 a Marcos y en el cine él me debe $300, se ven como dos deudas separadas en vez de una neta de $200.
+
+**Pregunta abierta:** ¿el charter pedía esa compensación cruzada, o alcanza con la agregación que ya existe?
+
+**Impacto si se pide la compensación:**
+- Técnicamente es alcanzable sin rehacer nada: el motor (`debt-engine.ts`) recibe una lista de movimientos y no le importa de qué evento vienen.
+- Lo que sí cambia es la UX: hay que definir **cómo se salda** una deuda que resume varios eventos, y qué muestra el historial de cada evento cuando su deuda quedó compensada con otro.
+
+**Estado:** pendiente de definición. No bloquea nada de lo que está construido.
+
+**Fecha:** 2026-07-29

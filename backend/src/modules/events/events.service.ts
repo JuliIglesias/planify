@@ -1,92 +1,143 @@
-import { prisma } from '../../common/prisma';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../common/errors';
+import { AsistenciaEstado, Evento, Participante } from '../../domain/entities';
+import {
+  EventoRepository,
+  GrupoRepository,
+  ParticipanteRepository,
+  UsuarioRepository,
+} from '../../domain/repositories';
+import { ActivityLogService } from '../activity-log/activity-log.service';
+import { ActivityType } from '../activity-log/activity-log.types';
 
-interface CreateEventInput {
+export interface CrearEventoInput {
   nombre: string;
   lugarTexto: string;
+  /** Grupo existente (HU-05)… */
   grupoId?: string;
+  /** …o miembros sueltos, que crean un grupo nuevo (HU-04). */
   nuevoGrupoNombre?: string;
   miembroUsuarioIds?: string[];
 }
 
-// HU-06 — creación de evento en 2 pasos (paso 1: nombre+lugar; paso 2: grupo existente
-// o miembros nuevos, que dispara HU-04). El organizador queda como Participante con
-// es_organizador=true (ver nota de diseño de docs/01-plan-de-ejecucion.md §3).
-export async function createEvent(usuarioId: string, input: CreateEventInput) {
-  if (!input.nombre?.trim()) throw new BadRequestError('nombre es requerido');
-  if (!input.lugarTexto?.trim()) throw new BadRequestError('lugarTexto es requerido');
-  if (!input.grupoId && !input.nuevoGrupoNombre) {
-    throw new BadRequestError('Se requiere grupoId (grupo existente) o nuevoGrupoNombre (HU-04/HU-05)');
-  }
+/**
+ * SCRUM-8 — creación de evento en 2 pasos (HU-06, NFR#3) y cancelación (HU-11).
+ * Todo evento pertenece a un grupo (Duda #1) y lo crea un usuario registrado,
+ * nunca un anónimo (Duda #19).
+ */
+export class EventsService {
+  constructor(
+    private readonly eventos: EventoRepository,
+    private readonly grupos: GrupoRepository,
+    private readonly participantes: ParticipanteRepository,
+    private readonly usuarios: UsuarioRepository,
+    private readonly log: ActivityLogService,
+  ) {}
 
-  const organizadorUsuario = await prisma.usuario.findUniqueOrThrow({ where: { id: usuarioId } });
+  async crear(
+    usuarioId: string,
+    input: CrearEventoInput,
+  ): Promise<{ evento: Evento; organizador: Participante }> {
+    const nombre = input.nombre?.trim();
+    const lugar = input.lugarTexto?.trim();
 
-  return prisma.$transaction(async (tx) => {
-    let grupoId = input.grupoId;
-
-    if (!grupoId) {
-      const miembroIds = Array.from(new Set([usuarioId, ...(input.miembroUsuarioIds ?? [])]));
-      const grupo = await tx.grupo.create({
-        data: {
-          nombre: input.nuevoGrupoNombre!.trim(),
-          miembros: { create: miembroIds.map((id) => ({ usuarioId: id })) },
-        },
-      });
-      grupoId = grupo.id;
+    if (!nombre) throw new BadRequestError('nombre es requerido');
+    if (!lugar) throw new BadRequestError('lugarTexto es requerido');
+    if (!input.grupoId && !input.nuevoGrupoNombre?.trim()) {
+      throw new BadRequestError(
+        'Se requiere grupoId (grupo existente) o nuevoGrupoNombre (HU-04/HU-05)',
+      );
     }
 
-    const evento = await tx.evento.create({
-      data: {
-        grupoId,
-        nombre: input.nombre.trim(),
-        lugarTexto: input.lugarTexto.trim(),
-        creadoPor: 'pending', // se resuelve abajo (evento y participante organizador se crean juntos)
-      },
+    const usuario = await this.usuarios.findById(usuarioId);
+    if (!usuario) throw new NotFoundError('Usuario no encontrado');
+
+    const grupoId = input.grupoId
+      ? await this.validarGrupoExistente(input.grupoId, usuarioId)
+      : (await this.grupos.create(input.nuevoGrupoNombre!.trim(), [
+          usuarioId,
+          ...(input.miembroUsuarioIds ?? []),
+        ])).id;
+
+    const resultado = await this.eventos.createWithOrganizer({
+      grupoId,
+      nombre,
+      lugarTexto: lugar,
+      organizadorUsuarioId: usuarioId,
+      organizadorNombre: usuario.nombre,
     });
 
-    const organizador = await tx.participante.create({
-      data: {
-        eventoId: evento.id,
-        usuarioId,
-        nombreDisplay: organizadorUsuario.nombre,
-        esOrganizador: true,
-        estadoAsistencia: 'confirmado',
-      },
+    await this.log.registrar({
+      eventoId: resultado.evento.id,
+      tipo: ActivityType.eventoCreado,
+      actorParticipanteId: resultado.organizador.id,
+      payload: { nombre, lugar },
     });
 
-    const eventoFinal = await tx.evento.update({
-      where: { id: evento.id },
-      data: { creadoPor: organizador.id },
+    return resultado;
+  }
+
+  /** HU-11 — cancelar. Permiso exclusivo del organizador (Duda #6). */
+  async cancelar(usuarioId: string, eventoId: string): Promise<Evento> {
+    const evento = await this.eventos.findById(eventoId);
+    if (!evento) throw new NotFoundError('Evento no encontrado');
+    if (evento.estado === 'cancelado') {
+      throw new BadRequestError('El evento ya está cancelado');
+    }
+
+    const organizador = await this.exigirOrganizador(eventoId, usuarioId);
+
+    const cancelado = await this.eventos.updateEstado(eventoId, 'cancelado');
+    // Los anónimos pierden el acceso: su identidad solo vivía para este evento.
+    await this.participantes.invalidarSesionesAnonimas(eventoId);
+
+    await this.log.registrar({
+      eventoId,
+      tipo: ActivityType.eventoCancelado,
+      actorParticipanteId: organizador.id,
     });
 
-    return { evento: eventoFinal, organizador };
-  });
-}
+    return cancelado;
+  }
 
-// HU-11 — cancelación de evento, solo por el organizador.
-export async function cancelEvent(usuarioId: string, eventoId: string) {
-  const evento = await prisma.evento.findUnique({ where: { id: eventoId } });
-  if (!evento) throw new NotFoundError('Evento no encontrado');
+  /** HU-10 — confirmar o rechazar asistencia. Cualquier participante puede. */
+  async responderAsistencia(
+    participanteId: string,
+    estado: Extract<AsistenciaEstado, 'confirmado' | 'rechazado'>,
+  ): Promise<Participante> {
+    const participante = await this.participantes.findById(participanteId);
+    if (!participante) throw new NotFoundError('Participante no encontrado');
 
-  const organizador = await prisma.participante.findFirst({
-    where: { eventoId, usuarioId, esOrganizador: true },
-  });
-  if (!organizador) throw new ForbiddenError('Solo el organizador puede cancelar el evento');
+    const evento = await this.eventos.findById(participante.eventoId);
+    if (evento?.estado === 'cancelado') {
+      throw new BadRequestError('El evento está cancelado');
+    }
 
-  return prisma.$transaction([
-    prisma.evento.update({ where: { id: eventoId }, data: { estado: 'cancelado' } }),
-    // Invalida el acceso de los participantes anónimos (Duda #5): se limpia su token de sesión.
-    prisma.participante.updateMany({
-      where: { eventoId, esAnonimo: true },
-      data: { tokenSesion: null },
-    }),
-  ]);
-}
+    const actualizado = await this.participantes.updateAsistencia(participanteId, estado);
 
-// HU-10 — confirmación/rechazo de asistencia por parte de cualquier participante.
-export async function setAttendance(participanteId: string, estado: 'confirmado' | 'rechazado') {
-  return prisma.participante.update({
-    where: { id: participanteId },
-    data: { estadoAsistencia: estado },
-  });
+    await this.log.registrar({
+      eventoId: participante.eventoId,
+      tipo: ActivityType.asistenciaConfirmada,
+      actorParticipanteId: participanteId,
+      payload: { estado },
+    });
+
+    return actualizado;
+  }
+
+  /** Compartido por cancelar, confirmar horario y cerrar gastos. */
+  async exigirOrganizador(eventoId: string, usuarioId: string): Promise<Participante> {
+    const organizador = await this.participantes.findByEventoAndUsuario(eventoId, usuarioId);
+    if (!organizador?.esOrganizador) {
+      throw new ForbiddenError('Solo el organizador puede realizar esta acción');
+    }
+    return organizador;
+  }
+
+  private async validarGrupoExistente(grupoId: string, usuarioId: string): Promise<string> {
+    const esMiembro = await this.grupos.esMiembro(grupoId, usuarioId);
+    if (!esMiembro) {
+      throw new ForbiddenError('No sos miembro de ese grupo');
+    }
+    return grupoId;
+  }
 }

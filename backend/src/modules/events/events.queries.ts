@@ -1,170 +1,123 @@
-import { prisma } from '../../common/prisma';
 import { NotFoundError } from '../../common/errors';
-import { getUnreadCounts } from '../activity-log/activity-log.service';
+import {
+  DeudaRepository,
+  EventoConResumen,
+  EventoRepository,
+  GastoRepository,
+  ParticipanteRepository,
+  TareaConAsignado,
+  TareaRepository,
+} from '../../domain/repositories';
+import { toCents, fromCents } from '../debts/debt-engine';
 
-/** Home — "Próximos eventos": confirmados o en planificación, más cercanos primero. */
-export async function getUpcomingEvents(usuarioId: string) {
-  const eventos = await prisma.evento.findMany({
-    where: {
-      participantes: { some: { usuarioId } },
-      estado: { in: ['planificacion', 'confirmado'] },
-    },
-    orderBy: [{ fechaHoraInicio: 'asc' }, { createdAt: 'desc' }],
-    include: {
-      grupo: { select: { id: true, nombre: true } },
-      participantes: { select: { id: true, nombreDisplay: true, estadoAsistencia: true } },
-    },
-  });
+export interface EventoHistorial extends EventoConResumen {
+  /** Los mismos 3 estados que Balances (Duda #2: "el historial trabaja igual"). */
+  estadoSaldo: 'pagar' | 'pendiente' | 'saldado';
+  monto: string;
+}
 
-  return eventos.map(serializeEventSummary);
+export interface DetalleEvento extends Omit<EventoConResumen, 'participantes'> {
+  /**
+   * La pantalla de detalle necesita saber quién es el organizador para mostrar
+   * u ocultar cancelar y cerrar gastos, así que lleva más campos que el resumen.
+   */
+  participantes: {
+    id: string;
+    nombreDisplay: string;
+    estadoAsistencia: string;
+    esOrganizador: boolean;
+    esAnonimo: boolean;
+  }[];
+  tareas: TareaConAsignado[];
+  gastos: number;
 }
 
 /**
- * Groups — cada card muestra el grupo con su evento más próximo y contadores.
- * El badge "NUEVO" marca eventos creados hace poco dentro del grupo (Duda #2).
+ * Consultas de lectura para las pantallas (Home, Historial, detalle).
+ * Están separadas de `EventsService` a propósito: ese maneja los comandos que
+ * cambian estado, este solo arma vistas. Mezclarlos hace que la clase crezca
+ * sin control (responsabilidad única).
  */
-export async function getGroupsOverview(usuarioId: string) {
-  const grupos = await prisma.grupo.findMany({
-    where: { miembros: { some: { usuarioId } } },
-    include: {
-      miembros: { include: { usuario: { select: { id: true, nombre: true, avatarUrl: true } } } },
-      eventos: {
-        orderBy: [{ fechaHoraInicio: 'asc' }, { createdAt: 'desc' }],
-        include: {
-          participantes: { select: { id: true, estadoAsistencia: true } },
-          tareas: { select: { id: true, estado: true } },
-          gastos: { select: { id: true } },
-        },
-      },
-    },
-  });
+export class EventsQueryService {
+  constructor(
+    private readonly eventos: EventoRepository,
+    private readonly participantes: ParticipanteRepository,
+    private readonly deudas: DeudaRepository,
+    private readonly tareas: TareaRepository,
+    private readonly gastos: GastoRepository,
+  ) {}
 
-  const { porGrupo } = await getUnreadCounts(usuarioId);
-  const hace48hs = new Date(Date.now() - 48 * 60 * 60 * 1000);
+  /** Home — "Próximos eventos". */
+  async proximosDe(usuarioId: string): Promise<EventoConResumen[]> {
+    return this.eventos.listUpcomingForUsuario(usuarioId);
+  }
 
-  return grupos.map((grupo) => {
-    const activos = grupo.eventos.filter((e) => e.estado === 'planificacion' || e.estado === 'confirmado');
-    const proximo = activos[0];
+  /** Historial — eventos pasados con su estado de saldo. */
+  async historialDe(usuarioId: string): Promise<EventoHistorial[]> {
+    const [eventos, participaciones] = await Promise.all([
+      this.eventos.listPastForUsuario(usuarioId),
+      this.participantes.listByUsuario(usuarioId),
+    ]);
+
+    const misIds = new Set(participaciones.map((p) => p.id));
+    const deudas = await this.deudas.listByParticipantes([...misIds]);
+
+    const porEvento = new Map<string, { deboCents: number; meDebenCents: number }>();
+    for (const deuda of deudas) {
+      if (deuda.estado === 'saldado') continue;
+
+      const actual = porEvento.get(deuda.eventoId) ?? { deboCents: 0, meDebenCents: 0 };
+      const montoCents = toCents(deuda.monto);
+
+      if (misIds.has(deuda.deudorParticipanteId)) actual.deboCents += montoCents;
+      else if (misIds.has(deuda.acreedorParticipanteId)) actual.meDebenCents += montoCents;
+
+      porEvento.set(deuda.eventoId, actual);
+    }
+
+    return eventos.map((evento) => {
+      const saldo = porEvento.get(evento.id);
+
+      // Deber tiene prioridad sobre que te deban: es lo accionable para el usuario.
+      if (saldo && saldo.deboCents > 0) {
+        return { ...evento, estadoSaldo: 'pagar' as const, monto: fromCents(saldo.deboCents) };
+      }
+      if (saldo && saldo.meDebenCents > 0) {
+        return {
+          ...evento,
+          estadoSaldo: 'pendiente' as const,
+          monto: fromCents(saldo.meDebenCents),
+        };
+      }
+      return { ...evento, estadoSaldo: 'saldado' as const, monto: '0.00' };
+    });
+  }
+
+  async detalle(eventoId: string): Promise<DetalleEvento> {
+    const evento = await this.eventos.findById(eventoId);
+    if (!evento) throw new NotFoundError('Evento no encontrado');
+
+    const [participantes, tareas, gastos] = await Promise.all([
+      this.participantes.listByEvento(eventoId),
+      this.tareas.listByEvento(eventoId),
+      this.gastos.contarPorEvento([eventoId]),
+    ]);
 
     return {
-      id: grupo.id,
-      nombre: grupo.nombre,
-      avatarUrl: grupo.avatarUrl,
-      miembros: grupo.miembros.map((m) => ({
-        id: m.usuario.id,
-        nombre: m.usuario.nombre,
-        avatarUrl: m.usuario.avatarUrl,
+      ...evento,
+      // El nombre del grupo ya viene del contexto de navegación en la app,
+      // así que se evita una consulta extra para traerlo.
+      grupoNombre: '',
+      participantes: participantes.map((p) => ({
+        id: p.id,
+        nombreDisplay: p.nombreDisplay,
+        estadoAsistencia: p.estadoAsistencia,
+        esOrganizador: p.esOrganizador,
+        esAnonimo: p.esAnonimo,
       })),
-      noLeidos: porGrupo[grupo.id] ?? 0,
-      // "NUEVO" = hay un evento creado en las últimas 48hs en este grupo.
-      tieneEventoNuevo: grupo.eventos.some((e) => e.createdAt > hace48hs),
-      proximoEvento: proximo
-        ? {
-            id: proximo.id,
-            nombre: proximo.nombre,
-            lugarTexto: proximo.lugarTexto,
-            estado: proximo.estado,
-            fechaHoraInicio: proximo.fechaHoraInicio,
-            confirmados: proximo.participantes.filter((p) => p.estadoAsistencia === 'confirmado').length,
-            tareasPendientes: proximo.tareas.filter((t) => t.estado !== 'completado').length,
-            gastos: proximo.gastos.length,
-          }
-        : null,
+      confirmados: participantes.filter((p) => p.estadoAsistencia === 'confirmado').length,
+      tareas,
+      gastos: gastos[eventoId] ?? 0,
     };
-  });
-}
-
-/**
- * Historial — eventos pasados agrupados por mes, con el estado de saldos.
- * Usa los mismos 3 estados que Balances (Duda #2: "historial trabaja igual").
- */
-export async function getHistory(usuarioId: string) {
-  const participaciones = await prisma.participante.findMany({
-    where: { usuarioId },
-    select: { id: true },
-  });
-  const misIds = participaciones.map((p) => p.id);
-
-  const eventos = await prisma.evento.findMany({
-    where: {
-      participantes: { some: { usuarioId } },
-      estado: { in: ['finalizado', 'cancelado', 'confirmado'] },
-    },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      participantes: { select: { id: true, nombreDisplay: true } },
-      deudas: true,
-    },
-  });
-
-  return eventos.map((evento) => {
-    const misDeudas = evento.deudas.filter(
-      (d) =>
-        (misIds.includes(d.deudorParticipanteId) || misIds.includes(d.acreedorParticipanteId)) &&
-        d.estado !== 'saldado',
-    );
-
-    const debo = misDeudas.filter((d) => misIds.includes(d.deudorParticipanteId));
-    const meDeben = misDeudas.filter((d) => misIds.includes(d.acreedorParticipanteId));
-
-    let estadoSaldo: 'pagar' | 'pendiente' | 'saldado' = 'saldado';
-    if (debo.length > 0) estadoSaldo = 'pagar';
-    else if (meDeben.length > 0) estadoSaldo = 'pendiente';
-
-    const montoRelevante = (debo.length > 0 ? debo : meDeben).reduce(
-      (acc, d) => acc + Number(d.monto),
-      0,
-    );
-
-    return {
-      id: evento.id,
-      nombre: evento.nombre,
-      lugarTexto: evento.lugarTexto,
-      estado: evento.estado,
-      fechaHoraInicio: evento.fechaHoraInicio,
-      createdAt: evento.createdAt,
-      participantes: evento.participantes,
-      estadoSaldo,
-      monto: montoRelevante.toFixed(2),
-    };
-  });
-}
-
-/** Detalle completo de un evento — pantalla de evento + log de actividad. */
-export async function getEventDetail(eventoId: string) {
-  const evento = await prisma.evento.findUnique({
-    where: { id: eventoId },
-    include: {
-      grupo: { select: { id: true, nombre: true } },
-      participantes: {
-        select: { id: true, nombreDisplay: true, estadoAsistencia: true, esOrganizador: true, esAnonimo: true },
-      },
-      tareas: { include: { asignado: { select: { id: true, nombreDisplay: true } } } },
-      gastos: { include: { acreedores: true, deudores: true } },
-    },
-  });
-
-  if (!evento) throw new NotFoundError('Evento no encontrado');
-  return evento;
-}
-
-function serializeEventSummary(evento: {
-  id: string;
-  nombre: string;
-  lugarTexto: string;
-  estado: string;
-  fechaHoraInicio: Date | null;
-  grupo: { id: string; nombre: string };
-  participantes: { id: string; nombreDisplay: string; estadoAsistencia: string }[];
-}) {
-  return {
-    id: evento.id,
-    nombre: evento.nombre,
-    lugarTexto: evento.lugarTexto,
-    estado: evento.estado,
-    fechaHoraInicio: evento.fechaHoraInicio,
-    grupo: evento.grupo,
-    participantes: evento.participantes,
-    confirmados: evento.participantes.filter((p) => p.estadoAsistencia === 'confirmado').length,
-  };
+  }
 }

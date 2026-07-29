@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/network/planify_api.dart';
+import 'data/events_repository.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -47,7 +47,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     setState(() => _creando = true);
 
     try {
-      final eventoId = await ref.read(planifyApiProvider).createEvent(
+      final eventoId = await ref.read(eventsRepositoryProvider).crear(
             nombre: _nombre.text.trim(),
             lugarTexto: _lugar.text.trim(),
             grupoId: _grupoSeleccionadoId,

@@ -27,9 +27,13 @@
 
 ## 2. Arquitectura de la solución
 
+> **Actualización (2026-07-28):** la arquitectura pasó a estar desacoplada por capas con inversión de dependencias (SOLID) — ver [Duda #23](02-decisiones.md). El objetivo es que un cambio se haga en un solo lugar y sea fácil de encontrar.
+
 **Capas:**
-- **Mobile (Flutter):** Presentación (screens/widgets) → Riverpod (state) → Repositories → Dio (HTTP) → API REST.
-- **Backend (Node + Express):** Routes → Controllers (REST) → Services (lógica de negocio, incl. motor de cálculo de deudas) → Prisma (data access) → PostgreSQL.
+- **Mobile (Flutter):** Presentación (screens/widgets) → Riverpod (state) → **Repositorios por feature (interfaz + implementación Dio)** → API REST.
+- **Backend (Node + Express):** Routes → Services (lógica de negocio) → **Interfaces de repositorio (`src/domain`)** → Implementaciones Prisma (`src/infrastructure`) → PostgreSQL.
+
+**Regla clave:** los servicios dependen de **interfaces**, nunca de Prisma. El único archivo que decide qué implementación concreta se usa es `backend/src/container.ts` (composition root). Migrar a Cognito, cambiar de ORM o agregar un caché es tocar ese archivo y la carpeta `infrastructure/`, sin abrir ni un servicio.
 - **Infraestructura (AWS):** EC2 (contenedor Docker con la API) + RDS Postgres + Cognito (auth registrados) + SNS/Pinpoint (push) + S3 opcional (avatares).
 - **CI/CD:** GitHub Actions construye, testea y despliega a EC2.
 
@@ -221,58 +225,66 @@ erDiagram
 
 ```
 planify-lab4/
-├── docs/                          # este directorio (ya existente)
-├── mobile/                        # Flutter app
+├── docs/
+├── mobile/                             # Flutter app
 │   ├── lib/
 │   │   ├── core/
-│   │   │   ├── theme/             # design system (colores, tipografía, spacing)
-│   │   │   ├── network/           # cliente Dio, interceptors
-│   │   │   ├── i18n/              # setup flutter_localizations
-│   │   │   └── widgets/           # componentes compartidos (EventCard, AvatarStack, StatusBadge, etc.)
-│   │   ├── features/
-│   │   │   ├── auth/
-│   │   │   ├── home/
-│   │   │   ├── groups/
-│   │   │   ├── events/            # incluye creación 2 pasos, disponibilidad/heatmap, asistencia
-│   │   │   ├── expenses/
-│   │   │   ├── tasks/
-│   │   │   ├── activity_log/
-│   │   │   ├── balances/
-│   │   │   ├── history/
-│   │   │   └── profile/
+│   │   │   ├── theme/                  # tokens del design system
+│   │   │   ├── models/                 # modelos de dominio (parseo de la API)
+│   │   │   ├── network/                # cliente Dio + TokenStorage (interfaz propia)
+│   │   │   ├── data/                   # ApiException: errores traducidos, sin Dio
+│   │   │   └── widgets/                # componentes compartidos
+│   │   ├── features/                   # cada feature tiene data/ (repositorios) + pantallas
+│   │   │   ├── auth/data/              # AuthRepository (interfaz + Dio)
+│   │   │   ├── events/data/            # Events, Availability, Tasks, Expenses, ActivityLog
+│   │   │   ├── events/widgets/         # diálogos de gasto y tarea
+│   │   │   ├── groups/data/            # GroupsRepository
+│   │   │   ├── balances/data/          # BalancesRepository
+│   │   │   ├── home/, history/, profile/
+│   │   ├── l10n/                       # .arb (es, en) + generated/
 │   │   └── main.dart
-│   ├── l10n/                      # archivos .arb (es, en)
 │   └── test/
-├── backend/                       # Node + Express app
+│       └── helpers/                    # fakes de repositorios + appDePrueba
+├── backend/                            # Node + Express app
 │   ├── src/
-│   │   ├── modules/                # cada uno con *.routes.ts / *.controller.ts / *.service.ts
-│   │   │   ├── auth/
-│   │   │   ├── users/
-│   │   │   ├── groups/
-│   │   │   ├── events/
-│   │   │   ├── participants/
-│   │   │   ├── invitations/
-│   │   │   ├── availability/
-│   │   │   ├── tasks/
+│   │   ├── domain/                     # ← no depende de nada
+│   │   │   ├── entities.ts             # tipos puros (sin Prisma)
+│   │   │   └── repositories/           # interfaces (ports), una por agregado
+│   │   ├── infrastructure/             # ← único lugar que conoce Prisma
+│   │   │   ├── prisma/                 # una implementación por repositorio
+│   │   │   └── servicios-externos.ts   # bcrypt, JWT, clock, uuid
+│   │   ├── modules/                    # lógica de negocio, un servicio por área
+│   │   │   ├── auth/, participants/, invitations/
+│   │   │   ├── events/                 # comandos (service) y consultas (queries)
+│   │   │   ├── availability/, groups/, tasks/
 │   │   │   ├── expenses/
-│   │   │   ├── debts/             # motor de simplificación de deudas
-│   │   │   ├── activity-log/
-│   │   │   └── notifications/
-│   │   ├── middlewares/            # auth guard, error handler, validación (reemplaza guards/interceptors de Nest)
-│   │   ├── common/                 # DTOs base, tipos compartidos
-│   │   ├── app.ts                  # setup de Express (middlewares globales, montaje de routers)
-│   │   └── server.ts               # entry point (listen)
-│   ├── prisma/
-│   │   ├── schema.prisma
-│   │   └── migrations/
-│   └── test/
+│   │   │   ├── debts/                  # debt-engine.ts: aritmética pura en centavos
+│   │   │   └── activity-log/
+│   │   ├── middlewares/                # guards, asyncHandler, errorHandler
+│   │   ├── common/                     # errores tipados
+│   │   ├── container.ts                # ← composition root: qué implementación usa cada cosa
+│   │   ├── routes.ts                   # todas las rutas, agrupadas por épica
+│   │   ├── app.ts                      # arma Express a partir del container
+│   │   └── server.ts                   # entry point
+│   ├── prisma/                         # schema, migrations, seed
+│   └── test/                           # fakes.ts + test-container.ts + suites
 ├── infra/
 │   ├── docker-compose.yml
-│   ├── ec2/                        # scripts de setup/deploy, systemd/docker units
-│   └── README.md                   # pasos manuales de provisioning AWS
-└── .github/
-    └── workflows/                  # CI: lint+test por PR, deploy a EC2
+│   └── README.md                       # provisioning AWS paso a paso
+└── .github/workflows/                  # CI por PR + deploy manual a EC2
 ```
+
+**Dónde tocar según qué cambie:**
+
+| Si cambia… | Se toca… |
+|---|---|
+| Una regla de negocio | `backend/src/modules/<área>/*.service.ts` |
+| La forma de guardar datos | `backend/src/infrastructure/prisma/` |
+| El proveedor de auth, hash o tokens | `backend/src/infrastructure/servicios-externos.ts` + `container.ts` |
+| Un endpoint | `backend/src/routes.ts` |
+| Un color, spacing o tipografía | `mobile/lib/core/theme/` |
+| Un texto visible | los dos `.arb` de `mobile/lib/l10n/` |
+| Cómo se llama a la API | `mobile/lib/features/<feature>/data/` |
 
 ## 5. Backlog completo
 

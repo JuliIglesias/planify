@@ -1,56 +1,96 @@
-import { prisma } from '../../common/prisma';
-import { BadRequestError, ForbiddenError, NotFoundError } from '../../common/errors';
+import { BadRequestError, NotFoundError } from '../../common/errors';
+import { Evento } from '../../domain/entities';
+import {
+  DisponibilidadRepository,
+  EventoRepository,
+  SlotDisponibilidad,
+  SlotHeatmap,
+} from '../../domain/repositories';
+import { ActivityLogService } from '../activity-log/activity-log.service';
+import { ActivityType } from '../activity-log/activity-log.types';
+import { EventsService } from '../events/events.service';
 
-interface Slot {
-  diaSemana: number; // 0=lunes .. 6=domingo
-  bloqueHora: number; // bloques de 30 min, 0..47
-}
+const DIAS_SEMANA = 7;
+const BLOQUES_POR_DIA = 24;
 
-// HU-07 — el participante carga su disponibilidad semanal para el evento.
-// Reemplaza (no acumula) los slots previos del participante para ese evento.
-export async function setAvailability(eventoId: string, participanteId: string, slots: Slot[]) {
-  if (!Array.isArray(slots)) throw new BadRequestError('slots debe ser un array');
+/**
+ * SCRUM-9 — HU-07/HU-08/HU-09. Es el corazón del MVP: cada uno marca cuándo
+ * puede, el heatmap muestra dónde coinciden y el organizador cierra el horario.
+ * La fecha del evento sale de acá, no del formulario de creación (Duda F4).
+ */
+export class AvailabilityService {
+  constructor(
+    private readonly disponibilidad: DisponibilidadRepository,
+    private readonly eventos: EventoRepository,
+    private readonly events: EventsService,
+    private readonly log: ActivityLogService,
+  ) {}
 
-  return prisma.$transaction([
-    prisma.disponibilidadSlot.deleteMany({ where: { eventoId, participanteId } }),
-    prisma.disponibilidadSlot.createMany({
-      data: slots.map((s) => ({ eventoId, participanteId, diaSemana: s.diaSemana, bloqueHora: s.bloqueHora })),
-    }),
-  ]);
-}
+  /** HU-07 — reemplaza la disponibilidad del participante en ese evento. */
+  async guardar(
+    eventoId: string,
+    participanteId: string,
+    slots: SlotDisponibilidad[],
+  ): Promise<void> {
+    if (!Array.isArray(slots)) throw new BadRequestError('slots debe ser un array');
 
-// HU-08 — heatmap: cantidad de participantes disponibles por bloque horario.
-export async function getHeatmap(eventoId: string) {
-  const slots = await prisma.disponibilidadSlot.groupBy({
-    by: ['diaSemana', 'bloqueHora'],
-    where: { eventoId },
-    _count: { participanteId: true },
-  });
+    for (const slot of slots) {
+      if (!Number.isInteger(slot.diaSemana) || slot.diaSemana < 0 || slot.diaSemana >= DIAS_SEMANA) {
+        throw new BadRequestError(`diaSemana inválido: ${slot.diaSemana} (esperado 0..6)`);
+      }
+      if (
+        !Number.isInteger(slot.bloqueHora) ||
+        slot.bloqueHora < 0 ||
+        slot.bloqueHora >= BLOQUES_POR_DIA
+      ) {
+        throw new BadRequestError(`bloqueHora inválido: ${slot.bloqueHora} (esperado 0..23)`);
+      }
+    }
 
-  return slots.map((s) => ({
-    diaSemana: s.diaSemana,
-    bloqueHora: s.bloqueHora,
-    disponibles: s._count.participanteId,
-  }));
-}
+    const evento = await this.eventos.findById(eventoId);
+    if (!evento) throw new NotFoundError('Evento no encontrado');
+    if (evento.estado === 'cancelado') throw new BadRequestError('El evento está cancelado');
 
-// HU-09 — el organizador confirma un horario de inicio a partir del heatmap.
-export async function confirmSchedule(usuarioId: string, eventoId: string, fechaHoraInicio: Date) {
-  const evento = await prisma.evento.findUnique({ where: { id: eventoId } });
-  if (!evento) throw new NotFoundError('Evento no encontrado');
+    await this.disponibilidad.replaceForParticipante(eventoId, participanteId, slots);
 
-  const organizador = await prisma.participante.findFirst({
-    where: { eventoId, usuarioId, esOrganizador: true },
-  });
-  if (!organizador) throw new ForbiddenError('Solo el organizador puede confirmar el horario');
+    await this.log.registrar({
+      eventoId,
+      tipo: ActivityType.disponibilidadCargada,
+      actorParticipanteId: participanteId,
+      payload: { bloques: slots.length },
+    });
+  }
 
-  const eventoActualizado = await prisma.evento.update({
-    where: { id: eventoId },
-    data: { estado: 'confirmado', fechaHoraInicio },
-  });
+  /** HU-08 — cuántos pueden en cada bloque. */
+  async heatmap(eventoId: string): Promise<SlotHeatmap[]> {
+    return this.disponibilidad.heatmapForEvento(eventoId);
+  }
 
-  // TODO(SCRUM-13/HU-24): emitir LOG_ACTIVIDAD "horario_confirmado" cuando el módulo
-  // activity-log esté implementado. TODO(SCRUM-15/HU-35): disparar notificación push.
+  /** HU-09 — el organizador fija el horario a partir del heatmap. */
+  async confirmarHorario(
+    usuarioId: string,
+    eventoId: string,
+    fechaHoraInicio: Date,
+  ): Promise<Evento> {
+    if (Number.isNaN(fechaHoraInicio.getTime())) {
+      throw new BadRequestError('fechaHoraInicio inválida');
+    }
 
-  return eventoActualizado;
+    const evento = await this.eventos.findById(eventoId);
+    if (!evento) throw new NotFoundError('Evento no encontrado');
+    if (evento.estado === 'cancelado') throw new BadRequestError('El evento está cancelado');
+
+    const organizador = await this.events.exigirOrganizador(eventoId, usuarioId);
+
+    const confirmado = await this.eventos.confirmarHorario(eventoId, fechaHoraInicio);
+
+    await this.log.registrar({
+      eventoId,
+      tipo: ActivityType.horarioConfirmado,
+      actorParticipanteId: organizador.id,
+      payload: { fechaHoraInicio: fechaHoraInicio.toISOString() },
+    });
+
+    return confirmado;
+  }
 }

@@ -224,12 +224,6 @@ abstract class AppLocalizations {
   /// **'Próximos eventos'**
   String get homeUpcomingEvents;
 
-  /// No description provided for @homeSeeAll.
-  ///
-  /// In es, this message translates to:
-  /// **'Ver todas'**
-  String get homeSeeAll;
-
   /// No description provided for @homeRecentActivity.
   ///
   /// In es, this message translates to:
@@ -524,12 +518,6 @@ abstract class AppLocalizations {
   /// **'Disponibilidad del grupo'**
   String get eventDetailAvailability;
 
-  /// No description provided for @eventDetailConfirmSchedule.
-  ///
-  /// In es, this message translates to:
-  /// **'Confirmar horario'**
-  String get eventDetailConfirmSchedule;
-
   /// No description provided for @eventDetailMyAvailability.
   ///
   /// In es, this message translates to:
@@ -734,12 +722,6 @@ abstract class AppLocalizations {
   /// **'Agregar'**
   String get commonAdd;
 
-  /// No description provided for @commonRetry.
-  ///
-  /// In es, this message translates to:
-  /// **'Reintentar'**
-  String get commonRetry;
-
   /// No description provided for @commonError.
   ///
   /// In es, this message translates to:
@@ -763,6 +745,138 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'A definir'**
   String get commonToBeDefined;
+
+  /// No description provided for @eventDetailCloseExpenses.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar gastos'**
+  String get eventDetailCloseExpenses;
+
+  /// No description provided for @eventDetailCancelConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Se va a cancelar el evento para todos. Esta acción no se puede deshacer.'**
+  String get eventDetailCancelConfirm;
+
+  /// No description provided for @eventDetailCancelled.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelado'**
+  String get eventDetailCancelled;
+
+  /// No description provided for @eventDetailSettle.
+  ///
+  /// In es, this message translates to:
+  /// **'Saldar'**
+  String get eventDetailSettle;
+
+  /// No description provided for @eventDetailDebts.
+  ///
+  /// In es, this message translates to:
+  /// **'Deudas del evento'**
+  String get eventDetailDebts;
+
+  /// No description provided for @eventDetailNoDebts.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay deudas en este evento'**
+  String get eventDetailNoDebts;
+
+  /// No description provided for @eventDetailAssignTo.
+  ///
+  /// In es, this message translates to:
+  /// **'Asignar a alguien'**
+  String get eventDetailAssignTo;
+
+  /// No description provided for @eventDetailTapToConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Tocá un bloque del mapa para confirmar el horario'**
+  String get eventDetailTapToConfirm;
+
+  /// No description provided for @eventDetailWhoPaid.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Quién pagó?'**
+  String get eventDetailWhoPaid;
+
+  /// No description provided for @eventDetailExpenseInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Completá una descripción y un monto válido'**
+  String get eventDetailExpenseInvalid;
+
+  /// No description provided for @groupsManage.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrar grupo'**
+  String get groupsManage;
+
+  /// No description provided for @groupsRename.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar nombre'**
+  String get groupsRename;
+
+  /// No description provided for @groupsAddMember.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar amigo'**
+  String get groupsAddMember;
+
+  /// No description provided for @groupsLeave.
+  ///
+  /// In es, this message translates to:
+  /// **'Abandonar grupo'**
+  String get groupsLeave;
+
+  /// No description provided for @groupsLeaveConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Vas a dejar de ver los eventos de este grupo.'**
+  String get groupsLeaveConfirm;
+
+  /// No description provided for @groupsMembers.
+  ///
+  /// In es, this message translates to:
+  /// **'Miembros'**
+  String get groupsMembers;
+
+  /// No description provided for @groupsNewName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo nombre'**
+  String get groupsNewName;
+
+  /// No description provided for @groupsFriendId.
+  ///
+  /// In es, this message translates to:
+  /// **'ID del amigo'**
+  String get groupsFriendId;
+
+  /// No description provided for @commonConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar'**
+  String get commonConfirm;
+
+  /// No description provided for @activityExpensesClosed.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} cerró los gastos'**
+  String activityExpensesClosed(String actor);
+
+  /// No description provided for @activityTaskAssignedTo.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} asignó una tarea'**
+  String activityTaskAssignedTo(String actor);
+
+  /// No description provided for @homeNoActivity.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay actividad'**
+  String get homeNoActivity;
 }
 
 class _AppLocalizationsDelegate

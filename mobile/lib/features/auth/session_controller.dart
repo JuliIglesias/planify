@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/network/planify_api.dart';
+import 'data/auth_repository.dart';
 import '../../core/network/token_storage.dart';
 
 /// Quién está usando la app. En el MVP hay dos caminos (Duda #19):
@@ -44,7 +44,7 @@ class SessionController extends AsyncNotifier<Session> {
   Future<void> loginOrganizador(String email, String password) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final api = ref.read(planifyApiProvider);
+      final api = ref.read(authRepositoryProvider);
       final storage = ref.read(tokenStorageProvider);
 
       final res = await api.login(email, password);
@@ -62,10 +62,10 @@ class SessionController extends AsyncNotifier<Session> {
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final api = ref.read(planifyApiProvider);
+      final api = ref.read(authRepositoryProvider);
       final storage = ref.read(tokenStorageProvider);
 
-      final res = await api.joinAnonymous(
+      final res = await api.unirseComoAnonimo(
         eventoId: eventoId,
         nombreDisplay: nombreDisplay,
       );

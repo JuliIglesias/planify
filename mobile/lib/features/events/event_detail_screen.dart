@@ -3,17 +3,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/models/models.dart';
-import '../../core/network/planify_api.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/event_card.dart';
+import '../../core/widgets/quick_action_button.dart';
+import '../../core/widgets/status_badge.dart';
 import '../../core/widgets/weekly_availability_grid.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../home/home_providers.dart';
+import 'data/availability_repository.dart';
+import 'data/events_repository.dart';
+import 'data/expenses_repository.dart';
+import 'data/tasks_repository.dart';
+import 'widgets/expense_dialog.dart';
+import 'widgets/activity_presentation.dart';
+import 'widgets/task_dialogs.dart';
+import '../balances/data/balances_repository.dart';
 
-/// Detalle del evento: disponibilidad + heatmap (HU-07/08/09), asistencia
-/// (HU-10), tareas (HU-20..23), gastos (HU-13) y log de actividad (HU-24).
+/// Detalle del evento: asistencia (HU-10), disponibilidad y heatmap
+/// (HU-07/08/09), tareas (HU-20..23), gastos y deudas (HU-13..19) y log de
+/// actividad (HU-24).
 class EventDetailScreen extends ConsumerStatefulWidget {
   const EventDetailScreen({super.key, required this.eventoId});
 
@@ -25,22 +35,23 @@ class EventDetailScreen extends ConsumerStatefulWidget {
 
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   final _miDisponibilidad = <AvailabilitySlot>{};
-  bool _guardando = false;
+  bool _ocupado = false;
 
-  Future<void> _run(Future<void> Function() accion) async {
-    setState(() => _guardando = true);
+  /// Ejecuta una acción mostrando el estado de carga y refrescando al terminar.
+  /// Centralizado para que ninguna acción se olvide de invalidar los providers.
+  Future<void> _accion(Future<void> Function() accion) async {
+    if (_ocupado) return;
+    setState(() => _ocupado = true);
+
     try {
       await accion();
       if (mounted) invalidateEventData(ref, widget.eventoId);
     } catch (err) {
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${l10n.commonError}: $err')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$err')));
       }
     } finally {
-      if (mounted) setState(() => _guardando = false);
+      if (mounted) setState(() => _ocupado = false);
     }
   }
 
@@ -52,73 +63,115 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.surface,
-        title: Text(detalle.value?['nombre'] as String? ?? l10n.commonLoading),
+        title: Text(detalle.value?.nombre ?? l10n.commonLoading),
+        actions: [
+          if (detalle.value?.organizador != null && !(detalle.value?.estaCancelado ?? false))
+            PopupMenuButton<String>(
+              onSelected: (opcion) => switch (opcion) {
+                'cerrar' => _accion(() => ref
+                    .read(expensesRepositoryProvider)
+                    .cerrar(widget.eventoId)),
+                'cancelar' => _confirmarCancelacion(),
+                _ => null,
+              },
+              itemBuilder: (_) => [
+                // HU-19 y HU-11: acciones exclusivas del organizador (Duda #6).
+                PopupMenuItem(value: 'cerrar', child: Text(l10n.eventDetailCloseExpenses)),
+                PopupMenuItem(value: 'cancelar', child: Text(l10n.eventDetailCancelEvent)),
+              ],
+            ),
+        ],
       ),
       body: detalle.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => AsyncStateView(
           icon: Icons.cloud_off,
           mensaje: l10n.commonError,
-          detalle: l10n.commonErrorHint,
+          detalle: '$err',
         ),
         data: (evento) => _Contenido(
           evento: evento,
-          eventoId: widget.eventoId,
           miDisponibilidad: _miDisponibilidad,
-          guardando: _guardando,
+          ocupado: _ocupado,
           onToggleSlot: (slot) => setState(() {
             if (!_miDisponibilidad.remove(slot)) _miDisponibilidad.add(slot);
           }),
-          onRun: _run,
+          onAccion: _accion,
         ),
       ),
     );
+  }
+
+  Future<void> _confirmarCancelacion() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.eventDetailCancelEvent),
+        content: Text(l10n.eventDetailCancelConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.commonConfirm),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmado == true) {
+      await _accion(() => ref.read(eventsRepositoryProvider).cancelar(widget.eventoId));
+      if (mounted) Navigator.of(context).pop();
+    }
   }
 }
 
 class _Contenido extends ConsumerWidget {
   const _Contenido({
     required this.evento,
-    required this.eventoId,
     required this.miDisponibilidad,
-    required this.guardando,
+    required this.ocupado,
     required this.onToggleSlot,
-    required this.onRun,
+    required this.onAccion,
   });
 
-  final Map<String, dynamic> evento;
-  final String eventoId;
+  final DetalleEvento evento;
   final Set<AvailabilitySlot> miDisponibilidad;
-  final bool guardando;
+  final bool ocupado;
   final ValueChanged<AvailabilitySlot> onToggleSlot;
-  final Future<void> Function(Future<void> Function()) onRun;
+  final Future<void> Function(Future<void> Function()) onAccion;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final api = ref.watch(planifyApiProvider);
 
-    final participantes = ((evento['participantes'] as List<dynamic>?) ?? [])
-        .map((p) => Participante.fromJson(p as Map<String, dynamic>))
-        .toList();
-    final lugar = evento['lugarTexto'] as String? ?? '';
-    final fechaIso = evento['fechaHoraInicio'] as String?;
-    final fecha = fechaIso != null
-        ? DateFormat("EEEE d 'de' MMMM · HH:mm", 'es').format(DateTime.parse(fechaIso))
+    final fecha = evento.fechaHoraInicio != null
+        ? DateFormat("EEEE d 'de' MMMM · HH:mm", 'es').format(evento.fechaHoraInicio!)
         : l10n.commonToBeDefined;
 
-    final heatmap = ref.watch(eventHeatmapProvider(eventoId));
-    final tareas = ref.watch(eventTasksProvider(eventoId));
-    final actividad = ref.watch(eventActivityProvider(eventoId));
+    final habilitado = !ocupado && !evento.estaCancelado;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
-        Text('$fecha · $lugar', style: theme.textTheme.bodyMedium),
-        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            Expanded(child: Text('$fecha · ${evento.lugarTexto}')),
+            if (evento.estaCancelado)
+              StatusBadge(label: l10n.eventDetailCancelled, color: AppColors.danger)
+            else if (evento.estaFinalizado)
+              StatusBadge.saldo(SaldoEstado.saldado, l10n.balancesStateSettled),
+          ],
+        ),
 
-        // Asistencia (HU-10)
+        // ── Asistencia (HU-10) ────────────────────────────────────────────
+        const SizedBox(height: AppSpacing.md),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -126,18 +179,20 @@ class _Contenido extends ConsumerWidget {
               children: [
                 Expanded(child: Text(l10n.eventDetailAttendance)),
                 TextButton(
-                  onPressed: guardando
-                      ? null
-                      : () => onRun(() =>
-                          api.setAttendance(eventoId: eventoId, confirma: false)),
+                  onPressed: habilitado
+                      ? () => onAccion(() => ref
+                          .read(eventsRepositoryProvider)
+                          .responderAsistencia(eventoId: evento.id, confirma: false))
+                      : null,
                   child: Text(l10n.eventDetailNotGoing),
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 FilledButton(
-                  onPressed: guardando
-                      ? null
-                      : () => onRun(
-                          () => api.setAttendance(eventoId: eventoId, confirma: true)),
+                  onPressed: habilitado
+                      ? () => onAccion(() => ref
+                          .read(eventsRepositoryProvider)
+                          .responderAsistencia(eventoId: evento.id, confirma: true))
+                      : null,
                   child: Text(l10n.eventDetailGoing),
                 ),
               ],
@@ -145,7 +200,38 @@ class _Contenido extends ConsumerWidget {
           ),
         ),
 
-        // Mi disponibilidad (HU-07)
+        // ── Acciones rápidas (mockup "Log de Actividad") ──────────────────
+        _Seccion(titulo: l10n.eventDetailQuickActions),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                QuickActionButton(
+                  icon: Icons.receipt_long_outlined,
+                  label: l10n.eventDetailAddExpense,
+                  color: AppColors.danger,
+                  onPressed: habilitado ? () => _agregarGasto(context, ref) : null,
+                ),
+                QuickActionButton(
+                  icon: Icons.check_box_outlined,
+                  label: l10n.eventDetailAddTask,
+                  color: AppColors.warning,
+                  onPressed: habilitado ? () => _agregarTarea(context, ref) : null,
+                ),
+                QuickActionButton(
+                  icon: Icons.price_check,
+                  label: l10n.eventDetailSettle,
+                  color: AppColors.success,
+                  onPressed: habilitado ? () => _mostrarDeudas(context, ref) : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // ── Mi disponibilidad (HU-07) ─────────────────────────────────────
         _Seccion(titulo: l10n.eventDetailMyAvailability),
         Card(
           child: Padding(
@@ -156,23 +242,23 @@ class _Contenido extends ConsumerWidget {
                   horaInicio: 10,
                   horaFin: 24,
                   seleccionados: miDisponibilidad,
-                  onToggle: onToggleSlot,
+                  onToggle: habilitado ? onToggleSlot : (_) {},
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: guardando
-                        ? null
-                        : () => onRun(() => api.submitAvailability(
-                              eventoId: eventoId,
+                    onPressed: habilitado
+                        ? () => onAccion(() => ref
+                            .read(availabilityRepositoryProvider)
+                            .guardar(
+                              eventoId: evento.id,
                               slots: miDisponibilidad
-                                  .map((s) => (
-                                        diaSemana: s.diaSemana,
-                                        bloqueHora: s.bloqueHora,
-                                      ))
+                                  .map((s) =>
+                                      (diaSemana: s.diaSemana, bloqueHora: s.bloqueHora))
                                   .toList(),
-                            )),
+                            ))
+                        : null,
                     child: Text(l10n.eventDetailSaveAvailability),
                   ),
                 ),
@@ -181,261 +267,257 @@ class _Contenido extends ConsumerWidget {
           ),
         ),
 
-        // Heatmap del grupo (HU-08/HU-09)
+        // ── Heatmap del grupo (HU-08/HU-09) ───────────────────────────────
         _Seccion(titulo: l10n.eventDetailAvailability),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: heatmap.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, __) => Text(l10n.commonError),
-              data: (slots) => WeeklyAvailabilityGrid(
-                horaInicio: 10,
-                horaFin: 24,
-                totalParticipantes: participantes.length,
-                heatmap: {
-                  for (final s in slots)
-                    AvailabilitySlot(s.diaSemana, s.bloqueHora): s.disponibles,
-                },
-              ),
-            ),
-          ),
-        ),
-
-        // Tareas (HU-20 a HU-23)
-        _Seccion(titulo: l10n.eventDetailTasks),
-        tareas.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => Text(l10n.commonError),
-          data: (lista) => Column(
-            children: [
-              if (lista.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Text(
-                    l10n.eventDetailNoTasks,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              for (final tarea in lista)
-                Card(
-                  child: ListTile(
-                    leading: Icon(
-                      tarea.estado == 'completado'
-                          ? Icons.check_circle
-                          : Icons.radio_button_unchecked,
-                      color: tarea.estado == 'completado'
-                          ? AppColors.success
-                          : AppColors.textSecondary,
-                    ),
-                    title: Text(tarea.titulo),
-                    subtitle: Text(
-                      tarea.asignadoNombre ?? l10n.eventDetailTaskUnassigned,
-                    ),
-                    trailing: tarea.estado == 'completado'
-                        ? Text(l10n.eventDetailTaskDone)
-                        : TextButton(
-                            onPressed: guardando
-                                ? null
-                                : () => onRun(() => tarea.estado == 'no_asignado'
-                                    ? api.assignTask(
-                                        eventoId: eventoId, tareaId: tarea.id)
-                                    : api.completeTask(
-                                        eventoId: eventoId, tareaId: tarea.id)),
-                            child: Text(tarea.estado == 'no_asignado'
-                                ? l10n.eventDetailTakeTask
-                                : l10n.eventDetailCompleteTask),
-                          ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-
-        // Acciones rápidas (mockup "Log de Actividad")
-        _Seccion(titulo: l10n.eventDetailQuickActions),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: guardando ? null : () => _mostrarDialogoGasto(context, ref),
-                icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                label: Text(l10n.eventDetailAddExpense),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: guardando ? null : () => _mostrarDialogoTarea(context, ref),
-                icon: const Icon(Icons.check_box_outlined, size: 18),
-                label: Text(l10n.eventDetailAddTask),
-              ),
-            ),
-          ],
-        ),
-
-        // Log de actividad (HU-24)
-        _Seccion(titulo: l10n.eventDetailActivityLog),
-        actividad.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => Text(l10n.commonError),
-          data: (entradas) => entradas.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Text(
-                    l10n.eventDetailNoActivity,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                )
-              : Column(
-                  children: [
-                    for (final entrada in entradas)
-                      ActivityFeedItem(
-                        icon: _iconoActividad(entrada.tipo),
-                        iconColor: _colorActividad(entrada.tipo),
-                        titulo: _textoActividad(l10n, entrada),
-                        trailing: DateFormat('dd/MM HH:mm').format(entrada.createdAt),
+            child: ref.watch(eventHeatmapProvider(evento.id)).when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (err, _) => Text('$err'),
+                  data: (slots) => Column(
+                    children: [
+                      WeeklyAvailabilityGrid(
+                        horaInicio: 10,
+                        horaFin: 24,
+                        totalParticipantes: evento.participantes.length,
+                        heatmap: {
+                          for (final s in slots)
+                            AvailabilitySlot(s.diaSemana, s.bloqueHora): s.disponibles,
+                        },
+                        // HU-09: tocar un bloque del heatmap confirma el horario.
+                        onSlotTap: habilitado && evento.organizador != null
+                            ? (slot) => _confirmarHorario(context, ref, slot)
+                            : null,
                       ),
-                  ],
+                      if (evento.organizador != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          l10n.eventDetailTapToConfirm,
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
+          ),
         ),
+
+        // ── Tareas (HU-20 a HU-23) ────────────────────────────────────────
+        _Seccion(titulo: l10n.eventDetailTasks),
+        ref.watch(eventTasksProvider(evento.id)).when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Text('$err'),
+              data: (tareas) => tareas.isEmpty
+                  ? _TextoVacio(l10n.eventDetailNoTasks)
+                  : Column(
+                      children: [
+                        for (final tarea in tareas)
+                          _TareaTile(
+                            tarea: tarea,
+                            participantes: evento.participantes,
+                            habilitado: habilitado,
+                            onTomar: () => onAccion(() => ref
+                                .read(tasksRepositoryProvider)
+                                .asignar(eventoId: evento.id, tareaId: tarea.id)),
+                            onAsignarA: (participanteId) => onAccion(() => ref
+                                .read(tasksRepositoryProvider)
+                                .asignar(
+                                  eventoId: evento.id,
+                                  tareaId: tarea.id,
+                                  asignadoA: participanteId,
+                                )),
+                            onCompletar: () => onAccion(() => ref
+                                .read(tasksRepositoryProvider)
+                                .completar(eventoId: evento.id, tareaId: tarea.id)),
+                          ),
+                      ],
+                    ),
+            ),
+
+        // ── Log de actividad (HU-24) ──────────────────────────────────────
+        _Seccion(titulo: l10n.eventDetailActivityLog),
+        ref.watch(eventActivityProvider(evento.id)).when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Text('$err'),
+              data: (entradas) => entradas.isEmpty
+                  ? _TextoVacio(l10n.eventDetailNoActivity)
+                  : Column(
+                      children: [
+                        for (final entrada in entradas)
+                          ActivityFeedItem(
+                            icon: iconoDeActividad(entrada.tipo),
+                            iconColor: colorDeActividad(entrada.tipo),
+                            titulo: textoActividad(l10n, entrada),
+                            trailing: DateFormat('dd/MM HH:mm').format(entrada.createdAt),
+                          ),
+                      ],
+                    ),
+            ),
         const SizedBox(height: AppSpacing.xl),
       ],
     );
   }
 
-  Future<void> _mostrarDialogoTarea(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
-    final api = ref.read(planifyApiProvider);
-
-    final titulo = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.eventDetailAddTask),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(hintText: l10n.eventDetailTaskTitle),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: Text(l10n.commonAdd),
-          ),
-        ],
-      ),
+  Future<void> _agregarTarea(BuildContext context, WidgetRef ref) async {
+    final titulo = await pedirTituloTarea(context);
+    if (titulo == null) return;
+    await onAccion(
+      () => ref.read(tasksRepositoryProvider).crear(eventoId: evento.id, titulo: titulo),
     );
-
-    if (titulo != null && titulo.trim().isNotEmpty) {
-      await onRun(() => api.createTask(eventoId: eventoId, titulo: titulo.trim()));
-    }
   }
 
-  Future<void> _mostrarDialogoGasto(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context)!;
-    final descripcion = TextEditingController();
-    final monto = TextEditingController();
-    final api = ref.read(planifyApiProvider);
+  Future<void> _agregarGasto(BuildContext context, WidgetRef ref) async {
+    final datos = await pedirDatosGasto(context, evento.participantes);
+    if (datos == null) return;
 
-    // El pagador por defecto es el organizador del evento; en una iteración
-    // futura se elige de una lista (HU-13 con múltiples acreedores).
-    final participantes = ((evento['participantes'] as List<dynamic>?) ?? [])
-        .map((p) => Participante.fromJson(p as Map<String, dynamic>))
-        .toList();
-    final pagador = participantes.firstWhere(
-      (p) => p.esOrganizador,
-      orElse: () => participantes.first,
+    await onAccion(
+      () => ref.read(expensesRepositoryProvider).crear(
+            eventoId: evento.id,
+            descripcion: datos.descripcion,
+            montoTotal: datos.monto,
+            acreedores: [
+              AporteGasto(participanteId: datos.pagadorId, monto: datos.monto),
+            ],
+          ),
     );
+  }
 
-    final confirmado = await showDialog<bool>(
+  Future<void> _mostrarDeudas(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final deudas = await ref.read(eventDebtsProvider(evento.id).future);
+
+    if (!context.mounted) return;
+
+    final deudaId = await showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.eventDetailAddExpense),
-        content: Column(
+      builder: (ctx) => SafeArea(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: descripcion,
-              autofocus: true,
-              decoration: InputDecoration(hintText: l10n.eventDetailExpenseDescription),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Text(
+                l10n.eventDetailDebts,
+                style: Theme.of(ctx).textTheme.titleMedium,
+              ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            TextField(
-              controller: monto,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(hintText: l10n.eventDetailExpenseAmount),
-            ),
+            if (deudas.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Text(l10n.eventDetailNoDebts),
+              ),
+            for (final deuda in deudas)
+              ListTile(
+                title: Text('${deuda.deudorNombre} → ${deuda.acreedorNombre}'),
+                subtitle: Text('\$${deuda.monto}'),
+                trailing: deuda.estaSaldada
+                    ? StatusBadge.saldo(SaldoEstado.saldado, l10n.balancesStateSettled)
+                    : TextButton(
+                        onPressed: () => Navigator.pop(ctx, deuda.id),
+                        child: Text(l10n.eventDetailSettle),
+                      ),
+              ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.commonAdd),
-          ),
-        ],
       ),
     );
 
-    if (confirmado == true &&
-        descripcion.text.trim().isNotEmpty &&
-        monto.text.trim().isNotEmpty) {
-      await onRun(() => api.createExpense(
-            eventoId: eventoId,
-            descripcion: descripcion.text.trim(),
-            montoTotal: monto.text.trim(),
-            pagadorParticipanteId: pagador.id,
-          ));
-    }
+    if (deudaId == null) return;
+    await onAccion(
+      () => ref
+          .read(balancesRepositoryProvider)
+          .saldar(eventoId: evento.id, deudaId: deudaId),
+    );
   }
 
-  static IconData _iconoActividad(String tipo) => switch (tipo) {
-        'gasto_agregado' => Icons.receipt_long,
-        'deuda_saldada' => Icons.price_check,
-        'tarea_creada' || 'tarea_asignada' => Icons.checklist,
-        'tarea_completada' => Icons.task_alt,
-        'horario_confirmado' => Icons.event_available,
-        'evento_cancelado' => Icons.event_busy,
-        'participante_se_unio' => Icons.person_add,
-        _ => Icons.bolt,
-      };
+  Future<void> _confirmarHorario(
+    BuildContext context,
+    WidgetRef ref,
+    AvailabilitySlot slot,
+  ) async {
+    // El heatmap trabaja en día de la semana + hora; se traduce a la próxima
+    // fecha real que caiga en ese día (la fecha sale de acá, no del alta — F4).
+    final ahora = DateTime.now();
+    final diasHasta = (slot.diaSemana + 1 - ahora.weekday + 7) % 7;
+    final fecha = DateTime(
+      ahora.year,
+      ahora.month,
+      ahora.day + (diasHasta == 0 ? 7 : diasHasta),
+      slot.bloqueHora,
+    );
 
-  static Color _colorActividad(String tipo) => switch (tipo) {
-        'gasto_agregado' => AppColors.danger,
-        'deuda_saldada' || 'tarea_completada' => AppColors.success,
-        'evento_cancelado' => AppColors.danger,
-        'horario_confirmado' => AppColors.primary,
-        _ => AppColors.warning,
-      };
+    await onAccion(
+      () => ref
+          .read(availabilityRepositoryProvider)
+          .confirmarHorario(eventoId: evento.id, fechaHoraInicio: fecha),
+    );
+  }
+}
 
-  static String _textoActividad(AppLocalizations l10n, ActividadLog entrada) {
-    final actor = entrada.actorNombre;
-    return switch (entrada.tipo) {
-      'evento_creado' => l10n.activityEventCreated(actor),
-      'horario_confirmado' => l10n.activityScheduleConfirmed(actor),
-      'gasto_agregado' => l10n.activityExpenseAdded(actor),
-      'deuda_saldada' => l10n.activityDebtSettled(actor),
-      'tarea_creada' => l10n.activityTaskCreated(actor),
-      'tarea_asignada' => l10n.activityTaskAssigned(actor),
-      'tarea_completada' => l10n.activityTaskCompleted(actor),
-      'participante_se_unio' => l10n.activityJoined(actor),
-      'asistencia_confirmada' => l10n.activityAttendance(actor),
-      'disponibilidad_cargada' => l10n.activityAvailability(actor),
-      'evento_cancelado' => l10n.activityCancelled(actor),
-      _ => actor,
-    };
+class _TareaTile extends StatelessWidget {
+  const _TareaTile({
+    required this.tarea,
+    required this.participantes,
+    required this.habilitado,
+    required this.onTomar,
+    required this.onAsignarA,
+    required this.onCompletar,
+  });
+
+  final Tarea tarea;
+  final List<Participante> participantes;
+  final bool habilitado;
+  final VoidCallback onTomar;
+  final ValueChanged<String> onAsignarA;
+  final VoidCallback onCompletar;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Card(
+      child: ListTile(
+        leading: Icon(
+          tarea.estaCompletada ? Icons.check_circle : Icons.radio_button_unchecked,
+          color: tarea.estaCompletada ? AppColors.success : AppColors.textSecondary,
+        ),
+        title: Text(tarea.titulo),
+        subtitle: Text(tarea.asignadoNombre ?? l10n.eventDetailTaskUnassigned),
+        trailing: tarea.estaCompletada
+            ? Text(l10n.eventDetailTaskDone)
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // HU-22 — asignar a otro participante.
+                  if (tarea.estaSinAsignar)
+                    PopupMenuButton<String>(
+                      enabled: habilitado,
+                      icon: const Icon(Icons.person_add_alt, size: 20),
+                      tooltip: l10n.eventDetailAssignTo,
+                      onSelected: onAsignarA,
+                      itemBuilder: (_) => [
+                        for (final p in participantes)
+                          PopupMenuItem(value: p.id, child: Text(p.nombreDisplay)),
+                      ],
+                    ),
+                  TextButton(
+                    onPressed: !habilitado
+                        ? null
+                        : tarea.estaSinAsignar
+                            ? onTomar
+                            : onCompletar,
+                    child: Text(
+                      tarea.estaSinAsignar
+                          ? l10n.eventDetailTakeTask
+                          : l10n.eventDetailCompleteTask,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
   }
 }
 
@@ -450,10 +532,28 @@ class _Seccion extends StatelessWidget {
       padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm),
       child: Text(
         titulo,
+        style:
+            Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+}
+
+class _TextoVacio extends StatelessWidget {
+  const _TextoVacio(this.texto);
+
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Text(
+        texto,
         style: Theme.of(context)
             .textTheme
-            .titleMedium
-            ?.copyWith(fontWeight: FontWeight.bold),
+            .bodySmall
+            ?.copyWith(color: AppColors.textSecondary),
       ),
     );
   }

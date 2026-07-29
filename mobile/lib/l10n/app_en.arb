@@ -2,7 +2,6 @@
   "@@locale": "en",
   "appName": "Planify",
   "appTagline": "Get-togethers without the stress",
-
   "loginUserOrEmail": "Username or Email",
   "loginPassword": "Password",
   "loginForgotPassword": "Forgot your password?",
@@ -14,34 +13,53 @@
   "loginComingSoon": "Coming soon",
   "loginError": "We couldn't sign you in. Check your details.",
   "loginAnonymousHint": "To join as a guest you need an event invitation link.",
-
   "navHome": "Home",
   "navGroups": "Groups",
   "navBalances": "Balances",
   "navProfile": "Profile",
-
   "homeGreeting": "Hi, {nombre}!",
-  "@homeGreeting": { "placeholders": { "nombre": { "type": "String" } } },
+  "@homeGreeting": {
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
   "homeOwedToMe": "Owed to me",
   "homeIOwe": "I owe",
   "homeUpcomingEvents": "Upcoming events",
-  "homeSeeAll": "See all",
   "homeRecentActivity": "Recent activity",
   "homeNoEvents": "You have no events yet",
   "homeNoEventsHint": "Create your first one with the + button",
-
   "groupsTitle": "Groups",
   "groupsNoGroups": "You have no groups yet",
   "groupsNoGroupsHint": "They're created automatically when you set up an event",
   "groupsNewEvent": "NEW",
   "groupsConfirmed": "{count} confirmed",
-  "@groupsConfirmed": { "placeholders": { "count": { "type": "int" } } },
+  "@groupsConfirmed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "groupsPendingTasks": "{count} pending tasks",
-  "@groupsPendingTasks": { "placeholders": { "count": { "type": "int" } } },
+  "@groupsPendingTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "groupsExpenses": "{count} expenses",
-  "@groupsExpenses": { "placeholders": { "count": { "type": "int" } } },
+  "@groupsExpenses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "groupsNoUpcoming": "No upcoming events",
-
   "balancesTitle": "Balances",
   "balancesNet": "NET BALANCE",
   "balancesAll": "All",
@@ -55,18 +73,15 @@
   "balancesStateSettled": "Settled",
   "balancesOweYou": "Owes you",
   "balancesYouOwe": "You owe",
-
   "profileTitle": "Profile",
   "profileWeeklyAvailability": "Weekly Availability",
   "profileAvailabilityHint": "Tap the blocks to mark your free time",
   "profileHistory": "Event history",
   "profileLogout": "Sign out",
-
   "historyTitle": "Event history",
   "historyEmpty": "No past events yet",
   "historyToPay": "To pay",
   "historyYourShare": "Your share",
-
   "eventCreateTitle": "New event",
   "eventStep1Title": "What's the plan?",
   "eventStep2Title": "With whom?",
@@ -82,9 +97,7 @@
   "eventNewGroupName": "Group name",
   "eventCreateError": "We couldn't create the event",
   "eventDateComesLater": "The date is set later, once everyone shares their availability",
-
   "eventDetailAvailability": "Group availability",
-  "eventDetailConfirmSchedule": "Confirm time",
   "eventDetailMyAvailability": "My availability",
   "eventDetailSaveAvailability": "Save availability",
   "eventDetailAttendance": "Are you in?",
@@ -105,36 +118,135 @@
   "eventDetailExpenseAmount": "Amount",
   "eventDetailCancelEvent": "Cancel event",
   "eventDetailNoActivity": "Nothing has happened in this event yet",
-
   "activityEventCreated": "{actor} created the event",
-  "@activityEventCreated": { "placeholders": { "actor": { "type": "String" } } },
+  "@activityEventCreated": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
   "activityScheduleConfirmed": "{actor} confirmed the time",
-  "@activityScheduleConfirmed": { "placeholders": { "actor": { "type": "String" } } },
+  "@activityScheduleConfirmed": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
   "activityExpenseAdded": "{actor} added an expense",
-  "@activityExpenseAdded": { "placeholders": { "actor": { "type": "String" } } },
+  "@activityExpenseAdded": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
   "activityDebtSettled": "{actor} settled their debt",
-  "@activityDebtSettled": { "placeholders": { "actor": { "type": "String" } } },
+  "@activityDebtSettled": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
   "activityTaskCreated": "{actor} created a task",
-  "@activityTaskCreated": { "placeholders": { "actor": { "type": "String" } } },
+  "@activityTaskCreated": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
   "activityTaskAssigned": "{actor} took a task",
-  "@activityTaskAssigned": { "placeholders": { "actor": { "type": "String" } } },
+  "@activityTaskAssigned": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
   "activityTaskCompleted": "{actor} completed a task",
-  "@activityTaskCompleted": { "placeholders": { "actor": { "type": "String" } } },
+  "@activityTaskCompleted": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
   "activityJoined": "{actor} joined the event",
-  "@activityJoined": { "placeholders": { "actor": { "type": "String" } } },
+  "@activityJoined": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
   "activityAttendance": "{actor} confirmed attendance",
-  "@activityAttendance": { "placeholders": { "actor": { "type": "String" } } },
+  "@activityAttendance": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
   "activityAvailability": "{actor} shared their availability",
-  "@activityAvailability": { "placeholders": { "actor": { "type": "String" } } },
+  "@activityAvailability": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
   "activityCancelled": "{actor} cancelled the event",
-  "@activityCancelled": { "placeholders": { "actor": { "type": "String" } } },
-
+  "@activityCancelled": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
   "commonSave": "Save",
   "commonCancel": "Cancel",
   "commonAdd": "Add",
-  "commonRetry": "Retry",
   "commonError": "Something went wrong",
   "commonErrorHint": "Check that the backend is running",
   "commonLoading": "Loading…",
-  "commonToBeDefined": "To be defined"
+  "commonToBeDefined": "To be defined",
+  "eventDetailCloseExpenses": "Close expenses",
+  "eventDetailCancelConfirm": "This will cancel the event for everyone. It cannot be undone.",
+  "eventDetailCancelled": "Cancelled",
+  "eventDetailSettle": "Settle",
+  "eventDetailDebts": "Event debts",
+  "eventDetailNoDebts": "No debts in this event",
+  "eventDetailAssignTo": "Assign to someone",
+  "eventDetailTapToConfirm": "Tap a block on the map to confirm the time",
+  "eventDetailWhoPaid": "Who paid?",
+  "eventDetailExpenseInvalid": "Enter a description and a valid amount",
+  "groupsManage": "Manage group",
+  "groupsRename": "Rename",
+  "groupsAddMember": "Add friend",
+  "groupsLeave": "Leave group",
+  "groupsLeaveConfirm": "You will stop seeing this group events.",
+  "groupsMembers": "Members",
+  "groupsNewName": "New name",
+  "groupsFriendId": "Friend ID",
+  "commonConfirm": "Confirm",
+  "activityExpensesClosed": "{actor} closed the expenses",
+  "@activityExpensesClosed": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityTaskAssignedTo": "{actor} assigned a task",
+  "@activityTaskAssignedTo": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "homeNoActivity": "No activity yet"
 }

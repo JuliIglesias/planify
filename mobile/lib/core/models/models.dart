@@ -8,18 +8,69 @@ class Participante {
     required this.nombreDisplay,
     this.estadoAsistencia = 'sin_confirmar',
     this.esOrganizador = false,
+    this.esAnonimo = false,
   });
 
   final String id;
   final String nombreDisplay;
   final String estadoAsistencia;
   final bool esOrganizador;
+  final bool esAnonimo;
 
   factory Participante.fromJson(Map<String, dynamic> json) => Participante(
         id: json['id'] as String,
         nombreDisplay: json['nombreDisplay'] as String? ?? '',
         estadoAsistencia: json['estadoAsistencia'] as String? ?? 'sin_confirmar',
         esOrganizador: json['esOrganizador'] as bool? ?? false,
+        esAnonimo: json['esAnonimo'] as bool? ?? false,
+      );
+}
+
+/// Detalle completo del evento, con lo que necesita la pantalla para decidir
+/// qué acciones mostrar (cancelar y cerrar gastos son solo del organizador).
+class DetalleEvento {
+  const DetalleEvento({
+    required this.id,
+    required this.nombre,
+    required this.lugarTexto,
+    required this.estado,
+    required this.participantes,
+    required this.tareas,
+    this.fechaHoraInicio,
+    this.gastos = 0,
+  });
+
+  final String id;
+  final String nombre;
+  final String lugarTexto;
+  final String estado;
+  final List<Participante> participantes;
+  final List<Tarea> tareas;
+  final DateTime? fechaHoraInicio;
+  final int gastos;
+
+  bool get estaCancelado => estado == 'cancelado';
+  bool get estaFinalizado => estado == 'finalizado';
+
+  /// El participante que representa al usuario actual, si es el organizador.
+  Participante? get organizador =>
+      participantes.where((p) => p.esOrganizador).firstOrNull;
+
+  factory DetalleEvento.fromJson(Map<String, dynamic> json) => DetalleEvento(
+        id: json['id'] as String? ?? '',
+        nombre: json['nombre'] as String? ?? '',
+        lugarTexto: json['lugarTexto'] as String? ?? '',
+        estado: json['estado'] as String? ?? 'planificacion',
+        fechaHoraInicio: json['fechaHoraInicio'] != null
+            ? DateTime.tryParse(json['fechaHoraInicio'] as String)
+            : null,
+        gastos: json['gastos'] as int? ?? 0,
+        participantes: ((json['participantes'] as List<dynamic>?) ?? [])
+            .map((p) => Participante.fromJson(p as Map<String, dynamic>))
+            .toList(),
+        tareas: ((json['tareas'] as List<dynamic>?) ?? [])
+            .map((t) => Tarea.fromJson(t as Map<String, dynamic>))
+            .toList(),
       );
 }
 
@@ -215,12 +266,51 @@ class SaldoPorPersona {
       );
 }
 
+/// Deuda simplificada dentro de un evento (resultado del motor HU-15).
+class DeudaEvento {
+  const DeudaEvento({
+    required this.id,
+    required this.deudorId,
+    required this.deudorNombre,
+    required this.acreedorId,
+    required this.acreedorNombre,
+    required this.monto,
+    required this.estado,
+  });
+
+  final String id;
+  final String deudorId;
+  final String deudorNombre;
+  final String acreedorId;
+  final String acreedorNombre;
+  final String monto;
+  final String estado;
+
+  bool get estaSaldada => estado == 'saldado';
+
+  factory DeudaEvento.fromJson(Map<String, dynamic> json) {
+    final deudor = json['deudor'] as Map<String, dynamic>?;
+    final acreedor = json['acreedor'] as Map<String, dynamic>?;
+    return DeudaEvento(
+      id: json['id'] as String,
+      deudorId: json['deudorParticipanteId'] as String? ?? '',
+      deudorNombre: deudor?['nombre'] as String? ?? '',
+      acreedorId: json['acreedorParticipanteId'] as String? ?? '',
+      acreedorNombre: acreedor?['nombre'] as String? ?? '',
+      monto: json['monto'] as String? ?? '0.00',
+      estado: json['estado'] as String? ?? 'pendiente',
+    );
+  }
+}
+
 class ActividadLog {
   const ActividadLog({
     required this.id,
     required this.tipo,
     required this.actorNombre,
     required this.createdAt,
+    this.eventoId,
+    this.eventoNombre,
     this.payload,
   });
 
@@ -228,16 +318,25 @@ class ActividadLog {
   final String tipo;
   final String actorNombre;
   final DateTime createdAt;
+
+  /// Solo vienen en el feed de Home, donde hace falta saber de qué evento es.
+  final String? eventoId;
+  final String? eventoNombre;
   final Map<String, dynamic>? payload;
 
-  factory ActividadLog.fromJson(Map<String, dynamic> json) => ActividadLog(
-        id: json['id'] as String,
-        tipo: json['tipo'] as String? ?? '',
-        actorNombre:
-            (json['actor'] as Map<String, dynamic>?)?['nombreDisplay'] as String? ?? '',
-        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
-        payload: json['payload'] as Map<String, dynamic>?,
-      );
+  factory ActividadLog.fromJson(Map<String, dynamic> json) {
+    final actor = json['actor'] as Map<String, dynamic>?;
+    return ActividadLog(
+      id: json['id'] as String,
+      tipo: json['tipo'] as String? ?? '',
+      // El backend serializa PersonaRef como `nombre`.
+      actorNombre: (actor?['nombre'] ?? actor?['nombreDisplay']) as String? ?? '',
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      eventoId: json['eventoId'] as String?,
+      eventoNombre: json['eventoNombre'] as String?,
+      payload: json['payload'] as Map<String, dynamic>?,
+    );
+  }
 }
 
 class Tarea {
@@ -245,21 +344,30 @@ class Tarea {
     required this.id,
     required this.titulo,
     required this.estado,
+    this.asignadoId,
     this.asignadoNombre,
   });
 
   final String id;
   final String titulo;
   final String estado;
+  final String? asignadoId;
   final String? asignadoNombre;
 
-  factory Tarea.fromJson(Map<String, dynamic> json) => Tarea(
-        id: json['id'] as String,
-        titulo: json['titulo'] as String? ?? '',
-        estado: json['estado'] as String? ?? 'no_asignado',
-        asignadoNombre:
-            (json['asignado'] as Map<String, dynamic>?)?['nombreDisplay'] as String?,
-      );
+  bool get estaCompletada => estado == 'completado';
+  bool get estaSinAsignar => estado == 'no_asignado';
+
+  factory Tarea.fromJson(Map<String, dynamic> json) {
+    final asignado = json['asignado'] as Map<String, dynamic>?;
+    return Tarea(
+      id: json['id'] as String,
+      titulo: json['titulo'] as String? ?? '',
+      estado: json['estado'] as String? ?? 'no_asignado',
+      asignadoId: asignado?['id'] as String?,
+      // El backend serializa el nombre como `nombre` en TareaConAsignado.
+      asignadoNombre: (asignado?['nombre'] ?? asignado?['nombreDisplay']) as String?,
+    );
+  }
 }
 
 class HeatmapSlot {

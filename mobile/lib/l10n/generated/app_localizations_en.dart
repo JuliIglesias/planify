@@ -75,9 +75,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeUpcomingEvents => 'Upcoming events';
 
   @override
-  String get homeSeeAll => 'See all';
-
-  @override
   String get homeRecentActivity => 'Recent activity';
 
   @override
@@ -233,9 +230,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventDetailAvailability => 'Group availability';
 
   @override
-  String get eventDetailConfirmSchedule => 'Confirm time';
-
-  @override
   String get eventDetailMyAvailability => 'My availability';
 
   @override
@@ -360,9 +354,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonAdd => 'Add';
 
   @override
-  String get commonRetry => 'Retry';
-
-  @override
   String get commonError => 'Something went wrong';
 
   @override
@@ -373,4 +364,77 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonToBeDefined => 'To be defined';
+
+  @override
+  String get eventDetailCloseExpenses => 'Close expenses';
+
+  @override
+  String get eventDetailCancelConfirm =>
+      'This will cancel the event for everyone. It cannot be undone.';
+
+  @override
+  String get eventDetailCancelled => 'Cancelled';
+
+  @override
+  String get eventDetailSettle => 'Settle';
+
+  @override
+  String get eventDetailDebts => 'Event debts';
+
+  @override
+  String get eventDetailNoDebts => 'No debts in this event';
+
+  @override
+  String get eventDetailAssignTo => 'Assign to someone';
+
+  @override
+  String get eventDetailTapToConfirm =>
+      'Tap a block on the map to confirm the time';
+
+  @override
+  String get eventDetailWhoPaid => 'Who paid?';
+
+  @override
+  String get eventDetailExpenseInvalid =>
+      'Enter a description and a valid amount';
+
+  @override
+  String get groupsManage => 'Manage group';
+
+  @override
+  String get groupsRename => 'Rename';
+
+  @override
+  String get groupsAddMember => 'Add friend';
+
+  @override
+  String get groupsLeave => 'Leave group';
+
+  @override
+  String get groupsLeaveConfirm => 'You will stop seeing this group events.';
+
+  @override
+  String get groupsMembers => 'Members';
+
+  @override
+  String get groupsNewName => 'New name';
+
+  @override
+  String get groupsFriendId => 'Friend ID';
+
+  @override
+  String get commonConfirm => 'Confirm';
+
+  @override
+  String activityExpensesClosed(String actor) {
+    return '$actor closed the expenses';
+  }
+
+  @override
+  String activityTaskAssignedTo(String actor) {
+    return '$actor assigned a task';
+  }
+
+  @override
+  String get homeNoActivity => 'No activity yet';
 }

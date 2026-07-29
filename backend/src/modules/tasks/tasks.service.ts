@@ -1,84 +1,106 @@
-import { prisma } from '../../common/prisma';
 import { BadRequestError, NotFoundError } from '../../common/errors';
-import { logActivity, ActivityType } from '../activity-log/activity-log.service';
+import { Tarea } from '../../domain/entities';
+import {
+  EventoRepository,
+  ParticipanteRepository,
+  TareaConAsignado,
+  TareaRepository,
+} from '../../domain/repositories';
+import { ActivityLogService } from '../activity-log/activity-log.service';
+import { ActivityType } from '../activity-log/activity-log.types';
 
 /**
- * SCRUM-12 — HU-20 a HU-23. Las "actividades" del evento: cosas que hay que
- * hacer antes de la juntada (comprar carne, hielo…) que alguien toma.
+ * SCRUM-12 — HU-20 a HU-23. Las "actividades" del evento: lo que hay que hacer
+ * antes de la juntada (comprar la carne, el hielo…) y alguien toma.
  * Estados: no_asignado → pendiente → completado (Duda #4).
  */
+export class TasksService {
+  constructor(
+    private readonly tareas: TareaRepository,
+    private readonly eventos: EventoRepository,
+    private readonly participantes: ParticipanteRepository,
+    private readonly log: ActivityLogService,
+  ) {}
 
-export async function createTask(eventoId: string, participanteId: string, titulo: string) {
-  if (!titulo?.trim()) throw new BadRequestError('titulo es requerido');
+  async crear(eventoId: string, participanteId: string, titulo: string): Promise<Tarea> {
+    const limpio = titulo?.trim();
+    if (!limpio) throw new BadRequestError('titulo es requerido');
 
-  const evento = await prisma.evento.findUnique({ where: { id: eventoId } });
-  if (!evento) throw new NotFoundError('Evento no encontrado');
+    const evento = await this.eventos.findById(eventoId);
+    if (!evento) throw new NotFoundError('Evento no encontrado');
+    if (evento.estado === 'cancelado') throw new BadRequestError('El evento está cancelado');
 
-  const tarea = await prisma.tarea.create({
-    data: { eventoId, titulo: titulo.trim(), creadoPor: participanteId, estado: 'no_asignado' },
-  });
+    const tarea = await this.tareas.create(eventoId, limpio, participanteId);
 
-  await logActivity(prisma, {
-    eventoId,
-    tipo: ActivityType.tareaCreada,
-    actorParticipanteId: participanteId,
-    payload: { tareaId: tarea.id, titulo: tarea.titulo },
-  });
+    await this.log.registrar({
+      eventoId,
+      tipo: ActivityType.tareaCreada,
+      actorParticipanteId: participanteId,
+      payload: { tareaId: tarea.id, titulo: limpio },
+    });
 
-  return tarea;
-}
+    return tarea;
+  }
 
-export async function listTasks(eventoId: string) {
-  return prisma.tarea.findMany({
-    where: { eventoId },
-    orderBy: { createdAt: 'asc' },
-    include: {
-      asignado: { select: { id: true, nombreDisplay: true } },
-      creador: { select: { id: true, nombreDisplay: true } },
-    },
-  });
-}
+  async listar(eventoId: string): Promise<TareaConAsignado[]> {
+    return this.tareas.listByEvento(eventoId);
+  }
 
-/**
- * HU-21/HU-22 — cualquier miembro puede tomar una tarea o asignársela a otro
- * (Duda #6: no es un permiso exclusivo del organizador).
- */
-export async function assignTask(tareaId: string, actorParticipanteId: string, asignadoA: string) {
-  const tarea = await prisma.tarea.findUnique({ where: { id: tareaId } });
-  if (!tarea) throw new NotFoundError('Tarea no encontrada');
+  /**
+   * HU-21/HU-22 — tomar una tarea o asignársela a otro. Cualquier miembro
+   * puede hacerlo, no es exclusivo del organizador (Duda #6).
+   */
+  async asignar(
+    tareaId: string,
+    actorParticipanteId: string,
+    asignadoA: string,
+  ): Promise<TareaConAsignado> {
+    const tarea = await this.tareas.findById(tareaId);
+    if (!tarea) throw new NotFoundError('Tarea no encontrada');
+    if (tarea.estado === 'completado') {
+      throw new BadRequestError('La tarea ya está completada');
+    }
 
-  const actualizada = await prisma.tarea.update({
-    where: { id: tareaId },
-    data: { asignadoA, estado: 'pendiente' },
-    include: { asignado: { select: { id: true, nombreDisplay: true } } },
-  });
+    // Solo se puede asignar a alguien que participe de este evento.
+    const destinatario = await this.participantes.findById(asignadoA);
+    if (!destinatario || destinatario.eventoId !== tarea.eventoId) {
+      throw new BadRequestError('El asignado no participa de este evento');
+    }
 
-  await logActivity(prisma, {
-    eventoId: tarea.eventoId,
-    tipo: ActivityType.tareaAsignada,
-    actorParticipanteId,
-    payload: { tareaId, titulo: tarea.titulo, asignadoA },
-  });
+    const actualizada = await this.tareas.asignar(tareaId, asignadoA);
 
-  return actualizada;
-}
+    await this.log.registrar({
+      eventoId: tarea.eventoId,
+      tipo: ActivityType.tareaAsignada,
+      actorParticipanteId,
+      payload: {
+        tareaId,
+        titulo: tarea.titulo,
+        asignadoA,
+        // Distingue "me la tomé" de "se la asigné a alguien" en el feed.
+        autoAsignada: actorParticipanteId === asignadoA,
+      },
+    });
 
-export async function completeTask(tareaId: string, participanteId: string) {
-  const tarea = await prisma.tarea.findUnique({ where: { id: tareaId } });
-  if (!tarea) throw new NotFoundError('Tarea no encontrada');
-  if (tarea.estado === 'completado') throw new BadRequestError('La tarea ya está completada');
+    return actualizada;
+  }
 
-  const actualizada = await prisma.tarea.update({
-    where: { id: tareaId },
-    data: { estado: 'completado' },
-  });
+  async completar(tareaId: string, participanteId: string): Promise<Tarea> {
+    const tarea = await this.tareas.findById(tareaId);
+    if (!tarea) throw new NotFoundError('Tarea no encontrada');
+    if (tarea.estado === 'completado') {
+      throw new BadRequestError('La tarea ya está completada');
+    }
 
-  await logActivity(prisma, {
-    eventoId: tarea.eventoId,
-    tipo: ActivityType.tareaCompletada,
-    actorParticipanteId: participanteId,
-    payload: { tareaId, titulo: tarea.titulo },
-  });
+    const actualizada = await this.tareas.cambiarEstado(tareaId, 'completado');
 
-  return actualizada;
+    await this.log.registrar({
+      eventoId: tarea.eventoId,
+      tipo: ActivityType.tareaCompletada,
+      actorParticipanteId: participanteId,
+      payload: { tareaId, titulo: tarea.titulo },
+    });
+
+    return actualizada;
+  }
 }

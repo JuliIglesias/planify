@@ -10,6 +10,7 @@ import '../../core/widgets/event_card.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../auth/session_controller.dart';
 import '../events/event_detail_screen.dart';
+import '../events/widgets/activity_presentation.dart';
 import 'home_providers.dart';
 
 /// Home — resumen de saldos, próximos eventos y actividad reciente
@@ -28,10 +29,7 @@ class HomeScreen extends ConsumerWidget {
     final balance = ref.watch(balanceProvider);
 
     return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(upcomingEventsProvider);
-        ref.invalidate(balanceProvider);
-      },
+      onRefresh: () async => invalidateListas(ref),
       child: ListView(
         padding: const EdgeInsets.only(bottom: AppSpacing.xl),
         children: [
@@ -96,6 +94,49 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
           ),
+
+          // Actividad reciente de todos los eventos (mockup "Home" de Figma).
+          const SizedBox(height: AppSpacing.lg),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Text(
+              l10n.homeRecentActivity,
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+
+          ref.watch(recentActivityProvider).when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(AppSpacing.md),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (err, _) => const SizedBox.shrink(),
+                data: (entradas) => entradas.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                        child: Text(
+                          l10n.homeNoActivity,
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
+                        ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                        child: Column(
+                          children: [
+                            for (final entrada in entradas)
+                              ActivityFeedItem(
+                                icon: iconoDeActividad(entrada.tipo),
+                                iconColor: colorDeActividad(entrada.tipo),
+                                titulo: textoActividad(l10n, entrada),
+                                subtitulo: entrada.eventoNombre,
+                                trailing: montoDeActividad(entrada),
+                              ),
+                          ],
+                        ),
+                      ),
+              ),
         ],
       ),
     );

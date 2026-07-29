@@ -1,124 +1,144 @@
-import { prisma } from '../../common/prisma';
-import { BadRequestError, ForbiddenError, NotFoundError } from '../../common/errors';
-import { logActivity, ActivityType } from '../activity-log/activity-log.service';
-import { recalculateEventDebts } from '../debts/debts.service';
-import { toCents, fromCents, splitEvenlyCents } from '../debts/debt-engine';
+import { BadRequestError, NotFoundError } from '../../common/errors';
+import { GastoCompleto, MontoParticipante } from '../../domain/entities';
+import {
+  EventoRepository,
+  GastoDetallado,
+  GastoRepository,
+  ParticipanteRepository,
+} from '../../domain/repositories';
+import { ActivityLogService } from '../activity-log/activity-log.service';
+import { ActivityType } from '../activity-log/activity-log.types';
+import { DebtsService } from '../debts/debts.service';
+import { fromCents, splitEvenlyCents, toCents } from '../debts/debt-engine';
+import { EventsService } from '../events/events.service';
 
-interface MontoPorParticipante {
-  participanteId: string;
-  monto: string | number;
-}
-
-interface CreateExpenseInput {
+export interface CrearGastoInput {
   descripcion: string;
   montoTotal: string | number;
-  /** Quién puso la plata. Soporta múltiples acreedores (FR7). */
-  acreedores: MontoPorParticipante[];
-  /** A quiénes les corresponde pagar. Si se omite, se divide en partes iguales
-   *  entre `dividirEntre` (o entre todos los participantes del evento). */
-  deudores?: MontoPorParticipante[];
+  /** Quién puso la plata: soporta varios acreedores (FR7). */
+  acreedores: MontoParticipante[];
+  /** A quién le toca pagar. Si se omite, se divide en partes iguales. */
+  deudores?: MontoParticipante[];
   dividirEntre?: string[];
 }
 
-/** HU-13/HU-14 — registrar un gasto con múltiples acreedores y deudores. */
-export async function createExpense(
-  eventoId: string,
-  participanteId: string,
-  input: CreateExpenseInput,
-) {
-  if (!input.descripcion?.trim()) throw new BadRequestError('descripcion es requerida');
+/** SCRUM-11 — HU-13/HU-14/HU-19. */
+export class ExpensesService {
+  constructor(
+    private readonly gastos: GastoRepository,
+    private readonly eventos: EventoRepository,
+    private readonly participantes: ParticipanteRepository,
+    private readonly debts: DebtsService,
+    private readonly events: EventsService,
+    private readonly log: ActivityLogService,
+  ) {}
 
-  const evento = await prisma.evento.findUnique({
-    where: { id: eventoId },
-    include: { participantes: { select: { id: true } } },
-  });
-  if (!evento) throw new NotFoundError('Evento no encontrado');
-  if (evento.estado === 'cancelado') throw new BadRequestError('El evento está cancelado');
+  async crear(
+    eventoId: string,
+    participanteId: string,
+    input: CrearGastoInput,
+  ): Promise<GastoCompleto> {
+    const descripcion = input.descripcion?.trim();
+    if (!descripcion) throw new BadRequestError('descripcion es requerida');
 
-  const totalCents = toCents(input.montoTotal);
-  if (totalCents <= 0) throw new BadRequestError('montoTotal debe ser mayor a 0');
+    const evento = await this.eventos.findById(eventoId);
+    if (!evento) throw new NotFoundError('Evento no encontrado');
+    if (evento.estado === 'cancelado') throw new BadRequestError('El evento está cancelado');
 
-  const acreedores = input.acreedores ?? [];
-  if (acreedores.length === 0) throw new BadRequestError('Se requiere al menos un acreedor');
+    const totalCents = toCents(input.montoTotal);
+    if (totalCents <= 0) throw new BadRequestError('montoTotal debe ser mayor a 0');
 
-  const sumaAcreedoresCents = acreedores.reduce((acc, a) => acc + toCents(a.monto), 0);
-  if (sumaAcreedoresCents !== totalCents) {
-    throw new BadRequestError(
-      `Los aportes suman ${fromCents(sumaAcreedoresCents)} pero el gasto es ${fromCents(totalCents)}`,
-    );
-  }
+    const acreedores = input.acreedores ?? [];
+    if (acreedores.length === 0) throw new BadRequestError('Se requiere al menos un acreedor');
 
-  // Si no se detalla quién debe qué, se divide en partes iguales sin perder centavos.
-  let deudores = input.deudores;
-  if (!deudores || deudores.length === 0) {
-    const ids = input.dividirEntre?.length
-      ? input.dividirEntre
-      : evento.participantes.map((p) => p.id);
-    if (ids.length === 0) throw new BadRequestError('No hay participantes para dividir el gasto');
+    // Si los aportes no suman el total, el gasto está mal cargado: preferimos
+    // rechazarlo antes que generar deudas silenciosamente incorrectas (NFR#4).
+    const sumaAcreedores = acreedores.reduce((acc, a) => acc + toCents(a.monto), 0);
+    if (sumaAcreedores !== totalCents) {
+      throw new BadRequestError(
+        `Los aportes suman ${fromCents(sumaAcreedores)} pero el gasto es ${fromCents(totalCents)}`,
+      );
+    }
 
-    const partes = splitEvenlyCents(totalCents, ids.length);
-    deudores = ids.map((id, i) => ({ participanteId: id, monto: fromCents(partes[i]) }));
-  }
+    const deudores = await this.resolverDeudores(eventoId, totalCents, input);
 
-  const sumaDeudoresCents = deudores.reduce((acc, d) => acc + toCents(d.monto), 0);
-  if (sumaDeudoresCents !== totalCents) {
-    throw new BadRequestError(
-      `Las deudas suman ${fromCents(sumaDeudoresCents)} pero el gasto es ${fromCents(totalCents)}`,
-    );
-  }
+    const sumaDeudores = deudores.reduce((acc, d) => acc + toCents(d.monto), 0);
+    if (sumaDeudores !== totalCents) {
+      throw new BadRequestError(
+        `Las deudas suman ${fromCents(sumaDeudores)} pero el gasto es ${fromCents(totalCents)}`,
+      );
+    }
 
-  const gasto = await prisma.gasto.create({
-    data: {
+    const gasto = await this.gastos.create({
       eventoId,
-      descripcion: input.descripcion.trim(),
+      descripcion,
       montoTotal: fromCents(totalCents),
       creadoPor: participanteId,
-      acreedores: {
-        create: acreedores.map((a) => ({
-          participanteId: a.participanteId,
-          montoAportado: fromCents(toCents(a.monto)),
-        })),
-      },
-      deudores: {
-        create: deudores.map((d) => ({
-          participanteId: d.participanteId,
-          montoAdeudado: fromCents(toCents(d.monto)),
-        })),
-      },
-    },
-    include: { acreedores: true, deudores: true },
-  });
+      acreedores: acreedores.map((a) => ({
+        participanteId: a.participanteId,
+        monto: fromCents(toCents(a.monto)),
+      })),
+      deudores,
+    });
 
-  await logActivity(prisma, {
-    eventoId,
-    tipo: ActivityType.gastoAgregado,
-    actorParticipanteId: participanteId,
-    payload: { gastoId: gasto.id, descripcion: gasto.descripcion, monto: gasto.montoTotal.toString() },
-  });
+    await this.log.registrar({
+      eventoId,
+      tipo: ActivityType.gastoAgregado,
+      actorParticipanteId: participanteId,
+      payload: { gastoId: gasto.id, descripcion, monto: gasto.montoTotal },
+    });
 
-  await recalculateEventDebts(eventoId);
+    await this.debts.recalcular(eventoId);
 
-  return gasto;
-}
+    return gasto;
+  }
 
-export async function listExpenses(eventoId: string) {
-  return prisma.gasto.findMany({
-    where: { eventoId },
-    orderBy: { fecha: 'desc' },
-    include: {
-      acreedores: { include: { participante: { select: { id: true, nombreDisplay: true } } } },
-      deudores: { include: { participante: { select: { id: true, nombreDisplay: true } } } },
-      creador: { select: { id: true, nombreDisplay: true } },
-    },
-  });
-}
+  async listar(eventoId: string): Promise<GastoDetallado[]> {
+    return this.gastos.listByEvento(eventoId);
+  }
 
-/** HU-19 — cerrar gastos: permiso exclusivo del organizador (Duda #6). */
-export async function closeExpenses(eventoId: string, usuarioId: string) {
-  const organizador = await prisma.participante.findFirst({
-    where: { eventoId, usuarioId, esOrganizador: true },
-  });
-  if (!organizador) throw new ForbiddenError('Solo el organizador puede cerrar los gastos');
+  /** HU-19 — cerrar gastos: permiso exclusivo del organizador (Duda #6). */
+  async cerrar(eventoId: string, usuarioId: string): Promise<void> {
+    const organizador = await this.events.exigirOrganizador(eventoId, usuarioId);
 
-  return recalculateEventDebts(eventoId);
+    await this.debts.recalcular(eventoId);
+
+    await this.log.registrar({
+      eventoId,
+      tipo: ActivityType.gastosCerrados,
+      actorParticipanteId: organizador.id,
+    });
+  }
+
+  /**
+   * Sin detalle de deudores, se divide en partes iguales entre los indicados
+   * (o entre todos los participantes). El reparto usa centavos enteros para
+   * que la suma de las partes dé exactamente el total.
+   */
+  private async resolverDeudores(
+    eventoId: string,
+    totalCents: number,
+    input: CrearGastoInput,
+  ): Promise<MontoParticipante[]> {
+    if (input.deudores && input.deudores.length > 0) {
+      return input.deudores.map((d) => ({
+        participanteId: d.participanteId,
+        monto: fromCents(toCents(d.monto)),
+      }));
+    }
+
+    const ids = input.dividirEntre?.length
+      ? input.dividirEntre
+      : (await this.participantes.listByEvento(eventoId)).map((p) => p.id);
+
+    if (ids.length === 0) {
+      throw new BadRequestError('No hay participantes entre los que dividir el gasto');
+    }
+
+    const partes = splitEvenlyCents(totalCents, ids.length);
+    return ids.map((participanteId, i) => ({
+      participanteId,
+      monto: fromCents(partes[i]),
+    }));
+  }
 }

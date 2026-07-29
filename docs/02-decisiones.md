@@ -175,3 +175,37 @@
 - La pantalla de Login se construye visualmente completa (coincide con el mockup), pero en el MVP solo funciona contra las credenciales del usuario semilla — "Crear cuenta" y "¿Olvidaste tu contraseña?" quedan visualmente presentes pero inertes/"próximamente" hasta Sprint 3.
 - Se agrega tarea técnica: script de seed que crea el/los usuario(s) organizador(es) fake en la base al levantar el ambiente.
 **Fecha:** 2026-07-28
+
+## Duda #23 — Desacoplamiento y principios SOLID (revisión de arquitectura)
+**Pedido del usuario:** "desacoplar de manera tal que si en un futuro hay que cambiar algo se haga desde un solo lugar y sea fácil de encontrar", siguiendo SOLID.
+
+**Contexto:** la primera implementación tenía los servicios importando `prisma` directamente y una única clase `PlanifyApi` en mobile con todos los endpoints. Funcionaba, pero cambiar el ORM, el proveedor de auth o el cliente HTTP obligaba a tocar decenas de archivos, y los tests necesitaban base de datos.
+
+**Decisión:** arquitectura en capas con inversión de dependencias.
+
+*Backend:*
+- `src/domain/` — entidades propias (sin tipos de Prisma) e interfaces de repositorio, una por agregado (segregación de interfaces).
+- `src/infrastructure/` — único lugar que conoce Prisma, bcrypt y JWT.
+- `src/modules/` — servicios como clases que reciben sus dependencias por constructor.
+- `src/container.ts` — composition root: el único archivo que decide qué implementación concreta usa cada servicio.
+- Comandos y consultas separados (`EventsService` vs `EventsQueryService`) para que ninguna clase crezca sin control.
+
+*Mobile:*
+- Un repositorio por feature (interfaz + implementación Dio) en vez de una clase única.
+- `TokenStorage` como interfaz propia, para no quedar atados a la API de `flutter_secure_storage`.
+- `ApiException` traduce los errores de red: las pantallas nunca ven un `DioException`.
+
+**Justificación:** el objetivo declarado del proyecto es que los estudiantes aprendan buenas prácticas ([Duda #8 revisada](#duda-8--backend--hosting-revisada--decisión-final)). Además habilita algo concreto: **los tests corren sin base de datos ni red**, usando los fakes de `backend/test/fakes.ts` y `mobile/test/helpers/fake_repositories.dart`.
+
+**Costo aceptado:** más archivos y una capa extra de indirección. Se mitiga con la tabla "dónde tocar según qué cambie" en [01-plan-de-ejecucion.md §4](01-plan-de-ejecucion.md) y la receta paso a paso en [04-notas-de-implementacion.md §5.7](04-notas-de-implementacion.md).
+
+**Fecha:** 2026-07-28
+
+## Duda #24 — Documentar las trabas técnicas para el equipo de desarrollo
+**Pedido del usuario:** "todo paso difícil que te encontraste me gustaría que lo documentes para tomarlo en cuenta para cuando se lo dé a los chicos", y desarrollar en el orden de los sprints/épicas, de a pasos chicos.
+
+**Decisión:** se crea [`docs/04-notas-de-implementacion.md`](04-notas-de-implementacion.md) como bitácora viva de trampas concretas: qué pasó, por qué, cómo se resolvió. Cubre versiones de dependencias que rompen, gotchas de Flutter/Express/Prisma, decisiones de arquitectura explicadas y una receta para agregar funcionalidad nueva.
+
+**Compromiso:** cada vez que alguien pierda más de ~20 minutos con un problema de herramientas o entorno, se agrega una entrada. Es el documento con más valor práctico para alguien que recién arranca.
+
+**Fecha:** 2026-07-28

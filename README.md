@@ -34,15 +34,24 @@ docs/      Documentación de producto y arquitectura
 | SCRUM-8 Creación de eventos | Backend + wizard de 2 pasos |
 | SCRUM-9 Disponibilidad | Backend + grilla y heatmap |
 | SCRUM-10 Confirmación asistencia | Backend + UI |
-| SCRUM-11 Gastos y deudas | Motor de deudas con 17 tests; UI básica de alta de gasto |
-| SCRUM-12 Tareas | Backend + UI |
-| SCRUM-13 Log de actividad | Backend + UI |
+| SCRUM-11 Gastos y deudas | Motor con 17 tests, alta de gasto, saldar y cerrar |
+| SCRUM-12 Tareas | Backend + UI (incluye asignar a terceros) |
+| SCRUM-13 Log de actividad | Backend + UI, 12 tipos de actividad |
 | SCRUM-16 Historial | Backend + UI |
+| SCRUM-14 Gestión de grupos | Renombrar, agregar miembro y abandonar |
 | SCRUM-14 Auth completa (Cognito) | Pendiente |
 | SCRUM-15 Notificaciones | Pendiente (endpoint 501) |
 | SCRUM-17 IA (Gemini) | Pendiente (endpoint 501) |
 
+**Verificación:** 58 tests de backend + 24 de mobile, todos en verde, sin necesidad de base de datos.
+
 Nada se ejecutó todavía contra una base de datos real — ver [`infra/README.md`](infra/README.md).
+
+## Arquitectura
+
+Está desacoplada siguiendo SOLID: los servicios dependen de interfaces, no de Prisma ni de Dio. La tabla **"dónde tocar según qué cambie"** está en [`docs/01-plan-de-ejecucion.md`](docs/01-plan-de-ejecucion.md#4-estructura-de-carpetas), y la receta para agregar funcionalidad nueva en [`docs/04-notas-de-implementacion.md`](docs/04-notas-de-implementacion.md).
+
+> 📌 **Antes de arrancar, leé [`docs/04-notas-de-implementacion.md`](docs/04-notas-de-implementacion.md).** Documenta las trampas concretas ya encontradas (versiones que rompen, gotchas de Flutter/Express/Prisma) para no perder horas repitiéndolas.
 
 ## Setup rápido
 

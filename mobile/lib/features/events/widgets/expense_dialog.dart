@@ -85,14 +85,17 @@ Future<DatosGasto?> pedirDatosGasto(
                 );
                 return;
               }
-              Navigator.pop(
-                ctx,
-                DatosGasto(
-                  descripcion: descripcion.text.trim(),
-                  monto: valor.toStringAsFixed(2),
-                  pagadorId: pagadorId,
-                ),
-              );
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!ctx.mounted) return;
+                Navigator.pop(
+                  ctx,
+                  DatosGasto(
+                    descripcion: descripcion.text.trim(),
+                    monto: valor.toStringAsFixed(2),
+                    pagadorId: pagadorId,
+                  ),
+                );
+              });
             },
             child: Text(l10n.commonAdd),
           ),

@@ -27,16 +27,13 @@ class _TaskTitleDialog extends StatefulWidget {
 }
 
 class _TaskTitleDialogState extends State<_TaskTitleDialog> {
-  final TextEditingController _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  String _titulo = '';
 
   void _submit() {
-    Navigator.pop(context, _controller.text);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.pop(context, _titulo);
+    });
   }
 
   @override
@@ -45,11 +42,12 @@ class _TaskTitleDialogState extends State<_TaskTitleDialog> {
 
     return AlertDialog(
       title: Text(l10n.eventDetailAddTask),
-      content: TextField(
-        controller: _controller,
+      content: TextFormField(
         autofocus: true,
+        initialValue: _titulo,
         decoration: InputDecoration(hintText: l10n.eventDetailTaskTitle),
-        onSubmitted: (_) => _submit(),
+        onChanged: (valor) => _titulo = valor,
+        onFieldSubmitted: (_) => _submit(),
       ),
       actions: [
         TextButton(

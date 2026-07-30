@@ -7,30 +7,57 @@ import '../../../l10n/generated/app_localizations.dart';
 /// control y para poder testear el diálogo por separado.
 Future<String?> pedirTituloTarea(BuildContext context) async {
   final l10n = AppLocalizations.of(context)!;
-  final controller = TextEditingController();
 
   final resultado = await showDialog<String>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(l10n.eventDetailAddTask),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
-        decoration: InputDecoration(hintText: l10n.eventDetailTaskTitle),
-        onSubmitted: (valor) => Navigator.pop(ctx, valor),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
-        FilledButton(
-          onPressed: () => Navigator.pop(ctx, controller.text),
-          child: Text(l10n.commonAdd),
-        ),
-      ],
-    ),
+    builder: (ctx) => _TaskTitleDialog(l10n: l10n),
   );
-
-  controller.dispose();
 
   final limpio = resultado?.trim();
   return (limpio == null || limpio.isEmpty) ? null : limpio;
+}
+
+class _TaskTitleDialog extends StatefulWidget {
+  const _TaskTitleDialog({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  State<_TaskTitleDialog> createState() => _TaskTitleDialogState();
+}
+
+class _TaskTitleDialogState extends State<_TaskTitleDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    Navigator.pop(context, _controller.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+
+    return AlertDialog(
+      title: Text(l10n.eventDetailAddTask),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        decoration: InputDecoration(hintText: l10n.eventDetailTaskTitle),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.commonCancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.commonAdd)),
+      ],
+    );
+  }
 }

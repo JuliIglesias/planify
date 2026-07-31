@@ -271,14 +271,4 @@ ALTER TABLE "amistades" ADD CONSTRAINT "amistades_usuario_id_1_fkey" FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE "amistades" ADD CONSTRAINT "amistades_usuario_id_2_fkey" FOREIGN KEY ("usuario_id_2") REFERENCES "usuarios"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-┌─────────────────────────────────────────────────────────┐
-│  Update available 6.19.3 -> 7.9.1                       │
-│                                                         │
-│  This is a major update - please follow the guide at    │
-│  https://pris.ly/d/major-version-upgrade                │
-│                                                         │
-│  Run the following to update                            │
-│    npm i --save-dev prisma@latest                       │
-│    npm i @prisma/client@latest                          │
-└─────────────────────────────────────────────────────────┘
 

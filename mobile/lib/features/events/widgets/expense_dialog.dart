@@ -10,49 +10,85 @@ class DatosGasto {
     required this.descripcion,
     required this.monto,
     required this.pagadorId,
+    required this.deudoresIds,
   });
 
   final String descripcion;
   final String monto;
   final String pagadorId;
+  final List<String> deudoresIds;
 }
 
-/// Pide descripción, monto y quién pagó.
-/// Por ahora un solo pagador; el charter contempla varios acreedores (FR7),
-/// que queda como mejora dentro de SCRUM-11.
+/// Pide descripción, monto, quién pagó y entre quiénes se divide el costo.
 Future<DatosGasto?> pedirDatosGasto(
   BuildContext context,
   List<Participante> participantes,
 ) async {
   if (participantes.isEmpty) return null;
 
-  final l10n = AppLocalizations.of(context)!;
-  final descripcion = TextEditingController();
-  final monto = TextEditingController();
-
-  var pagadorId = participantes
-      .firstWhere(
-        (p) => p.esOrganizador,
-        orElse: () => participantes.first,
-      )
-      .id;
-
-  final resultado = await showDialog<DatosGasto>(
+  return showDialog<DatosGasto>(
     context: context,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setState) => AlertDialog(
-        title: Text(l10n.eventDetailAddExpense),
-        content: Column(
+    builder: (ctx) => _ExpenseDialog(participantes: participantes),
+  );
+}
+
+class _ExpenseDialog extends StatefulWidget {
+  const _ExpenseDialog({required this.participantes});
+
+  final List<Participante> participantes;
+
+  @override
+  State<_ExpenseDialog> createState() => _ExpenseDialogState();
+}
+
+class _ExpenseDialogState extends State<_ExpenseDialog> {
+  late final TextEditingController _descripcionController;
+  late final TextEditingController _montoController;
+  late String _pagadorId;
+  late final Set<String> _deudoresSeleccionados;
+
+  @override
+  void initState() {
+    super.initState();
+    _descripcionController = TextEditingController();
+    _montoController = TextEditingController();
+
+    _pagadorId = widget.participantes
+        .firstWhere(
+          (p) => p.esOrganizador,
+          orElse: () => widget.participantes.first,
+        )
+        .id;
+
+    _deudoresSeleccionados = <String>{for (final p in widget.participantes) p.id};
+  }
+
+  @override
+  void dispose() {
+    _descripcionController.dispose();
+    _montoController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return AlertDialog(
+      title: Text(l10n.eventDetailAddExpense),
+      content: SingleChildScrollView(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
-              controller: descripcion,
+              controller: _descripcionController,
               autofocus: true,
               decoration: InputDecoration(hintText: l10n.eventDetailExpenseDescription),
             ),
             const SizedBox(height: AppSpacing.sm),
             TextField(
-              controller: monto,
+              controller: _montoController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 hintText: l10n.eventDetailExpenseAmount,
@@ -61,50 +97,81 @@ Future<DatosGasto?> pedirDatosGasto(
             ),
             const SizedBox(height: AppSpacing.sm),
             DropdownButtonFormField<String>(
-              initialValue: pagadorId,
+              value: _pagadorId,
               decoration: InputDecoration(labelText: l10n.eventDetailWhoPaid),
               items: [
-                for (final p in participantes)
+                for (final p in widget.participantes)
                   DropdownMenuItem(value: p.id, child: Text(p.nombreDisplay)),
               ],
-              onChanged: (valor) => setState(() => pagadorId = valor ?? pagadorId),
+              onChanged: (valor) {
+                if (valor != null) {
+                  setState(() => _pagadorId = valor);
+                }
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              l10n.eventDetailDivideBetween,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Column(
+              children: [
+                for (final p in widget.participantes)
+                  CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(p.nombreDisplay),
+                    value: _deudoresSeleccionados.contains(p.id),
+                    onChanged: (checked) {
+                      setState(() {
+                        if (checked == true) {
+                          _deudoresSeleccionados.add(p.id);
+                        } else {
+                          if (_deudoresSeleccionados.length > 1) {
+                            _deudoresSeleccionados.remove(p.id);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.eventDetailSelectAtLeastOne)),
+                            );
+                          }
+                        }
+                      });
+                    },
+                  ),
+              ],
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
-          FilledButton(
-            onPressed: () {
-              final texto = monto.text.trim().replaceAll(',', '.');
-              final valor = double.tryParse(texto);
-              if (descripcion.text.trim().isEmpty || valor == null || valor <= 0) {
-                // Validación mínima acá: el backend vuelve a validar que los
-                // aportes cierren con el total (NFR#4).
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  SnackBar(content: Text(l10n.eventDetailExpenseInvalid)),
-                );
-                return;
-              }
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!ctx.mounted) return;
-                Navigator.pop(
-                  ctx,
-                  DatosGasto(
-                    descripcion: descripcion.text.trim(),
-                    monto: valor.toStringAsFixed(2),
-                    pagadorId: pagadorId,
-                  ),
-                );
-              });
-            },
-            child: Text(l10n.commonAdd),
-          ),
-        ],
       ),
-    ),
-  );
-
-  descripcion.dispose();
-  monto.dispose();
-  return resultado;
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.commonCancel)),
+        FilledButton(
+          onPressed: () {
+            final texto = _montoController.text.trim().replaceAll(',', '.');
+            final valor = double.tryParse(texto);
+            if (_descripcionController.text.trim().isEmpty ||
+                valor == null ||
+                valor <= 0 ||
+                _deudoresSeleccionados.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(l10n.eventDetailExpenseInvalid)),
+              );
+              return;
+            }
+            Navigator.pop(
+              context,
+              DatosGasto(
+                descripcion: _descripcionController.text.trim(),
+                monto: valor.toStringAsFixed(2),
+                pagadorId: _pagadorId,
+                deudoresIds: _deudoresSeleccionados.toList(),
+              ),
+            );
+          },
+          child: Text(l10n.commonAdd),
+        ),
+      ],
+    );
+  }
 }

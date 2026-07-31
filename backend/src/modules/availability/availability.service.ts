@@ -66,6 +66,17 @@ export class AvailabilityService {
     return this.disponibilidad.heatmapForEvento(eventoId);
   }
 
+  /** Obtiene los bloques de disponibilidad guardados por un participante en un evento. */
+  async obtenerDeParticipante(
+    eventoId: string,
+    participanteId: string,
+  ): Promise<SlotDisponibilidad[]> {
+    const evento = await this.eventos.findById(eventoId);
+    if (!evento) throw new NotFoundError('Evento no encontrado');
+    return this.disponibilidad.findByParticipante(eventoId, participanteId);
+  }
+
+
   /** HU-09 — el organizador fija el horario a partir del heatmap. */
   async confirmarHorario(
     usuarioId: string,

@@ -10,9 +10,11 @@ import '../../l10n/generated/app_localizations.dart';
 import '../auth/session_controller.dart';
 import '../history/history_screen.dart';
 
+import 'profile_availability_provider.dart';
+
 /// Perfil — avatar, disponibilidad semanal y accesos (mockup "Profile").
 /// La grilla acá es la preferencia general del usuario; la del evento
-/// (HU-07) es la que se manda al backend.
+/// (HU-07) se inicializa a partir de esta preferencia.
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -21,13 +23,13 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  final _seleccionados = <AvailabilitySlot>{};
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final session = ref.watch(sessionControllerProvider).value;
+    final profileAvailAsync = ref.watch(profileAvailabilityProvider);
+    final seleccionados = profileAvailAsync.value ?? const <AvailabilitySlot>{};
     final nombre = switch (session) {
       SesionOrganizador(:final nombre) => nombre,
       SesionAnonima(:final nombre) => nombre,
@@ -69,10 +71,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   WeeklyAvailabilityGrid(
                     horaInicio: 8,
                     horaFin: 24,
-                    seleccionados: _seleccionados,
-                    onToggle: (slot) => setState(() {
-                      if (!_seleccionados.remove(slot)) _seleccionados.add(slot);
-                    }),
+                    seleccionados: seleccionados,
+                    onToggle: (slot) {
+                      final nuevos = Set<AvailabilitySlot>.from(seleccionados);
+                      if (!nuevos.remove(slot)) nuevos.add(slot);
+                      ref.read(profileAvailabilityProvider.notifier).guardar(nuevos);
+                    },
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
@@ -86,6 +90,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
         ),
+
         const SizedBox(height: AppSpacing.md),
         ListTile(
           leading: const Icon(Icons.history),

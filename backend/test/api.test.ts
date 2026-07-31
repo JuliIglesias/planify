@@ -184,7 +184,15 @@ describe('Flujo completo del MVP', () => {
       .send({ slots: [{ diaSemana: 4, bloqueHora: 21 }] });
     expect(disponibilidad.status).toBe(204);
 
+    // 4b. El anónimo consulta su propia disponibilidad guardada
+    const miDisponibilidad = await request(app)
+      .get(`/events/${eventoId}/availability/me`)
+      .set('X-Participant-Token', tokenAnonimo);
+    expect(miDisponibilidad.status).toBe(200);
+    expect(miDisponibilidad.body).toEqual([{ diaSemana: 4, bloqueHora: 21 }]);
+
     // 5. El heatmap muestra la coincidencia (HU-08)
+
     const heatmap = await request(app)
       .get(`/events/${eventoId}/availability/heatmap`)
       .set('Authorization', auth);
@@ -252,7 +260,49 @@ describe('Flujo completo del MVP', () => {
     expect(repos.eventos.eventos.find((e) => e.id === eventoId)!.estado).toBe('finalizado');
     expect(repos.logs.tipos()).toContain('deuda_saldada');
   });
+
+  it('permite elegir deudores específicos al crear un gasto (dividirEntre)', async () => {
+    const { app, repos } = armarApi();
+    const organizador = repos.usuarios.agregar({ nombre: 'Marcos' });
+    const grupo = await repos.grupos.create('Los Fibes', [organizador.id]);
+    const auth = tokenDe(organizador.id);
+
+    const creado = await request(app)
+      .post('/events')
+      .set('Authorization', auth)
+      .send({ nombre: 'Juntada', lugarTexto: 'Casa', grupoId: grupo.id });
+    const eventoId = creado.body.evento.id;
+    const marcosId = creado.body.organizador.id;
+
+    const anonimo1 = await request(app)
+      .post('/participants/anonymous')
+      .send({ eventoId, nombreDisplay: 'Sofía' });
+    const anonimo2 = await request(app)
+      .post('/participants/anonymous')
+      .send({ eventoId, nombreDisplay: 'Pedro' });
+
+    // Marcos compra algo por $3000 solo para él y Sofía (excluye a Pedro)
+    const pSofía = repos.participantes.participantes.find((p) => p.nombreDisplay === 'Sofía')!;
+    const gasto = await request(app)
+      .post(`/events/${eventoId}/expenses`)
+      .set('Authorization', auth)
+      .send({
+        descripcion: 'Bebidas diet',
+        montoTotal: '3000.00',
+        acreedores: [{ participanteId: marcosId, monto: '3000.00' }],
+        dividirEntre: [marcosId, pSofía.id],
+      });
+    expect(gasto.status).toBe(201);
+
+    const deudas = await request(app)
+      .get(`/events/${eventoId}/debts`)
+      .set('Authorization', auth);
+    expect(deudas.body).toHaveLength(1);
+    expect(deudas.body[0].deudorParticipanteId).toBe(pSofía.id);
+    expect(deudas.body[0].monto).toBe('1500.00');
+  });
 });
+
 
 describe('Endpoints todavía no implementados', () => {
   it('SCRUM-15 y SCRUM-17 devuelven 501 indicando su épica', async () => {

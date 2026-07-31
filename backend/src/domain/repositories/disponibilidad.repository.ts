@@ -17,4 +17,11 @@ export interface DisponibilidadRepository {
 
   /** Cuántos participantes están disponibles en cada bloque (HU-08). */
   heatmapForEvento(eventoId: string): Promise<SlotHeatmap[]>;
+
+  /** Obtiene la disponibilidad de un participante específico en un evento. */
+  findByParticipante(
+    eventoId: string,
+    participanteId: string,
+  ): Promise<SlotDisponibilidad[]>;
 }
+

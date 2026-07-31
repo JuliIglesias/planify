@@ -13,6 +13,9 @@ abstract interface class AvailabilityRepository {
     required List<({int diaSemana, int bloqueHora})> slots,
   });
 
+  /// Obtiene los bloques de disponibilidad guardados por mi usuario en el evento.
+  Future<List<({int diaSemana, int bloqueHora})>> obtenerMiDisponibilidad(String eventoId);
+
   /// HU-08 — cuántos participantes pueden en cada bloque.
   Future<List<HeatmapSlot>> heatmap(String eventoId);
 
@@ -45,6 +48,21 @@ class AvailabilityRepositoryHttp implements AvailabilityRepository {
       });
 
   @override
+  Future<List<({int diaSemana, int bloqueHora})>> obtenerMiDisponibilidad(String eventoId) =>
+      ejecutar(() async {
+        final res = await _dio.get<List<dynamic>>('/events/$eventoId/availability/me');
+        return (res.data ?? [])
+            .map((s) {
+              final map = s as Map<String, dynamic>;
+              return (
+                diaSemana: map['diaSemana'] as int,
+                bloqueHora: map['bloqueHora'] as int,
+              );
+            })
+            .toList();
+      });
+
+  @override
   Future<List<HeatmapSlot>> heatmap(String eventoId) => ejecutar(() async {
         final res = await _dio.get<List<dynamic>>('/events/$eventoId/availability/heatmap');
         return (res.data ?? [])
@@ -68,3 +86,10 @@ class AvailabilityRepositoryHttp implements AvailabilityRepository {
 final availabilityRepositoryProvider = Provider<AvailabilityRepository>(
   (ref) => AvailabilityRepositoryHttp(ref.watch(apiClientProvider)),
 );
+
+final myEventAvailabilityProvider =
+    FutureProvider.family<List<({int diaSemana, int bloqueHora})>, String>(
+  (ref, eventoId) =>
+      ref.watch(availabilityRepositoryProvider).obtenerMiDisponibilidad(eventoId),
+);
+

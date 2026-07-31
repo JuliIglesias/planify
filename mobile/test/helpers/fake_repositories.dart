@@ -115,9 +115,13 @@ class FakeEventsRepository implements EventsRepository {
 }
 
 class FakeAvailabilityRepository implements AvailabilityRepository {
-  FakeAvailabilityRepository({this.slots = const []});
+  FakeAvailabilityRepository({
+    this.slots = const [],
+    this.misSlots = const [],
+  });
 
   List<HeatmapSlot> slots;
+  List<({int diaSemana, int bloqueHora})> misSlots;
   final List<String> llamadas = [];
 
   @override
@@ -125,8 +129,12 @@ class FakeAvailabilityRepository implements AvailabilityRepository {
     required String eventoId,
     required List<({int diaSemana, int bloqueHora})> slots,
   }) async {
+    misSlots = slots;
     llamadas.add('guardar:${slots.length}');
   }
+
+  @override
+  Future<List<({int diaSemana, int bloqueHora})>> obtenerMiDisponibilidad(String eventoId) async => misSlots;
 
   @override
   Future<List<HeatmapSlot>> heatmap(String eventoId) async => slots;
@@ -179,6 +187,7 @@ class FakeExpensesRepository implements ExpensesRepository {
     required String montoTotal,
     required List<AporteGasto> acreedores,
     List<AporteGasto>? deudores,
+    List<String>? dividirEntre,
   }) async {
     llamadas.add('gasto:$descripcion:$montoTotal:${acreedores.first.participanteId}');
   }
@@ -186,6 +195,7 @@ class FakeExpensesRepository implements ExpensesRepository {
   @override
   Future<void> cerrar(String eventoId) async => llamadas.add('cerrar:$eventoId');
 }
+
 
 class FakeActivityLogRepository implements ActivityLogRepository {
   FakeActivityLogRepository({this.entradas = const [], this.recientesEntradas = const []});

@@ -800,6 +800,18 @@ abstract class AppLocalizations {
   /// **'¿Quién pagó?'**
   String get eventDetailWhoPaid;
 
+  /// No description provided for @eventDetailDivideBetween.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Entre quiénes se divide?'**
+  String get eventDetailDivideBetween;
+
+  /// No description provided for @eventDetailSelectAtLeastOne.
+  ///
+  /// In es, this message translates to:
+  /// **'Debe seleccionar al menos una persona'**
+  String get eventDetailSelectAtLeastOne;
+
   /// No description provided for @eventDetailExpenseInvalid.
   ///
   /// In es, this message translates to:

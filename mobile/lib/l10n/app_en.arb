@@ -222,6 +222,8 @@
   "eventDetailAssignTo": "Assign to someone",
   "eventDetailTapToConfirm": "Tap a block on the map to confirm the time",
   "eventDetailWhoPaid": "Who paid?",
+  "eventDetailDivideBetween": "Divide between:",
+  "eventDetailSelectAtLeastOne": "Select at least one person",
   "eventDetailExpenseInvalid": "Enter a description and a valid amount",
   "groupsManage": "Manage group",
   "groupsRename": "Rename",

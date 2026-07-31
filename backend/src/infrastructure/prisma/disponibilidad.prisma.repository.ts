@@ -41,4 +41,16 @@ export class PrismaDisponibilidadRepository implements DisponibilidadRepository 
       disponibles: g._count.participanteId,
     }));
   }
+
+  async findByParticipante(
+    eventoId: string,
+    participanteId: string,
+  ): Promise<SlotDisponibilidad[]> {
+    const slots = await this.prisma.disponibilidadSlot.findMany({
+      where: { eventoId, participanteId },
+      select: { diaSemana: true, bloqueHora: true },
+    });
+    return slots.map((s) => ({ diaSemana: s.diaSemana, bloqueHora: s.bloqueHora }));
+  }
 }
+

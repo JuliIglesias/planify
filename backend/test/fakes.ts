@@ -566,4 +566,14 @@ export class FakeDisponibilidadRepository implements R.DisponibilidadRepository 
       return { diaSemana, bloqueHora, disponibles };
     });
   }
+
+  async findByParticipante(
+    eventoId: string,
+    participanteId: string,
+  ): Promise<R.SlotDisponibilidad[]> {
+    return this.slots
+      .filter((s) => s.eventoId === eventoId && s.participanteId === participanteId)
+      .map((s) => ({ diaSemana: s.diaSemana, bloqueHora: s.bloqueHora }));
+  }
 }
+

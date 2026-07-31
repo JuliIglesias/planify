@@ -21,6 +21,8 @@ import 'widgets/activity_presentation.dart';
 import 'widgets/task_dialogs.dart';
 import '../balances/data/balances_repository.dart';
 
+import '../profile/profile_availability_provider.dart';
+
 /// Detalle del evento: asistencia (HU-10), disponibilidad y heatmap
 /// (HU-07/08/09), tareas (HU-20..23), gastos y deudas (HU-13..19) y log de
 /// actividad (HU-24).
@@ -35,6 +37,7 @@ class EventDetailScreen extends ConsumerStatefulWidget {
 
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   final _miDisponibilidad = <AvailabilitySlot>{};
+  bool _disponibilidadInicializada = false;
   bool _ocupado = false;
 
   /// Ejecuta una acción mostrando el estado de carga y refrescando al terminar.
@@ -59,6 +62,28 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final detalle = ref.watch(eventDetailProvider(widget.eventoId));
+    final savedAvailAsync = ref.watch(myEventAvailabilityProvider(widget.eventoId));
+    final profileAvailAsync = ref.watch(profileAvailabilityProvider);
+
+    if (!_disponibilidadInicializada) {
+      if (savedAvailAsync.hasValue) {
+        final eventSlots = savedAvailAsync.value!;
+        if (eventSlots.isNotEmpty) {
+          _miDisponibilidad.clear();
+          _miDisponibilidad.addAll(
+            eventSlots.map((s) => AvailabilitySlot(s.diaSemana, s.bloqueHora)),
+          );
+          _disponibilidadInicializada = true;
+        } else if (profileAvailAsync.hasValue) {
+          final profileSlots = profileAvailAsync.value!;
+          if (profileSlots.isNotEmpty) {
+            _miDisponibilidad.clear();
+            _miDisponibilidad.addAll(profileSlots);
+          }
+          _disponibilidadInicializada = true;
+        }
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -94,6 +119,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           miDisponibilidad: _miDisponibilidad,
           ocupado: _ocupado,
           onToggleSlot: (slot) => setState(() {
+            _disponibilidadInicializada = true;
             if (!_miDisponibilidad.remove(slot)) _miDisponibilidad.add(slot);
           }),
           onAccion: _accion,
@@ -101,6 +127,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       ),
     );
   }
+
 
   Future<void> _confirmarCancelacion() async {
     final l10n = AppLocalizations.of(context)!;
@@ -249,15 +276,18 @@ class _Contenido extends ConsumerWidget {
                   width: double.infinity,
                   child: FilledButton(
                     onPressed: habilitado
-                        ? () => onAccion(() => ref
-                            .read(availabilityRepositoryProvider)
-                            .guardar(
-                              eventoId: evento.id,
-                              slots: miDisponibilidad
-                                  .map((s) =>
-                                      (diaSemana: s.diaSemana, bloqueHora: s.bloqueHora))
-                                  .toList(),
-                            ))
+                        ? () => onAccion(() async {
+                            await ref
+                                .read(availabilityRepositoryProvider)
+                                .guardar(
+                                  eventoId: evento.id,
+                                  slots: miDisponibilidad
+                                      .map((s) =>
+                                          (diaSemana: s.diaSemana, bloqueHora: s.bloqueHora))
+                                      .toList(),
+                                );
+                            ref.invalidate(myEventAvailabilityProvider(evento.id));
+                          })
                         : null,
                     child: Text(l10n.eventDetailSaveAvailability),
                   ),
@@ -380,9 +410,11 @@ class _Contenido extends ConsumerWidget {
             acreedores: [
               AporteGasto(participanteId: datos.pagadorId, monto: datos.monto),
             ],
+            dividirEntre: datos.deudoresIds,
           ),
     );
   }
+
 
   Future<void> _mostrarDeudas(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;

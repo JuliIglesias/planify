@@ -395,6 +395,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventDetailWhoPaid => '¿Quién pagó?';
 
   @override
+  String get eventDetailDivideBetween => '¿Entre quiénes se divide?';
+
+  @override
+  String get eventDetailSelectAtLeastOne =>
+      'Debe seleccionar al menos una persona';
+
+  @override
   String get eventDetailExpenseInvalid =>
       'Completá una descripción y un monto válido';
 

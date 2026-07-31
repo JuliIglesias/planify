@@ -133,12 +133,26 @@ export function createRoutes(c: Container): Router {
   );
 
   router.get(
+    '/events/:id/availability/me',
+    soloParticipante,
+    asyncHandler(async (req: ParticipantRequest, res: Response) => {
+      res.json(
+        await c.availability.obtenerDeParticipante(
+          String(req.params.id),
+          exigirParticipante(req),
+        ),
+      );
+    }),
+  );
+
+  router.get(
     '/events/:id/availability/heatmap',
     soloParticipante,
     asyncHandler(async (req: Request, res: Response) => {
       res.json(await c.availability.heatmap(String(req.params.id)));
     }),
   );
+
 
   router.patch(
     '/events/:id/confirm',

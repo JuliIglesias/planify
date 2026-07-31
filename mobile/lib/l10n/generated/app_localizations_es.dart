@@ -406,6 +406,23 @@ class AppLocalizationsEs extends AppLocalizations {
       'Completá una descripción y un monto válido';
 
   @override
+  String get eventDetailInvite => 'Invitar';
+
+  @override
+  String get eventDetailInviteTitle => 'Invitar al evento';
+
+  @override
+  String get eventDetailInviteHint =>
+      'Compartí este enlace de invitación con tus amigos para que se sumen al evento:';
+
+  @override
+  String get eventDetailCopyLink => 'Copiar enlace';
+
+  @override
+  String get eventDetailLinkCopied =>
+      '¡Enlace de invitación copiado al portapapeles!';
+
+  @override
   String get groupsManage => 'Administrar grupo';
 
   @override

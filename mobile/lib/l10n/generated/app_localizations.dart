@@ -818,6 +818,36 @@ abstract class AppLocalizations {
   /// **'Completá una descripción y un monto válido'**
   String get eventDetailExpenseInvalid;
 
+  /// No description provided for @eventDetailInvite.
+  ///
+  /// In es, this message translates to:
+  /// **'Invitar'**
+  String get eventDetailInvite;
+
+  /// No description provided for @eventDetailInviteTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Invitar al evento'**
+  String get eventDetailInviteTitle;
+
+  /// No description provided for @eventDetailInviteHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartí este enlace de invitación con tus amigos para que se sumen al evento:'**
+  String get eventDetailInviteHint;
+
+  /// No description provided for @eventDetailCopyLink.
+  ///
+  /// In es, this message translates to:
+  /// **'Copiar enlace'**
+  String get eventDetailCopyLink;
+
+  /// No description provided for @eventDetailLinkCopied.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Enlace de invitación copiado al portapapeles!'**
+  String get eventDetailLinkCopied;
+
   /// No description provided for @groupsManage.
   ///
   /// In es, this message translates to:

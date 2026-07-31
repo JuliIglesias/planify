@@ -405,6 +405,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter a description and a valid amount';
 
   @override
+  String get eventDetailInvite => 'Invite';
+
+  @override
+  String get eventDetailInviteTitle => 'Invite to event';
+
+  @override
+  String get eventDetailInviteHint =>
+      'Share this invitation link with your friends so they can join the event:';
+
+  @override
+  String get eventDetailCopyLink => 'Copy link';
+
+  @override
+  String get eventDetailLinkCopied => 'Invitation link copied to clipboard!';
+
+  @override
   String get groupsManage => 'Manage group';
 
   @override

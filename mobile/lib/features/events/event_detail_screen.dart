@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 
 import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
@@ -90,6 +92,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         backgroundColor: AppColors.surface,
         title: Text(detalle.value?.nombre ?? l10n.commonLoading),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_outlined),
+            tooltip: l10n.eventDetailInviteTitle,
+            onPressed: !(detalle.value?.estaCancelado ?? false) ? _invitar : null,
+          ),
           if (detalle.value?.organizador != null && !(detalle.value?.estaCancelado ?? false))
             PopupMenuButton<String>(
               onSelected: (opcion) => switch (opcion) {
@@ -123,11 +130,70 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             if (!_miDisponibilidad.remove(slot)) _miDisponibilidad.add(slot);
           }),
           onAccion: _accion,
+          onInvitar: _invitar,
         ),
       ),
     );
   }
 
+  Future<void> _invitar() async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final token = await ref.read(eventsRepositoryProvider).crearInvitacion(widget.eventoId);
+      final inviteLink = 'planify://invite/$token';
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.eventDetailInviteTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.eventDetailInviteHint),
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: SelectableText(
+                  inviteLink,
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.commonCancel),
+            ),
+            FilledButton.icon(
+              icon: const Icon(Icons.copy, size: 18),
+              label: Text(l10n.eventDetailCopyLink),
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: inviteLink));
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.eventDetailLinkCopied)),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      );
+    } catch (err) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$err')));
+      }
+    }
+  }
 
   Future<void> _confirmarCancelacion() async {
     final l10n = AppLocalizations.of(context)!;
@@ -165,6 +231,7 @@ class _Contenido extends ConsumerWidget {
     required this.ocupado,
     required this.onToggleSlot,
     required this.onAccion,
+    required this.onInvitar,
   });
 
   final DetalleEvento evento;
@@ -172,6 +239,7 @@ class _Contenido extends ConsumerWidget {
   final bool ocupado;
   final ValueChanged<AvailabilitySlot> onToggleSlot;
   final Future<void> Function(Future<void> Function()) onAccion;
+  final VoidCallback onInvitar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -235,6 +303,12 @@ class _Contenido extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
+                QuickActionButton(
+                  icon: Icons.person_add_outlined,
+                  label: l10n.eventDetailInvite,
+                  color: AppColors.primary,
+                  onPressed: habilitado ? onInvitar : null,
+                ),
                 QuickActionButton(
                   icon: Icons.receipt_long_outlined,
                   label: l10n.eventDetailAddExpense,

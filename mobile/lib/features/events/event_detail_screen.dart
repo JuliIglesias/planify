@@ -378,8 +378,10 @@ class _Contenido extends ConsumerWidget {
             descripcion: datos.descripcion,
             montoTotal: datos.monto,
             acreedores: [
-              AporteGasto(participanteId: datos.pagadorId, monto: datos.monto),
+              for (final a in datos.acreedores)
+                AporteGasto(participanteId: a.participanteId, monto: a.monto),
             ],
+            dividirEntre: datos.dividirEntre,
           ),
     );
   }

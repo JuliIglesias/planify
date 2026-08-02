@@ -128,6 +128,14 @@ export interface LogActividad {
   createdAt: Date;
 }
 
+export interface Amistad {
+  id: string;
+  usuarioId1: string;
+  usuarioId2: string;
+  estado: AmistadEstado;
+  createdAt: Date;
+}
+
 /** Referencia liviana a una persona, para mostrar en listas. */
 export interface PersonaRef {
   id: string;

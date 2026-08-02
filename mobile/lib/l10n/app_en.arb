@@ -222,6 +222,24 @@
   "eventDetailAssignTo": "Assign to someone",
   "eventDetailTapToConfirm": "Tap a block on the map to confirm the time",
   "eventDetailWhoPaid": "Who paid?",
+  "eventDetailSplitAmong": "Split among?",
+  "eventDetailSplitEqually": "Split equally",
+  "eventDetailExpenseRemaining": "Missing ${monto}",
+  "@eventDetailExpenseRemaining": {
+    "placeholders": {
+      "monto": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDetailExpenseExtra": "Over by ${monto}",
+  "@eventDetailExpenseExtra": {
+    "placeholders": {
+      "monto": {
+        "type": "String"
+      }
+    }
+  },
   "eventDetailExpenseInvalid": "Enter a description and a valid amount",
   "groupsManage": "Manage group",
   "groupsRename": "Rename",

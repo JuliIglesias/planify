@@ -7,6 +7,7 @@ import {
   UuidGenerator,
 } from './infrastructure/servicios-externos';
 import { PrismaUsuarioRepository } from './infrastructure/prisma/usuario.prisma.repository';
+import { PrismaAmistadRepository } from './infrastructure/prisma/amistad.prisma.repository';
 import { PrismaGrupoRepository } from './infrastructure/prisma/grupo.prisma.repository';
 import { PrismaEventoRepository } from './infrastructure/prisma/evento.prisma.repository';
 import { PrismaParticipanteRepository } from './infrastructure/prisma/participante.prisma.repository';
@@ -28,6 +29,8 @@ import { GroupsService } from './modules/groups/groups.service';
 import { InvitationsService } from './modules/invitations/invitations.service';
 import { ParticipantsService } from './modules/participants/participants.service';
 import { TasksService } from './modules/tasks/tasks.service';
+import { UsersService } from './modules/users/users.service';
+import { FriendsService } from './modules/friends/friends.service';
 import { TokenService } from './domain/repositories';
 import { RequestHandler } from 'express';
 import { crearOrganizerGuard, crearParticipantGuard } from './middlewares/guards';
@@ -48,6 +51,8 @@ export interface Container {
     soloParticipante: RequestHandler;
   };
   auth: AuthService;
+  users: UsersService;
+  friends: FriendsService;
   participants: ParticipantsService;
   invitations: InvitationsService;
   events: EventsService;
@@ -72,6 +77,7 @@ export function createContainer(prisma: PrismaClient): Container {
 
   // ── Repositorios ────────────────────────────────────────────────────────
   const usuarios = new PrismaUsuarioRepository(prisma);
+  const amistades = new PrismaAmistadRepository(prisma);
   const grupos = new PrismaGrupoRepository(prisma);
   const eventos = new PrismaEventoRepository(prisma);
   const participantes = new PrismaParticipanteRepository(prisma);
@@ -86,6 +92,8 @@ export function createContainer(prisma: PrismaClient): Container {
   const activityLog = new ActivityLogService(logs, participantes, clock);
 
   const auth = new AuthService(usuarios, hasher, tokens);
+  const users = new UsersService(usuarios);
+  const friends = new FriendsService(amistades, usuarios);
   const participants = new ParticipantsService(participantes, eventos, ids, activityLog);
   const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
   const events = new EventsService(eventos, grupos, participantes, usuarios, activityLog);
@@ -126,6 +134,8 @@ export function createContainer(prisma: PrismaClient): Container {
       soloParticipante: crearParticipantGuard(tokens, participantes),
     },
     auth,
+    users,
+    friends,
     participants,
     invitations,
     events,

@@ -439,6 +439,96 @@ class Tarea {
   }
 }
 
+/// Perfil del usuario registrado (FR12 · GET /me).
+class PerfilUsuario {
+  const PerfilUsuario({
+    required this.id,
+    required this.nombre,
+    required this.email,
+    required this.idiomaPreferido,
+    this.avatarUrl,
+  });
+
+  final String id;
+  final String nombre;
+  final String email;
+  final String idiomaPreferido;
+  final String? avatarUrl;
+
+  factory PerfilUsuario.fromJson(Map<String, dynamic> json) => PerfilUsuario(
+        id: json['id'] as String? ?? '',
+        nombre: json['nombre'] as String? ?? '',
+        email: json['email'] as String? ?? '',
+        idiomaPreferido: json['idiomaPreferido'] as String? ?? 'es',
+        avatarUrl: json['avatarUrl'] as String?,
+      );
+}
+
+/// Un amigo (FR13). Trae el id de la relación ([amistadId]) para poder
+/// eliminarla, además del id del usuario.
+class Amigo {
+  const Amigo({required this.id, required this.nombre, required this.amistadId});
+
+  final String id;
+  final String nombre;
+  final String amistadId;
+
+  factory Amigo.fromJson(Map<String, dynamic> json) => Amigo(
+        id: json['id'] as String? ?? '',
+        nombre: json['nombre'] as String? ?? '',
+        amistadId: json['amistadId'] as String? ?? '',
+      );
+}
+
+/// Solicitud de amistad recibida y todavía sin aceptar (FR13).
+class SolicitudAmistad {
+  const SolicitudAmistad({
+    required this.amistadId,
+    required this.solicitanteId,
+    required this.solicitanteNombre,
+  });
+
+  final String amistadId;
+  final String solicitanteId;
+  final String solicitanteNombre;
+
+  factory SolicitudAmistad.fromJson(Map<String, dynamic> json) {
+    final solicitante = json['solicitante'] as Map<String, dynamic>?;
+    return SolicitudAmistad(
+      amistadId: json['amistadId'] as String? ?? '',
+      solicitanteId: solicitante?['id'] as String? ?? '',
+      solicitanteNombre: solicitante?['nombre'] as String? ?? '',
+    );
+  }
+}
+
+/// Resultado de buscar usuarios para agregar como amigos (FR13), con el estado
+/// de la relación ya resuelto por el backend.
+class UsuarioBuscado {
+  const UsuarioBuscado({
+    required this.id,
+    required this.nombre,
+    required this.email,
+    required this.relacion,
+  });
+
+  final String id;
+  final String nombre;
+  final String email;
+
+  /// 'ninguno' | 'amigo' | 'pendiente_enviada' | 'pendiente_recibida'
+  final String relacion;
+
+  bool get sePuedeAgregar => relacion == 'ninguno';
+
+  factory UsuarioBuscado.fromJson(Map<String, dynamic> json) => UsuarioBuscado(
+        id: json['id'] as String? ?? '',
+        nombre: json['nombre'] as String? ?? '',
+        email: json['email'] as String? ?? '',
+        relacion: json['relacion'] as String? ?? 'ninguno',
+      );
+}
+
 class HeatmapSlot {
   const HeatmapSlot({
     required this.diaSemana,

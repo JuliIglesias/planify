@@ -78,6 +78,16 @@ export function toDeuda(row: {
   };
 }
 
+export function toAmistad(row: {
+  id: string;
+  usuarioId1: string;
+  usuarioId2: string;
+  estado: string;
+  createdAt: Date;
+}): D.Amistad {
+  return { ...row, estado: row.estado as D.AmistadEstado };
+}
+
 export function toLogActividad(row: {
   id: string;
   eventoId: string;

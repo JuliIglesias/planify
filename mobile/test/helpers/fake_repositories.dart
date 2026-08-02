@@ -31,6 +31,17 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<SesionOrganizadorDto> register({
+    required String nombre,
+    required String email,
+    required String password,
+  }) async {
+    llamadas.add('register:$email');
+    if (fallaLogin) throw Exception('No se pudo registrar');
+    return SesionOrganizadorDto(token: 'token-test', usuarioId: 'usr-1', nombre: nombre);
+  }
+
+  @override
   Future<SesionAnonimaDto> unirseComoAnonimo({
     required String eventoId,
     required String nombreDisplay,
@@ -178,9 +189,12 @@ class FakeExpensesRepository implements ExpensesRepository {
     required String descripcion,
     required String montoTotal,
     required List<AporteGasto> acreedores,
+    List<String>? dividirEntre,
     List<AporteGasto>? deudores,
   }) async {
-    llamadas.add('gasto:$descripcion:$montoTotal:${acreedores.first.participanteId}');
+    final pagadores = acreedores.map((a) => a.participanteId).join('+');
+    final entre = (dividirEntre ?? const []).join('+');
+    llamadas.add('gasto:$descripcion:$montoTotal:$pagadores:$entre');
   }
 
   @override

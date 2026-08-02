@@ -77,7 +77,45 @@
   "profileWeeklyAvailability": "Disponibilidad Semanal",
   "profileAvailabilityHint": "Tocá los bloques para marcar tus ratos libres",
   "profileHistory": "Historial de eventos",
+  "profileFriends": "Amigos",
+  "profileEdit": "Editar perfil",
+  "profileEditName": "Nombre",
+  "profileEditLanguage": "Idioma",
+  "profileLanguageEs": "Español",
+  "profileLanguageEn": "Inglés",
+  "profileSaved": "Perfil actualizado",
   "profileLogout": "Cerrar sesión",
+  "registerTitle": "Crear cuenta",
+  "registerName": "Nombre",
+  "registerEmail": "Email",
+  "registerPassword": "Contraseña",
+  "registerPasswordHint": "Al menos 6 caracteres",
+  "registerSubmit": "Crear cuenta",
+  "registerError": "No pudimos crear la cuenta. Revisá tus datos.",
+  "registerPrivacyHint": "Al crear tu cuenta vas a poder organizar eventos, sumar amigos y guardar tu historial.",
+  "friendsTitle": "Amigos",
+  "friendsMyFriends": "Mis amigos",
+  "friendsRequests": "Solicitudes",
+  "friendsNoFriends": "Todavía no agregaste amigos",
+  "friendsAdd": "Agregar amigos",
+  "friendsSearch": "Buscar",
+  "friendsSearchHint": "Buscar por nombre o email",
+  "friendsSearchEmpty": "Sin resultados",
+  "friendsSendRequest": "Agregar",
+  "friendsRequestSent": "Enviada",
+  "friendsAccept": "Aceptar",
+  "friendsReject": "Rechazar",
+  "friendsRemove": "Eliminar amigo",
+  "friendsRemoveConfirm": "¿Querés eliminar a {nombre} de tus amigos?",
+  "@friendsRemoveConfirm": {
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "friendsAlreadyFriend": "Ya son amigos",
+  "friendsPending": "Pendiente",
   "historyTitle": "Historial de eventos",
   "historyEmpty": "Todavía no hay eventos pasados",
   "historyToPay": "Por pagar",
@@ -222,6 +260,24 @@
   "eventDetailAssignTo": "Asignar a alguien",
   "eventDetailTapToConfirm": "Tocá un bloque del mapa para confirmar el horario",
   "eventDetailWhoPaid": "¿Quién pagó?",
+  "eventDetailSplitAmong": "¿Entre quiénes se divide?",
+  "eventDetailSplitEqually": "Partes iguales",
+  "eventDetailExpenseRemaining": "Faltan ${monto}",
+  "@eventDetailExpenseRemaining": {
+    "placeholders": {
+      "monto": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDetailExpenseExtra": "Sobran ${monto}",
+  "@eventDetailExpenseExtra": {
+    "placeholders": {
+      "monto": {
+        "type": "String"
+      }
+    }
+  },
   "eventDetailExpenseInvalid": "Completá una descripción y un monto válido",
   "groupsManage": "Administrar grupo",
   "groupsRename": "Cambiar nombre",

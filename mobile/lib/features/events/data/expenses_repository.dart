@@ -16,13 +16,19 @@ class AporteGasto {
 
 /// SCRUM-11 — HU-13/HU-14/HU-19.
 abstract interface class ExpensesRepository {
-  /// Crea un gasto. Si no se detalla [deudores], se divide en partes iguales
-  /// entre todos los participantes (el backend reparte los centavos sobrantes).
+  /// Crea un gasto (FR7). Admite **varios acreedores** ([acreedores], cada uno
+  /// con cuánto puso) y **varios deudores**:
+  ///  - [dividirEntre]: ids entre los que se reparte en partes iguales (el
+  ///    backend reparte los centavos sobrantes). Si se omite junto con
+  ///    [deudores], se divide entre todos los participantes.
+  ///  - [deudores]: montos explícitos por deudor, si se quiere un reparto no
+  ///    equitativo.
   Future<void> crear({
     required String eventoId,
     required String descripcion,
     required String montoTotal,
     required List<AporteGasto> acreedores,
+    List<String>? dividirEntre,
     List<AporteGasto>? deudores,
   });
 
@@ -41,6 +47,7 @@ class ExpensesRepositoryHttp implements ExpensesRepository {
     required String descripcion,
     required String montoTotal,
     required List<AporteGasto> acreedores,
+    List<String>? dividirEntre,
     List<AporteGasto>? deudores,
   }) =>
       ejecutar(() async {
@@ -50,6 +57,7 @@ class ExpensesRepositoryHttp implements ExpensesRepository {
             'descripcion': descripcion,
             'montoTotal': montoTotal,
             'acreedores': acreedores.map((a) => a.toJson()).toList(),
+            if (dividirEntre != null) 'dividirEntre': dividirEntre,
             if (deudores != null) 'deudores': deudores.map((d) => d.toJson()).toList(),
           },
         );

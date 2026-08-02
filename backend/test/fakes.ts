@@ -59,6 +59,31 @@ export class FakeUsuarioRepository implements R.UsuarioRepository {
     return this.usuarios.filter((u) => ids.includes(u.id));
   }
 
+  async create(data: R.CrearUsuarioData): Promise<D.Usuario> {
+    return this.agregar({
+      nombre: data.nombre,
+      email: data.email,
+      passwordHash: data.passwordHash,
+    });
+  }
+
+  async updateProfile(id: string, data: R.ActualizarPerfilData): Promise<D.Usuario> {
+    const usuario = this.usuarios.find((u) => u.id === id)!;
+    if (data.nombre !== undefined) usuario.nombre = data.nombre;
+    if (data.avatarUrl !== undefined) usuario.avatarUrl = data.avatarUrl;
+    if (data.idiomaPreferido !== undefined) usuario.idiomaPreferido = data.idiomaPreferido;
+    return usuario;
+  }
+
+  async search(termino: string, excluirUsuarioId: string): Promise<D.Usuario[]> {
+    const t = termino.toLowerCase();
+    return this.usuarios.filter(
+      (u) =>
+        u.id !== excluirUsuarioId &&
+        (u.nombre.toLowerCase().includes(t) || u.email.toLowerCase().includes(t)),
+    );
+  }
+
   agregar(parcial: Partial<D.Usuario> = {}): D.Usuario {
     const usuario: D.Usuario = {
       id: nuevoId('usr'),
@@ -72,6 +97,60 @@ export class FakeUsuarioRepository implements R.UsuarioRepository {
     };
     this.usuarios.push(usuario);
     return usuario;
+  }
+}
+
+export class FakeAmistadRepository implements R.AmistadRepository {
+  amistades: D.Amistad[] = [];
+
+  async findById(id: string) {
+    return this.amistades.find((a) => a.id === id) ?? null;
+  }
+
+  async findEntre(a: string, b: string) {
+    return (
+      this.amistades.find(
+        (x) =>
+          (x.usuarioId1 === a && x.usuarioId2 === b) ||
+          (x.usuarioId1 === b && x.usuarioId2 === a),
+      ) ?? null
+    );
+  }
+
+  async create(solicitanteId: string, destinatarioId: string): Promise<D.Amistad> {
+    const amistad: D.Amistad = {
+      id: nuevoId('ami'),
+      usuarioId1: solicitanteId,
+      usuarioId2: destinatarioId,
+      estado: 'pendiente',
+      createdAt: new Date('2026-07-28'),
+    };
+    this.amistades.push(amistad);
+    return amistad;
+  }
+
+  async aceptar(id: string): Promise<D.Amistad> {
+    const amistad = this.amistades.find((a) => a.id === id)!;
+    amistad.estado = 'aceptada';
+    return amistad;
+  }
+
+  async eliminar(id: string) {
+    this.amistades = this.amistades.filter((a) => a.id !== id);
+  }
+
+  async listAceptadasDe(usuarioId: string) {
+    return this.amistades.filter(
+      (a) =>
+        a.estado === 'aceptada' &&
+        (a.usuarioId1 === usuarioId || a.usuarioId2 === usuarioId),
+    );
+  }
+
+  async listPendientesRecibidas(usuarioId: string) {
+    return this.amistades.filter(
+      (a) => a.estado === 'pendiente' && a.usuarioId2 === usuarioId,
+    );
   }
 }
 

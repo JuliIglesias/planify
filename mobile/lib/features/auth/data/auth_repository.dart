@@ -28,6 +28,13 @@ abstract interface class AuthRepository {
   /// HU-41 — login del organizador semilla.
   Future<SesionOrganizadorDto> login(String email, String password);
 
+  /// FR11 (HU-27) — alta de cuenta registrada. Deja la sesión igual que el login.
+  Future<SesionOrganizadorDto> register({
+    required String nombre,
+    required String email,
+    required String password,
+  });
+
   /// HU-01/HU-03 — un anónimo se une a un evento existente.
   Future<SesionAnonimaDto> unirseComoAnonimo({
     required String eventoId,
@@ -48,6 +55,25 @@ class AuthRepositoryHttp implements AuthRepository {
         final res = await _dio.post<Map<String, dynamic>>(
           '/auth/login',
           data: {'email': email, 'password': password},
+        );
+        final usuario = res.data!['usuario'] as Map<String, dynamic>;
+        return SesionOrganizadorDto(
+          token: res.data!['token'] as String,
+          usuarioId: usuario['id'] as String,
+          nombre: usuario['nombre'] as String,
+        );
+      });
+
+  @override
+  Future<SesionOrganizadorDto> register({
+    required String nombre,
+    required String email,
+    required String password,
+  }) =>
+      ejecutar(() async {
+        final res = await _dio.post<Map<String, dynamic>>(
+          '/auth/register',
+          data: {'nombre': nombre, 'email': email, 'password': password},
         );
         final usuario = res.data!['usuario'] as Map<String, dynamic>;
         return SesionOrganizadorDto(

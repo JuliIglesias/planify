@@ -800,6 +800,30 @@ abstract class AppLocalizations {
   /// **'¿Quién pagó?'**
   String get eventDetailWhoPaid;
 
+  /// No description provided for @eventDetailSplitAmong.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Entre quiénes se divide?'**
+  String get eventDetailSplitAmong;
+
+  /// No description provided for @eventDetailSplitEqually.
+  ///
+  /// In es, this message translates to:
+  /// **'Partes iguales'**
+  String get eventDetailSplitEqually;
+
+  /// No description provided for @eventDetailExpenseRemaining.
+  ///
+  /// In es, this message translates to:
+  /// **'Faltan \${monto}'**
+  String eventDetailExpenseRemaining(String monto);
+
+  /// No description provided for @eventDetailExpenseExtra.
+  ///
+  /// In es, this message translates to:
+  /// **'Sobran \${monto}'**
+  String eventDetailExpenseExtra(String monto);
+
   /// No description provided for @eventDetailExpenseInvalid.
   ///
   /// In es, this message translates to:

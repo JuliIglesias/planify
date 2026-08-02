@@ -13,8 +13,11 @@ import { GroupsService } from '../src/modules/groups/groups.service';
 import { InvitationsService } from '../src/modules/invitations/invitations.service';
 import { ParticipantsService } from '../src/modules/participants/participants.service';
 import { TasksService } from '../src/modules/tasks/tasks.service';
+import { UsersService } from '../src/modules/users/users.service';
+import { FriendsService } from '../src/modules/friends/friends.service';
 
 import {
+  FakeAmistadRepository,
   FakeClock,
   FakeDeudaRepository,
   FakeDisponibilidadRepository,
@@ -35,6 +38,7 @@ export interface TestContainer {
   container: Container;
   repos: {
     usuarios: FakeUsuarioRepository;
+    amistades: FakeAmistadRepository;
     grupos: FakeGrupoRepository;
     eventos: FakeEventoRepository;
     participantes: FakeParticipanteRepository;
@@ -61,6 +65,7 @@ export function createTestContainer(): TestContainer {
   const tokens = new FakeTokenService();
 
   const usuarios = new FakeUsuarioRepository();
+  const amistades = new FakeAmistadRepository();
   const grupos = new FakeGrupoRepository();
   const participantes = new FakeParticipanteRepository();
   const eventos = new FakeEventoRepository(participantes);
@@ -75,6 +80,8 @@ export function createTestContainer(): TestContainer {
 
   const activityLog = new ActivityLogService(logs, participantes, clock);
   const auth = new AuthService(usuarios, hasher, tokens);
+  const users = new UsersService(usuarios);
+  const friends = new FriendsService(amistades, usuarios);
   const participants = new ParticipantsService(participantes, eventos, ids, activityLog);
   const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
   const events = new EventsService(eventos, grupos, participantes, usuarios, activityLog);
@@ -101,6 +108,8 @@ export function createTestContainer(): TestContainer {
       soloParticipante: crearParticipantGuard(tokens, participantes),
     },
     auth,
+    users,
+    friends,
     participants,
     invitations,
     events,
@@ -118,6 +127,7 @@ export function createTestContainer(): TestContainer {
     clock,
     repos: {
       usuarios,
+      amistades,
       grupos,
       eventos,
       participantes,

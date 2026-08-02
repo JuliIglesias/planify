@@ -8,6 +8,7 @@
  * Las implementaciones concretas viven en `src/infrastructure/prisma/`.
  */
 export * from './usuario.repository';
+export * from './amistad.repository';
 export * from './grupo.repository';
 export * from './evento.repository';
 export * from './participante.repository';

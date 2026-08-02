@@ -37,6 +37,88 @@ export function createRoutes(c: Container): Router {
     }),
   );
 
+  // ── SCRUM-14 · Registro de cuenta (FR11) ────────────────────────────────
+  router.post(
+    '/auth/register',
+    asyncHandler(async (req: Request, res: Response) => {
+      const { nombre, email, password } = req.body ?? {};
+      res.status(201).json(await c.auth.register(nombre, email, password));
+    }),
+  );
+
+  // ── SCRUM-14 · Perfil / gestión de identidad (FR12) ─────────────────────
+  router.get(
+    '/me',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.users.perfil(exigirUsuario(req)));
+    }),
+  );
+
+  router.patch(
+    '/me/profile',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      const { nombre, avatarUrl, idiomaPreferido } = req.body ?? {};
+      res.json(
+        await c.users.actualizar(exigirUsuario(req), { nombre, avatarUrl, idiomaPreferido }),
+      );
+    }),
+  );
+
+  // ── SCRUM-14 · Gestión de amigos (FR13) ─────────────────────────────────
+  router.get(
+    '/users/search',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.friends.buscar(exigirUsuario(req), String(req.query.q ?? '')));
+    }),
+  );
+
+  router.get(
+    '/friends',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.friends.listarAmigos(exigirUsuario(req)));
+    }),
+  );
+
+  router.get(
+    '/friends/requests',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.friends.listarPendientes(exigirUsuario(req)));
+    }),
+  );
+
+  router.post(
+    '/friends',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      const { usuarioId } = req.body ?? {};
+      await c.friends.enviarSolicitud(exigirUsuario(req), usuarioId);
+      res.status(201).send();
+    }),
+  );
+
+  router.post(
+    '/friends/:amistadId/accept',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      await c.friends.aceptar(exigirUsuario(req), String(req.params.amistadId));
+      res.status(204).send();
+    }),
+  );
+
+  router.delete(
+    '/friends/:amistadId',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      await c.friends.eliminar(exigirUsuario(req), String(req.params.amistadId));
+      res.status(204).send();
+    }),
+  );
+
   router.post(
     '/participants/anonymous',
     asyncHandler(async (req: Request, res: Response) => {

@@ -395,6 +395,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventDetailWhoPaid => 'Who paid?';
 
   @override
+  String get eventDetailSplitAmong => 'Split among?';
+
+  @override
+  String get eventDetailSplitEqually => 'Split equally';
+
+  @override
+  String eventDetailExpenseRemaining(String monto) {
+    return 'Missing \$$monto';
+  }
+
+  @override
+  String eventDetailExpenseExtra(String monto) {
+    return 'Over by \$$monto';
+  }
+
+  @override
   String get eventDetailExpenseInvalid =>
       'Enter a description and a valid amount';
 

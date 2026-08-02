@@ -169,29 +169,35 @@ Future<String?> _pedirTexto(
   String? inicial,
 }) async {
   final l10n = AppLocalizations.of(context)!;
-  final controller = TextEditingController(text: inicial);
+  var valor = inicial ?? '';
+
+  void cerrar(BuildContext dialogContext, String? resultado) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!dialogContext.mounted) return;
+      Navigator.pop(dialogContext, resultado);
+    });
+  }
 
   final resultado = await showDialog<String>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(titulo),
-      content: TextField(
-        controller: controller,
+      content: TextFormField(
         autofocus: true,
+        initialValue: valor,
         decoration: InputDecoration(labelText: label),
-        onSubmitted: (valor) => Navigator.pop(ctx, valor),
+        onChanged: (texto) => valor = texto,
+        onFieldSubmitted: (_) => cerrar(ctx, valor),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
+        TextButton(onPressed: () => cerrar(ctx, null), child: Text(l10n.commonCancel)),
         FilledButton(
-          onPressed: () => Navigator.pop(ctx, controller.text),
+          onPressed: () => cerrar(ctx, valor),
           child: Text(l10n.commonSave),
         ),
       ],
     ),
   );
-
-  controller.dispose();
   final limpio = resultado?.trim();
   return (limpio == null || limpio.isEmpty) ? null : limpio;
 }

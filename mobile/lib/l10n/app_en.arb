@@ -121,6 +121,7 @@
       "count": { "type": "int" }
     }
   },
+  "eventConfigTitle": "Event settings",
   "eventDetailAvailability": "Group availability",
   "eventDetailMyAvailability": "My availability",
   "eventDetailSaveAvailability": "Save availability",

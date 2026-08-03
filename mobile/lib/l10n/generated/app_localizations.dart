@@ -596,6 +596,12 @@ abstract class AppLocalizations {
   /// **'Bloques donde vos y tus amigos ({count}) coinciden. Más intenso = más gente libre.'**
   String friendMatchesHint(int count);
 
+  /// No description provided for @eventConfigTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Configuración del evento'**
+  String get eventConfigTitle;
+
   /// No description provided for @eventDetailAvailability.
   ///
   /// In es, this message translates to:

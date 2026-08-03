@@ -418,3 +418,46 @@ tal cual está hoy — se gana espacio en pantalla sin perder la vista.
   la sección antes de tocar la grilla (documenta que arranca cerrada en el
   detalle de evento).
 - Mobile 35→38, `flutter analyze` limpio.
+
+## Item 4 — Pantalla del evento: feed de actividad + Configuración separada
+
+**Diseño confirmado con el usuario antes de tocar código** (3 preguntas
+respondidas): pantalla nueva completa (no modal), acceso por ícono de
+engranaje en el AppBar del feed, saldos se quedan como acción rápida (no se
+mueven a Configuración). También se confirmó omitir "Sondeo" (no existe como
+feature ni en backend ni en mobile — no se agrega un botón sin funcionalidad
+real detrás).
+
+**Cómo estaba antes:** `EventDetailScreen` era una única pantalla larga con
+TODO junto, en este orden: fecha/lugar, tarjeta de asistencia, acciones
+rápidas, "Mi disponibilidad", heatmap del grupo, tareas, log de actividad.
+
+**Fix:**
+- `EventDetailScreen` queda como el **feed** (tipo chat/log, mockup "Log de
+  Actividad"): fecha/lugar, acciones rápidas (Invitar, Gasto, Tarea, Saldar),
+  tareas (HU-20..23) y log de actividad (HU-24). Nada de esto se movió de
+  lugar ni cambió de comportamiento.
+- `EventConfigScreen` (nueva, `event_config_screen.dart`): asistencia
+  (HU-10), "Mi disponibilidad" (HU-07) y "Disponibilidad del grupo"
+  (HU-08/HU-09) — las tres secciones que se sacaron del feed, tal cual
+  estaban (mismas `CollapsibleSection` del Item 3, acá `initiallyExpanded:
+  true` porque es todo el contenido de la pantalla). Pantalla nueva completa,
+  no modal — se llega con un push normal, igual que `FriendsScreen`/
+  `HistoryScreen`.
+- Acceso: ícono de engranaje (`Icons.settings_outlined`) al lado del de
+  invitar, en el AppBar del feed.
+- El estado de "mi disponibilidad" (`_miDisponibilidad`, antes en
+  `_EventDetailScreenState`) se movió íntegro a `EventConfigScreen`: ya no
+  tiene sentido que lo cargue una pantalla que no la muestra.
+
+**Validación:**
+- `screens_test.dart` (`EventDetailScreen`) — reescrita: ya no hay asistencia
+  ni disponibilidad en el feed (`findsNothing`), el ícono de engranaje abre
+  Configuración, y "evento cancelado deshabilita las acciones" pasa a
+  chequear el `onPressed` de una `QuickActionButton` (antes tocaba el botón
+  de asistencia, que ya no está acá).
+- `event_config_screen_test.dart` (nuevo) — asistencia + las dos
+  disponibilidades ya expandidas sin tocar nada; confirmar asistencia llama
+  al repositorio; guardar disponibilidad envía los bloques; un no-organizador
+  no ve el hint de confirmar horario.
+- Mobile 38→41, `flutter analyze` limpio.

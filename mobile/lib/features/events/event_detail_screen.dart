@@ -8,27 +8,24 @@ import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_scaffold.dart';
-import '../../core/widgets/collapsible_section.dart';
 import '../../core/widgets/event_card.dart';
 import '../../core/widgets/quick_action_button.dart';
 import '../../core/widgets/status_badge.dart';
-import '../../core/widgets/weekly_availability_grid.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../home/home_providers.dart';
-import 'data/availability_repository.dart';
 import 'data/events_repository.dart';
 import 'data/expenses_repository.dart';
 import 'data/tasks_repository.dart';
+import 'event_config_screen.dart';
 import 'widgets/expense_dialog.dart';
 import 'widgets/activity_presentation.dart';
 import 'widgets/task_dialogs.dart';
 import '../balances/data/balances_repository.dart';
 
-import '../profile/profile_availability_provider.dart';
-
-/// Detalle del evento: asistencia (HU-10), disponibilidad y heatmap
-/// (HU-07/08/09), tareas (HU-20..23), gastos y deudas (HU-13..19) y log de
-/// actividad (HU-24).
+/// Detalle del evento (Item 4) — feed de actividad tipo chat: acciones
+/// rápidas, tareas (HU-20..23), gastos y deudas (HU-13..19) y log de
+/// actividad (HU-24). Asistencia y disponibilidad viven en la pantalla de
+/// Configuración aparte (`EventConfigScreen`, ícono de engranaje del AppBar).
 class EventDetailScreen extends ConsumerStatefulWidget {
   const EventDetailScreen({super.key, required this.eventoId});
 
@@ -39,8 +36,6 @@ class EventDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
-  final _miDisponibilidad = <AvailabilitySlot>{};
-  bool _disponibilidadInicializada = false;
   bool _ocupado = false;
 
   /// Ejecuta una acción mostrando el estado de carga y refrescando al terminar.
@@ -65,28 +60,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final detalle = ref.watch(eventDetailProvider(widget.eventoId));
-    final savedAvailAsync = ref.watch(myEventAvailabilityProvider(widget.eventoId));
-    final profileAvailAsync = ref.watch(profileAvailabilityProvider);
-
-    if (!_disponibilidadInicializada) {
-      if (savedAvailAsync.hasValue) {
-        final eventSlots = savedAvailAsync.value!;
-        if (eventSlots.isNotEmpty) {
-          _miDisponibilidad.clear();
-          _miDisponibilidad.addAll(
-            eventSlots.map((s) => AvailabilitySlot(s.diaSemana, s.bloqueHora)),
-          );
-          _disponibilidadInicializada = true;
-        } else if (profileAvailAsync.hasValue) {
-          final profileSlots = profileAvailAsync.value!;
-          if (profileSlots.isNotEmpty) {
-            _miDisponibilidad.clear();
-            _miDisponibilidad.addAll(profileSlots);
-          }
-          _disponibilidadInicializada = true;
-        }
-      }
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -97,6 +70,15 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             icon: const Icon(Icons.person_add_outlined),
             tooltip: l10n.eventDetailInviteTitle,
             onPressed: !(detalle.value?.estaCancelado ?? false) ? _invitar : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: l10n.eventConfigTitle,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => EventConfigScreen(eventoId: widget.eventoId),
+              ),
+            ),
           ),
           if ((detalle.value?.soyOrganizador ?? false) && !(detalle.value?.estaCancelado ?? false))
             PopupMenuButton<String>(
@@ -124,12 +106,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         ),
         data: (evento) => _Contenido(
           evento: evento,
-          miDisponibilidad: _miDisponibilidad,
           ocupado: _ocupado,
-          onToggleSlot: (slot) => setState(() {
-            _disponibilidadInicializada = true;
-            if (!_miDisponibilidad.remove(slot)) _miDisponibilidad.add(slot);
-          }),
           onAccion: _accion,
           onInvitar: _invitar,
         ),
@@ -231,24 +208,19 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 class _Contenido extends ConsumerWidget {
   const _Contenido({
     required this.evento,
-    required this.miDisponibilidad,
     required this.ocupado,
-    required this.onToggleSlot,
     required this.onAccion,
     required this.onInvitar,
   });
 
   final DetalleEvento evento;
-  final Set<AvailabilitySlot> miDisponibilidad;
   final bool ocupado;
-  final ValueChanged<AvailabilitySlot> onToggleSlot;
   final Future<void> Function(Future<void> Function()) onAccion;
   final VoidCallback onInvitar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
 
     final fecha = evento.fechaHoraInicio != null
         ? DateFormat("EEEE d 'de' MMMM · HH:mm", 'es').format(evento.fechaHoraInicio!)
@@ -276,35 +248,7 @@ class _Contenido extends ConsumerWidget {
           ],
         ),
 
-        // ── Asistencia (HU-10) ────────────────────────────────────────────
         const SizedBox(height: AppSpacing.md),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                Expanded(child: Text(l10n.eventDetailAttendance)),
-                TextButton(
-                  onPressed: habilitado
-                      ? () => onAccion(() => ref
-                          .read(eventsRepositoryProvider)
-                          .responderAsistencia(eventoId: evento.id, confirma: false))
-                      : null,
-                  child: Text(l10n.eventDetailNotGoing),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                FilledButton(
-                  onPressed: habilitado
-                      ? () => onAccion(() => ref
-                          .read(eventsRepositoryProvider)
-                          .responderAsistencia(eventoId: evento.id, confirma: true))
-                      : null,
-                  child: Text(l10n.eventDetailGoing),
-                ),
-              ],
-            ),
-          ),
-        ),
 
         // ── Acciones rápidas (mockup "Log de Actividad") ──────────────────
         _Seccion(titulo: l10n.eventDetailQuickActions),
@@ -341,79 +285,6 @@ class _Contenido extends ConsumerWidget {
               ],
             ),
           ),
-        ),
-
-        // ── Mi disponibilidad (HU-07) ─────────────────────────────────────
-        // Item 3: sección colapsable (cerrada por defecto, esta pantalla ya
-        // tiene mucho contenido) y grilla de 24hs completas (00-23h).
-        CollapsibleSection(
-          titulo: l10n.eventDetailMyAvailability,
-          child: Column(
-            children: [
-              WeeklyAvailabilityGrid(
-                horaInicio: 0,
-                horaFin: 24,
-                seleccionados: miDisponibilidad,
-                onToggle: habilitado ? onToggleSlot : (_) {},
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: habilitado
-                      ? () => onAccion(() async {
-                          await ref
-                              .read(availabilityRepositoryProvider)
-                              .guardar(
-                                eventoId: evento.id,
-                                slots: miDisponibilidad
-                                    .map((s) =>
-                                        (diaSemana: s.diaSemana, bloqueHora: s.bloqueHora))
-                                    .toList(),
-                              );
-                          ref.invalidate(myEventAvailabilityProvider(evento.id));
-                        })
-                      : null,
-                  child: Text(l10n.eventDetailSaveAvailability),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-
-        // ── Heatmap del grupo (HU-08/HU-09) ───────────────────────────────
-        CollapsibleSection(
-          titulo: l10n.eventDetailAvailability,
-          child: ref.watch(eventHeatmapProvider(evento.id)).when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, _) => Text('$err'),
-                data: (slots) => Column(
-                  children: [
-                    WeeklyAvailabilityGrid(
-                      horaInicio: 0,
-                      horaFin: 24,
-                      totalParticipantes: evento.participantes.length,
-                      heatmap: {
-                        for (final s in slots)
-                          AvailabilitySlot(s.diaSemana, s.bloqueHora): s.disponibles,
-                      },
-                      // HU-09: tocar un bloque del heatmap confirma el horario.
-                      onSlotTap: habilitado && evento.soyOrganizador
-                          ? (slot) => _confirmarHorario(context, ref, slot)
-                          : null,
-                    ),
-                    if (evento.soyOrganizador) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        l10n.eventDetailTapToConfirm,
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
         ),
 
         // ── Tareas (HU-20 a HU-23) ────────────────────────────────────────
@@ -557,29 +428,6 @@ class _Contenido extends ConsumerWidget {
       () => ref
           .read(balancesRepositoryProvider)
           .saldar(eventoId: evento.id, deudaId: deudaId),
-    );
-  }
-
-  Future<void> _confirmarHorario(
-    BuildContext context,
-    WidgetRef ref,
-    AvailabilitySlot slot,
-  ) async {
-    // El heatmap trabaja en día de la semana + hora; se traduce a la próxima
-    // fecha real que caiga en ese día (la fecha sale de acá, no del alta — F4).
-    final ahora = DateTime.now();
-    final diasHasta = (slot.diaSemana + 1 - ahora.weekday + 7) % 7;
-    final fecha = DateTime(
-      ahora.year,
-      ahora.month,
-      ahora.day + (diasHasta == 0 ? 7 : diasHasta),
-      slot.bloqueHora,
-    );
-
-    await onAccion(
-      () => ref
-          .read(availabilityRepositoryProvider)
-          .confirmarHorario(eventoId: evento.id, fechaHoraInicio: fecha),
     );
   }
 }

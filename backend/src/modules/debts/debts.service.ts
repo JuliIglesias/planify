@@ -308,11 +308,21 @@ export class DebtsService {
 
     const saldada = await this.deudas.marcarSaldada(deudaId, this.clock.now());
 
+    // Item 2 (Fase 4) — el nombre de la contraparte viaja en el payload para
+    // que el log del evento pueda agrupar varios saldos seguidos del mismo
+    // actor en una sola línea ("saldó cuentas con X, Y y Z") en vez de una
+    // entrada por cada deuda saldada.
+    const otroId =
+      deuda.deudorParticipanteId === participanteId
+        ? deuda.acreedorParticipanteId
+        : deuda.deudorParticipanteId;
+    const otro = await this.participantes.findById(otroId);
+
     await this.log.registrar({
       eventoId: deuda.eventoId,
       tipo: ActivityType.deudaSaldada,
       actorParticipanteId: participanteId,
-      payload: { deudaId, monto: deuda.monto },
+      payload: { deudaId, monto: deuda.monto, contraparteNombre: otro?.nombreDisplay ?? '' },
     });
 
     await this.actualizarEstadoEvento(deuda.eventoId);

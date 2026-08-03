@@ -361,6 +361,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String activityDebtSettledWith(String actor, String personas) {
+    return '$actor settled up with $personas';
+  }
+
+  @override
   String activityTaskCreated(String actor) {
     return '$actor created a task';
   }

@@ -360,6 +360,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String activityDebtSettledWith(String actor, String personas) {
+    return '$actor saldó cuentas con $personas';
+  }
+
+  @override
   String activityTaskCreated(String actor) {
     return '$actor creó una tarea';
   }

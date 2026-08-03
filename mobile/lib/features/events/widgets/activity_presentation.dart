@@ -65,3 +65,102 @@ String? montoDeActividad(ActividadLog entrada) {
     _ => '\$$monto',
   };
 }
+
+/// Item 2 — una entrada de actividad ya agrupada. `entrada` es la primera
+/// del grupo (de ahí salen ícono/texto/hora); `cantidad`, cuántas se
+/// fusionaron en esa línea.
+class ActividadAgrupada {
+  const ActividadAgrupada({required this.entrada, required this.cantidad});
+  final ActividadLog entrada;
+  final int cantidad;
+}
+
+/// Agrupa entradas consecutivas del mismo actor + mismo tipo + mismo evento
+/// en una sola línea, y corta en [limite] grupos. Así una racha de acciones
+/// iguales seguidas (ej. saldar gasto tras gasto) no se come todo el espacio
+/// del feed de "Actividad reciente" — cada grupo cuenta como una sola
+/// entrada dentro del tope, liberando lugar para actividad distinta.
+List<ActividadAgrupada> agruparActividades(List<ActividadLog> entradas, {int limite = 5}) {
+  final resultado = <ActividadAgrupada>[];
+  for (final entrada in entradas) {
+    if (resultado.isNotEmpty) {
+      final ultimo = resultado.last;
+      if (ultimo.entrada.actorNombre == entrada.actorNombre &&
+          ultimo.entrada.tipo == entrada.tipo &&
+          ultimo.entrada.eventoId == entrada.eventoId) {
+        resultado[resultado.length - 1] =
+            ActividadAgrupada(entrada: ultimo.entrada, cantidad: ultimo.cantidad + 1);
+        continue;
+      }
+    }
+    // No agrega una línea nueva pasado el tope, pero sigue recorriendo el
+    // resto — una entrada más adelante todavía puede fusionarse con la
+    // última línea ya agregada (`continue`, no `break`).
+    if (resultado.length >= limite) continue;
+    resultado.add(ActividadAgrupada(entrada: entrada, cantidad: 1));
+  }
+  return resultado;
+}
+
+/// El texto de una entrada agrupada: el texto normal + "(×N)" si se
+/// fusionaron varias, sin nombrar a nadie más que el actor — en Home no se
+/// especifica con quién, a diferencia del log del evento (Item 2).
+String textoActividadAgrupada(AppLocalizations l10n, ActividadAgrupada grupo) {
+  final base = textoActividad(l10n, grupo.entrada);
+  return grupo.cantidad > 1 ? '$base (×${grupo.cantidad})' : base;
+}
+
+/// Item 2 — dentro del log de UN evento (a diferencia del feed de Home) sí
+/// interesa saber con quién: varios "saldó su deuda" seguidos del mismo
+/// actor se fusionan nombrando a todas las contrapartes.
+class ActividadLogAgrupada {
+  const ActividadLogAgrupada({required this.entrada, required this.contrapartes});
+  final ActividadLog entrada;
+  final List<String> contrapartes;
+}
+
+List<ActividadLogAgrupada> agruparLogDeEvento(List<ActividadLog> entradas) {
+  final resultado = <ActividadLogAgrupada>[];
+  for (final entrada in entradas) {
+    final esSaldado = entrada.tipo == 'deuda_saldada';
+    final contraparte = entrada.payload?['contraparteNombre'] as String?;
+
+    if (esSaldado && resultado.isNotEmpty) {
+      final ultimo = resultado.last;
+      if (ultimo.entrada.tipo == 'deuda_saldada' &&
+          ultimo.entrada.actorNombre == entrada.actorNombre) {
+        resultado[resultado.length - 1] = ActividadLogAgrupada(
+          entrada: ultimo.entrada,
+          contrapartes: [
+            ...ultimo.contrapartes,
+            if (contraparte != null && contraparte.isNotEmpty) contraparte,
+          ],
+        );
+        continue;
+      }
+    }
+
+    resultado.add(ActividadLogAgrupada(
+      entrada: entrada,
+      contrapartes: esSaldado && contraparte != null && contraparte.isNotEmpty
+          ? [contraparte]
+          : const [],
+    ));
+  }
+  return resultado;
+}
+
+String textoActividadLogAgrupada(AppLocalizations l10n, ActividadLogAgrupada grupo) {
+  if (grupo.entrada.tipo == 'deuda_saldada' && grupo.contrapartes.length > 1) {
+    return l10n.activityDebtSettledWith(
+      grupo.entrada.actorNombre,
+      _formatearNombres(grupo.contrapartes),
+    );
+  }
+  return textoActividad(l10n, grupo.entrada);
+}
+
+String _formatearNombres(List<String> nombres) {
+  if (nombres.length == 1) return nombres.first;
+  return '${nombres.sublist(0, nombres.length - 1).join(', ')} y ${nombres.last}';
+}

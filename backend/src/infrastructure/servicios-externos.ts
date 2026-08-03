@@ -3,8 +3,11 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import {
   Clock,
+  DeviceRegistry,
   IdGenerator,
+  MensajePush,
   PasswordHasher,
+  PushNotifier,
   TokenOrganizador,
   TokenService,
 } from '../domain/repositories';
@@ -50,5 +53,42 @@ export class SystemClock implements Clock {
 export class UuidGenerator implements IdGenerator {
   generate(): string {
     return randomUUID();
+  }
+}
+
+/**
+ * SCRUM-15 — envío de push. Implementación por defecto: loguea la notificación.
+ * En producción se reemplaza por una contra **SNS/Pinpoint** (cambiando solo el
+ * wiring en container.ts). El SLA de NFR#8 (<60s) aplica mientras el ambiente
+ * demo esté encendido (Duda #8).
+ */
+export class ConsolePushNotifier implements PushNotifier {
+  async enviar(deviceTokens: string[], mensaje: MensajePush): Promise<void> {
+    if (deviceTokens.length === 0) return;
+    console.log(
+      `[push] → ${deviceTokens.length} dispositivo(s): "${mensaje.titulo}" — ${mensaje.cuerpo}`,
+    );
+  }
+}
+
+/**
+ * Registro de dispositivos en memoria. Suficiente para el ambiente demo (se
+ * pierde al reiniciar). En producción se persiste en una tabla o en Pinpoint.
+ */
+export class InMemoryDeviceRegistry implements DeviceRegistry {
+  private readonly porUsuario = new Map<string, Set<string>>();
+
+  async registrar(usuarioId: string, deviceToken: string): Promise<void> {
+    const set = this.porUsuario.get(usuarioId) ?? new Set<string>();
+    set.add(deviceToken);
+    this.porUsuario.set(usuarioId, set);
+  }
+
+  async tokensDe(usuarioIds: string[]): Promise<string[]> {
+    const tokens: string[] = [];
+    for (const id of usuarioIds) {
+      for (const t of this.porUsuario.get(id) ?? []) tokens.push(t);
+    }
+    return tokens;
   }
 }

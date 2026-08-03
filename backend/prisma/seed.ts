@@ -29,10 +29,14 @@ async function main() {
 }
 
 main()
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  })
-  .finally(async () => {
+  .then(async () => {
     await prisma.$disconnect();
+    // Salida explícita: garantiza que el contenedor de seed (one-shot en
+    // docker-compose) termine y no quede colgado (H-07).
+    process.exit(0);
+  })
+  .catch(async (err) => {
+    console.error(err);
+    await prisma.$disconnect();
+    process.exit(1);
   });

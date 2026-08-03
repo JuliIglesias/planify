@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { Grupo } from '../../domain/entities';
+import { Grupo, PersonaRef } from '../../domain/entities';
 import { GrupoConMiembros, GrupoRepository } from '../../domain/repositories';
 
 export class PrismaGrupoRepository implements GrupoRepository {
@@ -25,6 +25,14 @@ export class PrismaGrupoRepository implements GrupoRepository {
       createdAt: grupo.createdAt,
       miembros: grupo.miembros.map((m) => ({ id: m.usuario.id, nombre: m.usuario.nombre })),
     }));
+  }
+
+  async listMiembros(grupoId: string): Promise<PersonaRef[]> {
+    const filas = await this.prisma.miembroGrupo.findMany({
+      where: { grupoId },
+      include: { usuario: { select: { id: true, nombre: true } } },
+    });
+    return filas.map((m) => ({ id: m.usuario.id, nombre: m.usuario.nombre }));
   }
 
   async create(nombre: string, usuarioIds: string[]): Promise<Grupo> {

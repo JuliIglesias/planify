@@ -1,25 +1,31 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/models.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
-/// Datos con los que se da de alta un gasto (HU-13).
+/// Un aporte de un pagador dentro de un gasto (soporta varios — FR7).
+typedef AporteInput = ({String participanteId, String monto});
+
+/// Datos con los que se da de alta un gasto (HU-13/HU-14, FR7).
 class DatosGasto {
   const DatosGasto({
     required this.descripcion,
-    required this.monto,
-    required this.pagadorId,
+    required this.montoTotal,
+    required this.acreedores,
     required this.deudoresIds,
   });
 
   final String descripcion;
-  final String monto;
-  final String pagadorId;
+  final String montoTotal;
+
+  /// Uno o varios pagadores, con cuánto puso cada uno (FR7).
+  final List<AporteInput> acreedores;
   final List<String> deudoresIds;
 }
 
-/// Pide descripción, monto, quién pagó y entre quiénes se divide el costo.
+/// Pide descripción, monto, quién(es) pagó(aron) y entre quiénes se divide.
 Future<DatosGasto?> pedirDatosGasto(
   BuildContext context,
   List<Participante> participantes,
@@ -44,22 +50,27 @@ class _ExpenseDialog extends StatefulWidget {
 class _ExpenseDialogState extends State<_ExpenseDialog> {
   late final TextEditingController _descripcionController;
   late final TextEditingController _montoController;
-  late String _pagadorId;
+
+  /// Pagadores seleccionados y el monto que puso cada uno (texto editable).
+  final Set<String> _acreedores = {};
+  final Map<String, TextEditingController> _montoPorAcreedor = {};
+
   late final Set<String> _deudoresSeleccionados;
 
   @override
   void initState() {
     super.initState();
     _descripcionController = TextEditingController();
-    _montoController = TextEditingController();
+    _montoController = TextEditingController()..addListener(_alCambiarTotal);
 
-    _pagadorId = widget.participantes
-        .firstWhere(
-          (p) => p.esOrganizador,
-          orElse: () => widget.participantes.first,
-        )
+    // Por defecto paga el organizador (o el primero) y se divide entre todos.
+    final pagadorInicial = widget.participantes
+        .firstWhere((p) => p.esOrganizador, orElse: () => widget.participantes.first)
         .id;
-
+    _acreedores.add(pagadorInicial);
+    for (final p in widget.participantes) {
+      _montoPorAcreedor[p.id] = TextEditingController();
+    }
     _deudoresSeleccionados = <String>{for (final p in widget.participantes) p.id};
   }
 
@@ -67,12 +78,47 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
   void dispose() {
     _descripcionController.dispose();
     _montoController.dispose();
+    for (final c in _montoPorAcreedor.values) {
+      c.dispose();
+    }
     super.dispose();
+  }
+
+  double get _total => double.tryParse(_montoController.text.trim().replaceAll(',', '.')) ?? 0;
+
+  /// Con un solo pagador, su aporte es el total (no hace falta que lo tipee).
+  bool get _unSoloPagador => _acreedores.length == 1;
+
+  double _aporteDe(String id) =>
+      double.tryParse(_montoPorAcreedor[id]!.text.trim().replaceAll(',', '.')) ?? 0;
+
+  double get _sumaAportes {
+    if (_unSoloPagador) return _total;
+    return _acreedores.fold(0.0, (acc, id) => acc + _aporteDe(id));
+  }
+
+  void _alCambiarTotal() => setState(() {});
+
+  void _repartirEntrePagadores() {
+    if (_acreedores.isEmpty) return;
+    final centavos = (_total * 100).round();
+    final n = _acreedores.length;
+    final base = centavos ~/ n;
+    final resto = centavos - base * n;
+    var i = 0;
+    for (final id in _acreedores) {
+      final c = base + (i < resto ? 1 : 0);
+      _montoPorAcreedor[id]!.text = (c / 100).toStringAsFixed(2);
+      i++;
+    }
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final aportado = _sumaAportes;
+    final cuadra = (aportado - _total).abs() < 0.005 && _total > 0;
 
     return AlertDialog(
       title: Text(l10n.eventDetailAddExpense),
@@ -95,82 +141,180 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
                 prefixText: r'$ ',
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            DropdownButtonFormField<String>(
-              value: _pagadorId,
-              decoration: InputDecoration(labelText: l10n.eventDetailWhoPaid),
-              items: [
-                for (final p in widget.participantes)
-                  DropdownMenuItem(value: p.id, child: Text(p.nombreDisplay)),
+            const SizedBox(height: AppSpacing.md),
+
+            // ── ¿Quién pagó? (uno o varios acreedores — FR7) ────────────────
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.eventDetailWhoPaid,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                if (!_unSoloPagador)
+                  TextButton(
+                    onPressed: _total > 0 ? _repartirEntrePagadores : null,
+                    child: Text(l10n.eventDetailSplitEqually),
+                  ),
               ],
-              onChanged: (valor) {
-                if (valor != null) {
-                  setState(() => _pagadorId = valor);
-                }
-              },
             ),
+            for (final p in widget.participantes)
+              _FilaAcreedor(
+                nombre: p.nombreDisplay,
+                seleccionado: _acreedores.contains(p.id),
+                mostrarMonto: !_unSoloPagador && _acreedores.contains(p.id),
+                controller: _montoPorAcreedor[p.id]!,
+                onCambio: (checked) => setState(() {
+                  if (checked) {
+                    _acreedores.add(p.id);
+                  } else if (_acreedores.length > 1) {
+                    _acreedores.remove(p.id);
+                  }
+                }),
+                onMonto: () => setState(() {}),
+              ),
+
+            if (!_unSoloPagador)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text(
+                  l10n.eventDetailContributed(
+                    aportado.toStringAsFixed(2),
+                    _total.toStringAsFixed(2),
+                  ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: cuadra ? AppColors.success : AppColors.danger,
+                      ),
+                ),
+              ),
+
             const SizedBox(height: AppSpacing.md),
             Text(
               l10n.eventDetailDivideBetween,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.xs),
-            Column(
-              children: [
-                for (final p in widget.participantes)
-                  CheckboxListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(p.nombreDisplay),
-                    value: _deudoresSeleccionados.contains(p.id),
-                    onChanged: (checked) {
-                      setState(() {
-                        if (checked == true) {
-                          _deudoresSeleccionados.add(p.id);
-                        } else {
-                          if (_deudoresSeleccionados.length > 1) {
-                            _deudoresSeleccionados.remove(p.id);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(l10n.eventDetailSelectAtLeastOne)),
-                            );
-                          }
-                        }
-                      });
-                    },
-                  ),
-              ],
-            ),
+            for (final p in widget.participantes)
+              CheckboxListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(p.nombreDisplay),
+                value: _deudoresSeleccionados.contains(p.id),
+                onChanged: (checked) {
+                  setState(() {
+                    if (checked == true) {
+                      _deudoresSeleccionados.add(p.id);
+                    } else if (_deudoresSeleccionados.length > 1) {
+                      _deudoresSeleccionados.remove(p.id);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.eventDetailSelectAtLeastOne)),
+                      );
+                    }
+                  });
+                },
+              ),
           ],
         ),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.commonCancel)),
-        FilledButton(
-          onPressed: () {
-            final texto = _montoController.text.trim().replaceAll(',', '.');
-            final valor = double.tryParse(texto);
-            if (_descripcionController.text.trim().isEmpty ||
-                valor == null ||
-                valor <= 0 ||
-                _deudoresSeleccionados.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.eventDetailExpenseInvalid)),
-              );
-              return;
-            }
-            Navigator.pop(
-              context,
-              DatosGasto(
-                descripcion: _descripcionController.text.trim(),
-                monto: valor.toStringAsFixed(2),
-                pagadorId: _pagadorId,
-                deudoresIds: _deudoresSeleccionados.toList(),
-              ),
-            );
-          },
-          child: Text(l10n.commonAdd),
+        FilledButton(onPressed: () => _confirmar(l10n), child: Text(l10n.commonAdd)),
+      ],
+    );
+  }
+
+  void _confirmar(AppLocalizations l10n) {
+    final total = _total;
+    final descripcion = _descripcionController.text.trim();
+
+    if (descripcion.isEmpty || total <= 0 || _deudoresSeleccionados.isEmpty) {
+      _error(l10n.eventDetailExpenseInvalid);
+      return;
+    }
+    if (_acreedores.isEmpty) {
+      _error(l10n.eventDetailExpenseInvalid);
+      return;
+    }
+    // Con varios pagadores, los aportes tienen que sumar el total (NFR#4).
+    if (!_unSoloPagador && (_sumaAportes - total).abs() >= 0.005) {
+      _error(l10n.eventDetailPayersMustSum);
+      return;
+    }
+
+    final acreedores = <AporteInput>[
+      for (final id in _acreedores)
+        (
+          participanteId: id,
+          monto: _unSoloPagador
+              ? total.toStringAsFixed(2)
+              : _aporteDe(id).toStringAsFixed(2),
         ),
+    ];
+
+    Navigator.pop(
+      context,
+      DatosGasto(
+        descripcion: descripcion,
+        montoTotal: total.toStringAsFixed(2),
+        acreedores: acreedores,
+        deudoresIds: _deudoresSeleccionados.toList(),
+      ),
+    );
+  }
+
+  void _error(String texto) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
+  }
+}
+
+/// Una fila de "quién pagó": checkbox + (si hay varios) el monto que puso.
+class _FilaAcreedor extends StatelessWidget {
+  const _FilaAcreedor({
+    required this.nombre,
+    required this.seleccionado,
+    required this.mostrarMonto,
+    required this.controller,
+    required this.onCambio,
+    required this.onMonto,
+  });
+
+  final String nombre;
+  final bool seleccionado;
+  final bool mostrarMonto;
+  final TextEditingController controller;
+  final ValueChanged<bool> onCambio;
+  final VoidCallback onMonto;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: CheckboxListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(nombre),
+            value: seleccionado,
+            onChanged: (v) => onCambio(v ?? false),
+          ),
+        ),
+        if (mostrarMonto)
+          SizedBox(
+            width: 90,
+            child: TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              textAlign: TextAlign.end,
+              decoration: const InputDecoration(prefixText: r'$ ', isDense: true),
+              onChanged: (_) => onMonto(),
+            ),
+          ),
       ],
     );
   }

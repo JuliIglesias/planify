@@ -97,6 +97,26 @@
   "eventNewGroupName": "Nombre del grupo",
   "eventCreateError": "No pudimos crear el evento",
   "eventDateComesLater": "La fecha se define después, cuando todos carguen su disponibilidad",
+  "eventAiButton": "Generar con IA",
+  "eventAiTitle": "Describí tu evento",
+  "eventAiHint": "Ej: un asado en casa de Juli con Marcos y Sofía",
+  "eventAiGenerate": "Generar",
+  "eventAiUnmatched": "No encontré entre tus amigos a: {nombres}",
+  "@eventAiUnmatched": {
+    "placeholders": {
+      "nombres": { "type": "String" }
+    }
+  },
+  "eventSavedPlaces": "Ubicaciones guardadas",
+  "eventSavePlace": "Guardar esta ubicación",
+  "eventPlaceLabelHint": "Etiqueta (ej. Casa de Juli)",
+  "friendMatchesTitle": "Coincidencias con amigos",
+  "friendMatchesHint": "Bloques donde vos y tus amigos ({count}) coinciden. Más intenso = más gente libre.",
+  "@friendMatchesHint": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "eventDetailAvailability": "Disponibilidad del grupo",
   "eventDetailMyAvailability": "Mi disponibilidad",
   "eventDetailSaveAvailability": "Guardar disponibilidad",
@@ -225,6 +245,15 @@
   "eventDetailDivideBetween": "¿Entre quiénes se divide?",
   "eventDetailSelectAtLeastOne": "Debe seleccionar al menos una persona",
   "eventDetailExpenseInvalid": "Completá una descripción y un monto válido",
+  "eventDetailSplitEqually": "Repartir",
+  "eventDetailPayersMustSum": "Los aportes de los pagadores deben sumar el total",
+  "eventDetailContributed": "Aportado: ${aportado} de ${total}",
+  "@eventDetailContributed": {
+    "placeholders": {
+      "aportado": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
   "eventDetailInvite": "Invitar",
   "eventDetailInviteTitle": "Invitar al evento",
   "eventDetailInviteHint": "Compartí este enlace de invitación con tus amigos para que se sumen al evento:",
@@ -238,6 +267,31 @@
   "groupsMembers": "Miembros",
   "groupsNewName": "Nuevo nombre",
   "groupsFriendId": "ID del amigo",
+  "friendsPickTitle": "Elegir amigos",
+  "friendsEmpty": "Todavía no tenés amigos para agregar. Agregá amigos desde tu perfil.",
+  "friendsPickConfirm": "Agregar ({count})",
+  "@friendsPickConfirm": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "friendsTitle": "Mis amigos",
+  "friendsSearchHint": "Buscar por nombre o email",
+  "friendsAdd": "Agregar",
+  "friendsRequests": "Solicitudes",
+  "friendsAccept": "Aceptar",
+  "friendsRequestSent": "Solicitud enviada",
+  "friendsNoResults": "Sin resultados",
+  "profileEdit": "Editar perfil",
+  "profileName": "Nombre",
+  "profileLanguage": "Idioma",
+  "profileSave": "Guardar",
+  "registerTitle": "Crear cuenta",
+  "registerName": "Nombre",
+  "registerEmail": "Email",
+  "registerPassword": "Contraseña",
+  "registerSubmit": "Registrarme",
+  "registerHaveAccount": "¿Ya tenés cuenta? Ingresar",
   "commonConfirm": "Confirmar",
   "activityExpensesClosed": "{actor} cerró los gastos",
   "@activityExpensesClosed": {

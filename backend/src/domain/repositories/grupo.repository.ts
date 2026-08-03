@@ -8,6 +8,9 @@ export interface GrupoRepository {
   findById(id: string): Promise<Grupo | null>;
   listByUsuario(usuarioId: string): Promise<GrupoConMiembros[]>;
 
+  /** Miembros registrados de un grupo puntual (id = usuarioId, con su nombre). */
+  listMiembros(grupoId: string): Promise<PersonaRef[]>;
+
   create(nombre: string, usuarioIds: string[]): Promise<Grupo>;
   rename(id: string, nombre: string): Promise<Grupo>;
 

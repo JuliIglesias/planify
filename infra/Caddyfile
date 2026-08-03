@@ -1,0 +1,9 @@
+# Terminación TLS delante del backend (NFR#7, H-03).
+# - CADDY_DOMAIN=localhost  → certificado interno de Caddy (dev/demo local).
+# - CADDY_DOMAIN=api.tu-dominio → certificado de Let's Encrypt automático.
+#
+# El backend queda solo detrás del proxy; el tráfico entre app y API va por HTTPS.
+{$CADDY_DOMAIN} {
+	encode gzip
+	reverse_proxy backend:3000
+}

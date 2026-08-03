@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../../features/home/home_providers.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 /// Header con título + campana, común a las 4 pantallas raíz.
-class AppHeader extends StatelessWidget {
+/// La campana muestra un badge con la actividad sin leer (H-17).
+class AppHeader extends ConsumerWidget {
   const AppHeader({super.key, required this.titulo, this.subtitulo, this.trailing});
 
   final String titulo;
@@ -13,8 +16,9 @@ class AppHeader extends StatelessWidget {
   final Widget? trailing;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final noLeidos = ref.watch(unreadTotalProvider).value ?? 0;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -46,7 +50,13 @@ class AppHeader extends StatelessWidget {
               ],
             ),
           ),
-          trailing ?? const Icon(Icons.notifications_none, color: AppColors.primary),
+          trailing ??
+              (noLeidos > 0
+                  ? Badge(
+                      label: Text('$noLeidos'),
+                      child: const Icon(Icons.notifications_none, color: AppColors.primary),
+                    )
+                  : const Icon(Icons.notifications_none, color: AppColors.primary)),
         ],
       ),
     );

@@ -25,8 +25,11 @@ class SesionAnonimaDto {
 
 /// SCRUM-7 — acceso a la app. Las pantallas dependen de esta interfaz, no de Dio.
 abstract interface class AuthRepository {
-  /// HU-41 — login del organizador semilla.
+  /// HU-41 — login del organizador semilla / usuario registrado.
   Future<SesionOrganizadorDto> login(String email, String password);
+
+  /// HU-27 — registro de una cuenta real.
+  Future<SesionOrganizadorDto> register(String nombre, String email, String password);
 
   /// HU-01/HU-03 — un anónimo se une a un evento existente.
   Future<SesionAnonimaDto> unirseComoAnonimo({
@@ -48,6 +51,21 @@ class AuthRepositoryHttp implements AuthRepository {
         final res = await _dio.post<Map<String, dynamic>>(
           '/auth/login',
           data: {'email': email, 'password': password},
+        );
+        final usuario = res.data!['usuario'] as Map<String, dynamic>;
+        return SesionOrganizadorDto(
+          token: res.data!['token'] as String,
+          usuarioId: usuario['id'] as String,
+          nombre: usuario['nombre'] as String,
+        );
+      });
+
+  @override
+  Future<SesionOrganizadorDto> register(String nombre, String email, String password) =>
+      ejecutar(() async {
+        final res = await _dio.post<Map<String, dynamic>>(
+          '/auth/register',
+          data: {'nombre': nombre, 'email': email, 'password': password},
         );
         final usuario = res.data!['usuario'] as Map<String, dynamic>;
         return SesionOrganizadorDto(

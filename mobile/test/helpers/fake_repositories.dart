@@ -31,6 +31,13 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<SesionOrganizadorDto> register(String nombre, String email, String password) async {
+    llamadas.add('register:$email');
+    if (fallaLogin) throw Exception('No se pudo registrar');
+    return SesionOrganizadorDto(token: 'token-test', usuarioId: 'usr-1', nombre: nombre);
+  }
+
+  @override
   Future<SesionAnonimaDto> unirseComoAnonimo({
     required String eventoId,
     required String nombreDisplay,
@@ -59,12 +66,17 @@ class FakeEventsRepository implements EventsRepository {
     String estado = 'planificacion',
     List<Tarea> tareas = const [],
     bool conOrganizador = true,
+    // Por defecto la muestra es la vista del organizador; los tests del caso
+    // anónimo pasan soyOrganizador: false (H-04).
+    bool? soyOrganizador,
   }) =>
       DetalleEvento(
         id: 'evt-1',
         nombre: 'Asado en lo de Marcos',
         lugarTexto: 'Casa de Nacho',
         estado: estado,
+        miParticipanteId: 'part-1',
+        soyOrganizador: soyOrganizador ?? conOrganizador,
         participantes: [
           if (conOrganizador)
             const Participante(

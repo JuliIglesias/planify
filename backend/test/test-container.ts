@@ -4,6 +4,13 @@ import { crearOrganizerGuard, crearParticipantGuard } from '../src/middlewares/g
 
 import { ActivityLogService } from '../src/modules/activity-log/activity-log.service';
 import { AuthService } from '../src/modules/auth/auth.service';
+import { FriendsService } from '../src/modules/friends/friends.service';
+import { UsersService } from '../src/modules/users/users.service';
+import { NotificationsService } from '../src/modules/notifications/notifications.service';
+import { AiEventsService } from '../src/modules/ai-events/ai-events.service';
+import { HeuristicEventGenerator } from '../src/infrastructure/ai/event-generators';
+import { ProfileAvailabilityService } from '../src/modules/profile/profile-availability.service';
+import { LocationsService } from '../src/modules/profile/locations.service';
 import { AvailabilityService } from '../src/modules/availability/availability.service';
 import { DebtsService } from '../src/modules/debts/debts.service';
 import { EventsService } from '../src/modules/events/events.service';
@@ -15,8 +22,13 @@ import { ParticipantsService } from '../src/modules/participants/participants.se
 import { TasksService } from '../src/modules/tasks/tasks.service';
 
 import {
+  FakeAmistadRepository,
   FakeClock,
+  FakeDeviceRegistry,
   FakeDeudaRepository,
+  FakeLocationRepository,
+  FakeProfileAvailabilityRepository,
+  FakePushNotifier,
   FakeDisponibilidadRepository,
   FakeEventoRepository,
   FakeGastoRepository,
@@ -35,6 +47,7 @@ export interface TestContainer {
   container: Container;
   repos: {
     usuarios: FakeUsuarioRepository;
+    amistades: FakeAmistadRepository;
     grupos: FakeGrupoRepository;
     eventos: FakeEventoRepository;
     participantes: FakeParticipanteRepository;
@@ -44,6 +57,7 @@ export interface TestContainer {
     gastos: FakeGastoRepository;
     deudas: FakeDeudaRepository;
     logs: FakeLogActividadRepository;
+    push: FakePushNotifier;
   };
   clock: FakeClock;
 }
@@ -61,11 +75,14 @@ export function createTestContainer(): TestContainer {
   const tokens = new FakeTokenService();
 
   const usuarios = new FakeUsuarioRepository();
-  const grupos = new FakeGrupoRepository();
+  const amistades = new FakeAmistadRepository(usuarios);
+  const grupos = new FakeGrupoRepository(usuarios);
   const participantes = new FakeParticipanteRepository();
   const eventos = new FakeEventoRepository(participantes);
   const invitaciones = new FakeInvitacionRepository();
   const disponibilidad = new FakeDisponibilidadRepository();
+  const disponibilidadPerfil = new FakeProfileAvailabilityRepository();
+  const ubicaciones = new FakeLocationRepository();
   const tareas = new FakeTareaRepository();
   const gastos = new FakeGastoRepository();
   // Recibe los participantes para poder resolver nombre y usuarioId de cada
@@ -73,14 +90,38 @@ export function createTestContainer(): TestContainer {
   const deudas = new FakeDeudaRepository(participantes);
   const logs = new FakeLogActividadRepository();
 
-  const activityLog = new ActivityLogService(logs, participantes, clock);
+  const push = new FakePushNotifier();
+  const deviceRegistry = new FakeDeviceRegistry();
+  const notifications = new NotificationsService(participantes, deviceRegistry, push);
+  const activityLog = new ActivityLogService(logs, participantes, clock, notifications);
   const auth = new AuthService(usuarios, hasher, tokens);
+  const friends = new FriendsService(amistades, usuarios);
+  const users = new UsersService(usuarios);
+  const aiEvents = new AiEventsService(new HeuristicEventGenerator(), amistades);
+  const profileAvailability = new ProfileAvailabilityService(disponibilidadPerfil, amistades);
+  const locations = new LocationsService(ubicaciones);
   const participants = new ParticipantsService(participantes, eventos, ids, activityLog);
   const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
   const events = new EventsService(eventos, grupos, participantes, usuarios, activityLog);
-  const eventsQuery = new EventsQueryService(eventos, participantes, deudas, tareas, gastos);
+  const eventsQuery = new EventsQueryService(
+    eventos,
+    participantes,
+    deudas,
+    tareas,
+    gastos,
+    clock,
+  );
   const availability = new AvailabilityService(disponibilidad, eventos, events, activityLog);
-  const groups = new GroupsService(grupos, eventos, usuarios, tareas, gastos, activityLog, clock);
+  const groups = new GroupsService(
+    grupos,
+    eventos,
+    usuarios,
+    tareas,
+    gastos,
+    activityLog,
+    clock,
+    participantes,
+  );
   const tasks = new TasksService(tareas, eventos, participantes, activityLog);
   const debts = new DebtsService(deudas, gastos, participantes, eventos, activityLog, clock);
   const expenses = new ExpensesService(
@@ -101,6 +142,12 @@ export function createTestContainer(): TestContainer {
       soloParticipante: crearParticipantGuard(tokens, participantes),
     },
     auth,
+    friends,
+    users,
+    notifications,
+    aiEvents,
+    profileAvailability,
+    locations,
     participants,
     invitations,
     events,
@@ -118,6 +165,7 @@ export function createTestContainer(): TestContainer {
     clock,
     repos: {
       usuarios,
+      amistades,
       grupos,
       eventos,
       participantes,
@@ -127,6 +175,7 @@ export function createTestContainer(): TestContainer {
       gastos,
       deudas,
       logs,
+      push,
     },
   };
 }

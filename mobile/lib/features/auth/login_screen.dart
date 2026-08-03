@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'data/auth_repository.dart';
+import 'register_screen.dart';
 import 'session_controller.dart';
 
 /// Login — mockup "Login" de Figma.
@@ -276,7 +277,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Text(l10n.loginNoAccount, style: theme.textTheme.bodySmall),
                     TextButton(
-                      onPressed: () => _mensaje(l10n.loginComingSoon),
+                      // HU-27 (SCRUM-14): registro real de una cuenta.
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => const RegisterScreen()),
+                      ),
                       child: Text(l10n.loginCreateAccount),
                     ),
                   ],

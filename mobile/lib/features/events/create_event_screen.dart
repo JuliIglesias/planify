@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'data/ai_events_repository.dart';
 import 'data/events_repository.dart';
+import 'data/tasks_repository.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../friends/data/friends_repository.dart';
+import '../friends/friend_picker.dart';
 import '../home/home_providers.dart';
+import '../profile/data/profile_repository.dart';
 import 'event_detail_screen.dart';
 
 /// HU-06 — creación de evento en 2 pasos (NFR#3):
@@ -27,6 +32,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   int _paso = 0;
   String? _grupoSeleccionadoId;
   bool _creando = false;
+  bool _generandoIA = false;
+  final List<Persona> _miembros = [];
+  final List<String> _tareasSugeridas = [];
 
   @override
   void dispose() {
@@ -47,13 +55,27 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     setState(() => _creando = true);
 
     try {
+      final creandoGrupoNuevo = _grupoSeleccionadoId == null;
       final eventoId = await ref.read(eventsRepositoryProvider).crear(
             nombre: _nombre.text.trim(),
             lugarTexto: _lugar.text.trim(),
             grupoId: _grupoSeleccionadoId,
-            nuevoGrupoNombre:
-                _grupoSeleccionadoId == null ? _nuevoGrupo.text.trim() : null,
+            nuevoGrupoNombre: creandoGrupoNuevo ? _nuevoGrupo.text.trim() : null,
+            // HU-04 (H-05): al crear un grupo nuevo se pueden elegir miembros;
+            // el backend los suma al grupo y los vuelve participantes del evento.
+            miembroUsuarioIds: creandoGrupoNuevo && _miembros.isNotEmpty
+                ? _miembros.map((p) => p.id).toList()
+                : null,
           );
+
+      // HU-44b: crear las tareas que sugirió la IA (best-effort).
+      for (final titulo in _tareasSugeridas) {
+        try {
+          await ref.read(tasksRepositoryProvider).crear(eventoId: eventoId, titulo: titulo);
+        } catch (_) {
+          // Si falla una tarea sugerida, no bloquea la creación del evento.
+        }
+      }
 
       if (!mounted) return;
       ref.invalidate(upcomingEventsProvider);
@@ -69,6 +91,172 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       );
       setState(() => _creando = false);
     }
+  }
+
+  // HU-42/43/44b — describir el evento y que la IA arme un borrador editable.
+  Future<void> _generarConIA() async {
+    final l10n = AppLocalizations.of(context)!;
+    final ctrl = TextEditingController();
+    final descripcion = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.eventAiTitle),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLines: 3,
+          decoration: InputDecoration(hintText: l10n.eventAiHint),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: Text(l10n.eventAiGenerate),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (descripcion == null || descripcion.isEmpty || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _generandoIA = true);
+    try {
+      final borrador = await ref.read(aiEventsRepositoryProvider).generar(descripcion);
+      if (!mounted) return;
+      setState(() {
+        _nombre.text = borrador.nombre;
+        _lugar.text = borrador.lugar;
+        _tareasSugeridas
+          ..clear()
+          ..addAll(borrador.tareasSugeridas);
+        for (final a in borrador.amigosSugeridos) {
+          if (!_miembros.any((m) => m.id == a.id)) _miembros.add(a);
+        }
+      });
+      if (borrador.nombresSinMatch.isNotEmpty) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.eventAiUnmatched(borrador.nombresSinMatch.join(', ')))),
+        );
+      }
+    } catch (err) {
+      if (mounted) messenger.showSnackBar(SnackBar(content: Text('$err')));
+    } finally {
+      if (mounted) setState(() => _generandoIA = false);
+    }
+  }
+
+  // HU-B5 — elegir una ubicación favorita o guardar la actual.
+  Future<void> _gestionarUbicaciones() async {
+    final l10n = AppLocalizations.of(context)!;
+    final repo = ref.read(profileRepositoryProvider);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => Consumer(
+        builder: (ctx, refSheet, _) {
+          final favs = refSheet.watch(favoriteLocationsProvider);
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Text(l10n.eventSavedPlaces,
+                      style: Theme.of(ctx).textTheme.titleMedium),
+                ),
+                favs.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(AppSpacing.md),
+                    child: CircularProgressIndicator(),
+                  ),
+                  error: (e, _) => Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Text('$e'),
+                  ),
+                  data: (lista) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final u in lista)
+                        ListTile(
+                          leading: const Icon(Icons.place_outlined),
+                          title: Text(u.etiqueta),
+                          subtitle: Text(u.texto),
+                          onTap: () {
+                            _lugar.text = u.texto;
+                            setState(() {});
+                            Navigator.pop(ctx);
+                          },
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () async {
+                              await repo.eliminarUbicacion(u.id);
+                              refSheet.invalidate(favoriteLocationsProvider);
+                            },
+                          ),
+                        ),
+                      if (_lugar.text.trim().isNotEmpty)
+                        ListTile(
+                          leading: const Icon(Icons.bookmark_add_outlined),
+                          title: Text(l10n.eventSavePlace),
+                          onTap: () async {
+                            final etiqueta = await _pedirEtiqueta();
+                            if (etiqueta == null) return;
+                            await repo.crearUbicacion(etiqueta, _lugar.text.trim());
+                            refSheet.invalidate(favoriteLocationsProvider);
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<String?> _pedirEtiqueta() async {
+    final l10n = AppLocalizations.of(context)!;
+    final ctrl = TextEditingController();
+    final res = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.eventSavePlace),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(hintText: l10n.eventPlaceLabelHint),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: Text(l10n.commonSave),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    return (res == null || res.isEmpty) ? null : res;
+  }
+
+  Future<void> _elegirMiembros() async {
+    final elegidos = await elegirAmigos(
+      context,
+      ref,
+      multiple: true,
+      excluir: _miembros.map((p) => p.id).toSet(),
+    );
+    if (elegidos == null) return;
+    setState(() {
+      for (final p in elegidos) {
+        if (!_miembros.any((m) => m.id == p.id)) _miembros.add(p);
+      }
+    });
   }
 
   @override
@@ -105,6 +293,22 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 child: _paso == 0
                     ? Column(
                         children: [
+                          // HU-42: describir el evento y que la IA lo pre-arme.
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _generandoIA || _creando ? null : _generarConIA,
+                              icon: _generandoIA
+                                  ? const SizedBox(
+                                      height: 16,
+                                      width: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.auto_awesome, size: 18),
+                              label: Text(l10n.eventAiButton),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
                           TextField(
                             controller: _nombre,
                             autofocus: true,
@@ -121,6 +325,15 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                             decoration: InputDecoration(
                               labelText: l10n.eventPlaceLabel,
                               hintText: l10n.eventPlaceHint,
+                            ),
+                          ),
+                          // HU-B5 — ubicaciones favoritas reutilizables.
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed: _creando ? null : _gestionarUbicaciones,
+                              icon: const Icon(Icons.bookmark_border, size: 18),
+                              label: Text(l10n.eventSavedPlaces),
                             ),
                           ),
                           const SizedBox(height: AppSpacing.md),
@@ -183,6 +396,31 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                               labelText: l10n.eventNewGroupName,
                             ),
                           ),
+                          // HU-04 (H-05): elegir miembros para el grupo nuevo.
+                          if (_grupoSeleccionadoId == null) ...[
+                            const SizedBox(height: AppSpacing.sm),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: _creando ? null : _elegirMiembros,
+                                icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+                                label: Text(l10n.groupsAddMember),
+                              ),
+                            ),
+                            if (_miembros.isNotEmpty)
+                              Wrap(
+                                spacing: AppSpacing.xs,
+                                children: [
+                                  for (final m in _miembros)
+                                    Chip(
+                                      label: Text(m.nombre),
+                                      onDeleted: _creando
+                                          ? null
+                                          : () => setState(() => _miembros.remove(m)),
+                                    ),
+                                ],
+                              ),
+                          ],
                         ],
                       ),
               ),

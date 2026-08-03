@@ -227,6 +227,41 @@ class AppLocalizationsEn extends AppLocalizations {
       'The date is set later, once everyone shares their availability';
 
   @override
+  String get eventAiButton => 'Generate with AI';
+
+  @override
+  String get eventAiTitle => 'Describe your event';
+
+  @override
+  String get eventAiHint =>
+      'E.g.: a barbecue at Juli\'s place with Marcos and Sofía';
+
+  @override
+  String get eventAiGenerate => 'Generate';
+
+  @override
+  String eventAiUnmatched(String nombres) {
+    return 'Couldn\'t find these among your friends: $nombres';
+  }
+
+  @override
+  String get eventSavedPlaces => 'Saved places';
+
+  @override
+  String get eventSavePlace => 'Save this place';
+
+  @override
+  String get eventPlaceLabelHint => 'Label (e.g. Juli\'s place)';
+
+  @override
+  String get friendMatchesTitle => 'Matches with friends';
+
+  @override
+  String friendMatchesHint(int count) {
+    return 'Slots where you and your friends ($count) overlap. Darker = more people free.';
+  }
+
+  @override
   String get eventDetailAvailability => 'Group availability';
 
   @override
@@ -405,6 +440,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter a description and a valid amount';
 
   @override
+  String get eventDetailSplitEqually => 'Split';
+
+  @override
+  String get eventDetailPayersMustSum =>
+      'The payers\' contributions must add up to the total';
+
+  @override
+  String eventDetailContributed(String aportado, String total) {
+    return 'Contributed: \$$aportado of \$$total';
+  }
+
+  @override
   String get eventDetailInvite => 'Invite';
 
   @override
@@ -443,6 +490,69 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupsFriendId => 'Friend ID';
+
+  @override
+  String get friendsPickTitle => 'Pick friends';
+
+  @override
+  String get friendsEmpty =>
+      'You have no friends to add yet. Add friends from your profile.';
+
+  @override
+  String friendsPickConfirm(int count) {
+    return 'Add ($count)';
+  }
+
+  @override
+  String get friendsTitle => 'My friends';
+
+  @override
+  String get friendsSearchHint => 'Search by name or email';
+
+  @override
+  String get friendsAdd => 'Add';
+
+  @override
+  String get friendsRequests => 'Requests';
+
+  @override
+  String get friendsAccept => 'Accept';
+
+  @override
+  String get friendsRequestSent => 'Request sent';
+
+  @override
+  String get friendsNoResults => 'No results';
+
+  @override
+  String get profileEdit => 'Edit profile';
+
+  @override
+  String get profileName => 'Name';
+
+  @override
+  String get profileLanguage => 'Language';
+
+  @override
+  String get profileSave => 'Save';
+
+  @override
+  String get registerTitle => 'Create account';
+
+  @override
+  String get registerName => 'Name';
+
+  @override
+  String get registerEmail => 'Email';
+
+  @override
+  String get registerPassword => 'Password';
+
+  @override
+  String get registerSubmit => 'Sign up';
+
+  @override
+  String get registerHaveAccount => 'Already have an account? Sign in';
 
   @override
   String get commonConfirm => 'Confirm';

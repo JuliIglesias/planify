@@ -44,6 +44,12 @@ final recentActivityProvider = FutureProvider<List<ActividadLog>>(
   (ref) => ref.watch(activityLogRepositoryProvider).recientes(),
 );
 
+/// Total de actividad sin leer (para el badge de la campana — H-17).
+final unreadTotalProvider = FutureProvider<int>((ref) async {
+  final porEvento = await ref.watch(activityLogRepositoryProvider).noLeidas();
+  return porEvento.values.fold<int>(0, (acc, n) => acc + n);
+});
+
 final eventHeatmapProvider = FutureProvider.family<List<HeatmapSlot>, String>(
   (ref, eventoId) => ref.watch(availabilityRepositoryProvider).heatmap(eventoId),
 );
@@ -66,6 +72,7 @@ void invalidateEventData(WidgetRef ref, String eventoId) {
   ref.invalidate(balanceProvider);
   ref.invalidate(historyProvider);
   ref.invalidate(recentActivityProvider);
+  ref.invalidate(unreadTotalProvider);
 }
 
 /// Refresca los listados de nivel raíz (Home, Groups, Balances, Historial).
@@ -75,4 +82,5 @@ void invalidateListas(WidgetRef ref) {
   ref.invalidate(balanceProvider);
   ref.invalidate(historyProvider);
   ref.invalidate(recentActivityProvider);
+  ref.invalidate(unreadTotalProvider);
 }

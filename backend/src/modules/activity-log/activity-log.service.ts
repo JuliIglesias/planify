@@ -18,6 +18,19 @@ export interface RegistrarActividad {
 }
 
 /**
+ * Puerto mínimo hacia las notificaciones (SCRUM-15). Se inyecta como interfaz
+ * para no acoplar el log a la implementación concreta y para que los tests que
+ * no prueban push no tengan que pasar nada.
+ */
+export interface ActivityNotifier {
+  notificarActividad(input: {
+    eventoId: string;
+    actorParticipanteId: string;
+    tipo: ActivityTypeValue;
+  }): Promise<void>;
+}
+
+/**
  * SCRUM-13 — HU-24/HU-25. El "chat" del charter reinterpretado: un feed
  * automático de lo que pasa en el evento, sin mensajería libre (Duda #9).
  *
@@ -30,11 +43,24 @@ export class ActivityLogService {
     private readonly logs: LogActividadRepository,
     private readonly participantes: ParticipanteRepository,
     private readonly clock: Clock,
+    private readonly notifier?: ActivityNotifier,
   ) {}
 
   async registrar(entrada: RegistrarActividad): Promise<void> {
     await this.logs.create(entrada);
-    // TODO(SCRUM-15/HU-35): enviar la notificación push desde acá.
+    // SCRUM-15/HU-35: la notificación push se dispara desde acá, en un solo
+    // lugar. Si falla el push, no se cae el registro de la actividad.
+    if (this.notifier) {
+      try {
+        await this.notifier.notificarActividad({
+          eventoId: entrada.eventoId,
+          actorParticipanteId: entrada.actorParticipanteId,
+          tipo: entrada.tipo,
+        });
+      } catch {
+        // Notificar es best-effort; el log ya quedó persistido.
+      }
+    }
   }
 
   async listar(eventoId: string): Promise<EntradaLog[]> {

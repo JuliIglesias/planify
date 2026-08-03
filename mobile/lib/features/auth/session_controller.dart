@@ -54,6 +54,20 @@ class SessionController extends AsyncNotifier<Session> {
     });
   }
 
+  /// HU-27 — registro de una cuenta real; deja la sesión iniciada.
+  Future<void> registrar(String nombre, String email, String password) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final api = ref.read(authRepositoryProvider);
+      final storage = ref.read(tokenStorageProvider);
+
+      final res = await api.register(nombre, email, password);
+      await storage.write(StorageKeys.organizerToken, res.token);
+
+      return SesionOrganizador(usuarioId: res.usuarioId, nombre: res.nombre);
+    });
+  }
+
   /// HU-01/HU-02/HU-03 — el anónimo se une a un evento existente por link.
   /// Nunca crea eventos.
   Future<void> unirseComoAnonimo({

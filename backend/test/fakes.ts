@@ -28,6 +28,28 @@ export class FakeIdGenerator implements R.IdGenerator {
   }
 }
 
+export class FakePushNotifier implements R.PushNotifier {
+  /** Registro de envíos, para verificar en tests. */
+  enviados: { tokens: string[]; mensaje: R.MensajePush }[] = [];
+  async enviar(deviceTokens: string[], mensaje: R.MensajePush): Promise<void> {
+    this.enviados.push({ tokens: deviceTokens, mensaje });
+  }
+}
+
+export class FakeDeviceRegistry implements R.DeviceRegistry {
+  private readonly porUsuario = new Map<string, Set<string>>();
+  async registrar(usuarioId: string, deviceToken: string): Promise<void> {
+    const set = this.porUsuario.get(usuarioId) ?? new Set<string>();
+    set.add(deviceToken);
+    this.porUsuario.set(usuarioId, set);
+  }
+  async tokensDe(usuarioIds: string[]): Promise<string[]> {
+    const tokens: string[] = [];
+    for (const id of usuarioIds) for (const t of this.porUsuario.get(id) ?? []) tokens.push(t);
+    return tokens;
+  }
+}
+
 export class FakePasswordHasher implements R.PasswordHasher {
   async hash(plano: string): Promise<string> {
     return `hash(${plano})`;
@@ -59,6 +81,38 @@ export class FakeUsuarioRepository implements R.UsuarioRepository {
     return this.usuarios.filter((u) => ids.includes(u.id));
   }
 
+  async create(data: R.CrearUsuarioData): Promise<D.Usuario> {
+    return this.agregar({
+      nombre: data.nombre,
+      email: data.email,
+      passwordHash: data.passwordHash,
+    });
+  }
+
+  async updateProfile(id: string, data: R.ActualizarPerfilData): Promise<D.Usuario> {
+    const u = this.usuarios.find((x) => x.id === id)!;
+    if (data.nombre !== undefined) u.nombre = data.nombre;
+    if (data.avatarUrl !== undefined) u.avatarUrl = data.avatarUrl;
+    if (data.idiomaPreferido !== undefined) u.idiomaPreferido = data.idiomaPreferido;
+    return u;
+  }
+
+  async updatePassword(id: string, passwordHash: string): Promise<void> {
+    const u = this.usuarios.find((x) => x.id === id)!;
+    u.passwordHash = passwordHash;
+  }
+
+  async search(query: string, exceptoUsuarioId: string): Promise<D.PersonaRef[]> {
+    const q = query.toLowerCase();
+    return this.usuarios
+      .filter(
+        (u) =>
+          u.id !== exceptoUsuarioId &&
+          (u.nombre.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)),
+      )
+      .map((u) => ({ id: u.id, nombre: u.nombre }));
+  }
+
   agregar(parcial: Partial<D.Usuario> = {}): D.Usuario {
     const usuario: D.Usuario = {
       id: nuevoId('usr'),
@@ -75,9 +129,76 @@ export class FakeUsuarioRepository implements R.UsuarioRepository {
   }
 }
 
+export class FakeAmistadRepository implements R.AmistadRepository {
+  amistades: D.Amistad[] = [];
+  constructor(private readonly usuarios?: FakeUsuarioRepository) {}
+
+  private nombreDe(usuarioId: string): string {
+    return this.usuarios?.usuarios.find((u) => u.id === usuarioId)?.nombre ?? usuarioId;
+  }
+
+  async crear(solicitanteId: string, receptorId: string): Promise<D.Amistad> {
+    const amistad: D.Amistad = {
+      id: nuevoId('ami'),
+      usuarioId1: solicitanteId,
+      usuarioId2: receptorId,
+      estado: 'pendiente',
+      createdAt: new Date('2026-01-01'),
+    };
+    this.amistades.push(amistad);
+    return amistad;
+  }
+
+  async findById(id: string) {
+    return this.amistades.find((a) => a.id === id) ?? null;
+  }
+
+  async findEntre(a: string, b: string) {
+    return (
+      this.amistades.find(
+        (x) =>
+          (x.usuarioId1 === a && x.usuarioId2 === b) ||
+          (x.usuarioId1 === b && x.usuarioId2 === a),
+      ) ?? null
+    );
+  }
+
+  async aceptar(id: string) {
+    const amistad = this.amistades.find((a) => a.id === id)!;
+    amistad.estado = 'aceptada';
+    return amistad;
+  }
+
+  async listAmigos(usuarioId: string): Promise<D.PersonaRef[]> {
+    return this.amistades
+      .filter(
+        (a) =>
+          a.estado === 'aceptada' &&
+          (a.usuarioId1 === usuarioId || a.usuarioId2 === usuarioId),
+      )
+      .map((a) => {
+        const otro = a.usuarioId1 === usuarioId ? a.usuarioId2 : a.usuarioId1;
+        return { id: otro, nombre: this.nombreDe(otro) };
+      });
+  }
+
+  async listSolicitudesRecibidas(usuarioId: string): Promise<R.SolicitudAmistad[]> {
+    return this.amistades
+      .filter((a) => a.estado === 'pendiente' && a.usuarioId2 === usuarioId)
+      .map((a) => ({ amistadId: a.id, de: { id: a.usuarioId1, nombre: this.nombreDe(a.usuarioId1) } }));
+  }
+}
+
 export class FakeGrupoRepository implements R.GrupoRepository {
   grupos: D.Grupo[] = [];
   miembros: { grupoId: string; usuarioId: string }[] = [];
+
+  // Opcional: resuelve el nombre real de cada miembro a partir de los usuarios.
+  constructor(private readonly usuarios?: FakeUsuarioRepository) {}
+
+  private nombreDe(usuarioId: string): string {
+    return this.usuarios?.usuarios.find((u) => u.id === usuarioId)?.nombre ?? usuarioId;
+  }
 
   async findById(id: string) {
     return this.grupos.find((g) => g.id === id) ?? null;
@@ -91,8 +212,14 @@ export class FakeGrupoRepository implements R.GrupoRepository {
         ...g,
         miembros: this.miembros
           .filter((m) => m.grupoId === g.id)
-          .map((m) => ({ id: m.usuarioId, nombre: m.usuarioId })),
+          .map((m) => ({ id: m.usuarioId, nombre: this.nombreDe(m.usuarioId) })),
       }));
+  }
+
+  async listMiembros(grupoId: string): Promise<D.PersonaRef[]> {
+    return this.miembros
+      .filter((m) => m.grupoId === grupoId)
+      .map((m) => ({ id: m.usuarioId, nombre: this.nombreDe(m.usuarioId) }));
   }
 
   async create(nombre: string, usuarioIds: string[]): Promise<D.Grupo> {
@@ -163,6 +290,16 @@ export class FakeEventoRepository implements R.EventoRepository {
     });
     evento.creadoPor = organizador.id;
 
+    // H-01: los demás miembros del grupo también participan del evento.
+    for (const m of data.otrosMiembros ?? []) {
+      if (m.usuarioId === data.organizadorUsuarioId) continue;
+      this.participantes!.agregar({
+        eventoId: evento.id,
+        usuarioId: m.usuarioId,
+        nombreDisplay: m.nombre,
+      });
+    }
+
     return { evento, organizador };
   }
 
@@ -179,12 +316,53 @@ export class FakeEventoRepository implements R.EventoRepository {
     return evento;
   }
 
-  async listUpcomingForUsuario(): Promise<R.EventoConResumen[]> {
-    return [];
+  async listUpcomingForUsuario(usuarioId: string, ahora: Date): Promise<R.EventoConResumen[]> {
+    return this.paraUsuario(usuarioId)
+      .filter(
+        (e) =>
+          e.estado === 'planificacion' ||
+          (e.estado === 'confirmado' &&
+            (e.fechaHoraInicio === null || e.fechaHoraInicio >= ahora)),
+      )
+      .map((e) => this.toResumen(e));
   }
-  async listPastForUsuario(): Promise<R.EventoConResumen[]> {
-    return [];
+
+  async listPastForUsuario(usuarioId: string, ahora: Date): Promise<R.EventoConResumen[]> {
+    return this.paraUsuario(usuarioId)
+      .filter(
+        (e) =>
+          e.estado === 'finalizado' ||
+          e.estado === 'cancelado' ||
+          (e.estado === 'confirmado' &&
+            e.fechaHoraInicio !== null &&
+            e.fechaHoraInicio < ahora),
+      )
+      .map((e) => this.toResumen(e));
   }
+
+  private paraUsuario(usuarioId: string): D.Evento[] {
+    const idsDelUsuario = new Set(
+      (this.participantes?.participantes ?? [])
+        .filter((p) => p.usuarioId === usuarioId)
+        .map((p) => p.eventoId),
+    );
+    return this.eventos.filter((e) => idsDelUsuario.has(e.id));
+  }
+
+  private toResumen(e: D.Evento): R.EventoConResumen {
+    const parts = (this.participantes?.participantes ?? []).filter((p) => p.eventoId === e.id);
+    return {
+      ...e,
+      grupoNombre: '',
+      participantes: parts.map((p) => ({
+        id: p.id,
+        nombreDisplay: p.nombreDisplay,
+        estadoAsistencia: p.estadoAsistencia,
+      })),
+      confirmados: parts.filter((p) => p.estadoAsistencia === 'confirmado').length,
+    };
+  }
+
   async listByGrupo(grupoId: string) {
     return this.eventos.filter((e) => e.grupoId === grupoId);
   }
@@ -238,6 +416,20 @@ export class FakeParticipanteRepository implements R.ParticipanteRepository {
       nombreDisplay: data.nombreDisplay,
       esAnonimo: true,
       tokenSesion: data.tokenSesion,
+    });
+  }
+
+  async createParaUsuario(data: R.CrearParticipanteRegistradoData) {
+    const existente = this.participantes.find(
+      (p) => p.eventoId === data.eventoId && p.usuarioId === data.usuarioId,
+    );
+    if (existente) return existente;
+    return this.agregar({
+      eventoId: data.eventoId,
+      usuarioId: data.usuarioId,
+      nombreDisplay: data.nombreDisplay,
+      esAnonimo: false,
+      esOrganizador: false,
     });
   }
 
@@ -574,6 +766,47 @@ export class FakeDisponibilidadRepository implements R.DisponibilidadRepository 
     return this.slots
       .filter((s) => s.eventoId === eventoId && s.participanteId === participanteId)
       .map((s) => ({ diaSemana: s.diaSemana, bloqueHora: s.bloqueHora }));
+  }
+}
+
+export class FakeProfileAvailabilityRepository implements R.ProfileAvailabilityRepository {
+  slots: R.SlotDeUsuario[] = [];
+
+  async replaceForUsuario(usuarioId: string, slots: R.SlotDisponibilidad[]): Promise<void> {
+    this.slots = this.slots.filter((s) => s.usuarioId !== usuarioId);
+    for (const s of slots) this.slots.push({ usuarioId, ...s });
+  }
+
+  async findByUsuario(usuarioId: string): Promise<R.SlotDisponibilidad[]> {
+    return this.slots
+      .filter((s) => s.usuarioId === usuarioId)
+      .map((s) => ({ diaSemana: s.diaSemana, bloqueHora: s.bloqueHora }));
+  }
+
+  async slotsDeUsuarios(usuarioIds: string[]): Promise<R.SlotDeUsuario[]> {
+    return this.slots.filter((s) => usuarioIds.includes(s.usuarioId));
+  }
+}
+
+export class FakeLocationRepository implements R.LocationRepository {
+  ubicaciones: R.UbicacionFavorita[] = [];
+
+  async listByUsuario(usuarioId: string): Promise<R.UbicacionFavorita[]> {
+    return this.ubicaciones.filter((u) => u.usuarioId === usuarioId);
+  }
+
+  async create(usuarioId: string, etiqueta: string, texto: string): Promise<R.UbicacionFavorita> {
+    const u: R.UbicacionFavorita = { id: nuevoId('ubi'), usuarioId, etiqueta, texto };
+    this.ubicaciones.push(u);
+    return u;
+  }
+
+  async findById(id: string): Promise<R.UbicacionFavorita | null> {
+    return this.ubicaciones.find((u) => u.id === id) ?? null;
+  }
+
+  async delete(id: string): Promise<void> {
+    this.ubicaciones = this.ubicaciones.filter((u) => u.id !== id);
   }
 }
 

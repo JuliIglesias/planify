@@ -97,7 +97,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             tooltip: l10n.eventDetailInviteTitle,
             onPressed: !(detalle.value?.estaCancelado ?? false) ? _invitar : null,
           ),
-          if (detalle.value?.organizador != null && !(detalle.value?.estaCancelado ?? false))
+          if ((detalle.value?.soyOrganizador ?? false) && !(detalle.value?.estaCancelado ?? false))
             PopupMenuButton<String>(
               onSelected: (opcion) => switch (opcion) {
                 'cerrar' => _accion(() => ref
@@ -176,10 +176,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               icon: const Icon(Icons.copy, size: 18),
               label: Text(l10n.eventDetailCopyLink),
               onPressed: () async {
+                // Se captura el messenger antes del await para no usar el
+                // BuildContext cruzando un gap async (H-12).
+                final messenger = ScaffoldMessenger.of(context);
                 await Clipboard.setData(ClipboardData(text: inviteLink));
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(content: Text(l10n.eventDetailLinkCopied)),
                   );
                 }
@@ -252,7 +255,14 @@ class _Contenido extends ConsumerWidget {
 
     final habilitado = !ocupado && !evento.estaCancelado;
 
-    return ListView(
+    // Pull-to-refresh: si alguien se une al evento (anónimo por link) después de
+    // abrir esta pantalla, el organizador puede refrescar y verlo (H-02).
+    return RefreshIndicator(
+      onRefresh: () async {
+        invalidateEventData(ref, evento.id);
+        await ref.read(eventDetailProvider(evento.id).future);
+      },
+      child: ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
         Row(
@@ -390,11 +400,11 @@ class _Contenido extends ConsumerWidget {
                             AvailabilitySlot(s.diaSemana, s.bloqueHora): s.disponibles,
                         },
                         // HU-09: tocar un bloque del heatmap confirma el horario.
-                        onSlotTap: habilitado && evento.organizador != null
+                        onSlotTap: habilitado && evento.soyOrganizador
                             ? (slot) => _confirmarHorario(context, ref, slot)
                             : null,
                       ),
-                      if (evento.organizador != null) ...[
+                      if (evento.soyOrganizador) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           l10n.eventDetailTapToConfirm,
@@ -461,6 +471,7 @@ class _Contenido extends ConsumerWidget {
             ),
         const SizedBox(height: AppSpacing.xl),
       ],
+      ),
     );
   }
 
@@ -473,16 +484,29 @@ class _Contenido extends ConsumerWidget {
   }
 
   Future<void> _agregarGasto(BuildContext context, WidgetRef ref) async {
-    final datos = await pedirDatosGasto(context, evento.participantes);
+    // Traer la lista más fresca antes de abrir el diálogo: alguien pudo unirse
+    // (anónimo por link) después de que se cargó la pantalla (H-02). Si el
+    // refetch falla, se usa lo que ya estaba en memoria.
+    var participantes = evento.participantes;
+    try {
+      ref.invalidate(eventDetailProvider(evento.id));
+      participantes = (await ref.read(eventDetailProvider(evento.id).future)).participantes;
+    } catch (_) {
+      // Sin red: seguimos con la lista actual en vez de bloquear la carga.
+    }
+    if (!context.mounted) return;
+
+    final datos = await pedirDatosGasto(context, participantes);
     if (datos == null) return;
 
     await onAccion(
       () => ref.read(expensesRepositoryProvider).crear(
             eventoId: evento.id,
             descripcion: datos.descripcion,
-            montoTotal: datos.monto,
+            montoTotal: datos.montoTotal,
             acreedores: [
-              AporteGasto(participanteId: datos.pagadorId, monto: datos.monto),
+              for (final a in datos.acreedores)
+                AporteGasto(participanteId: a.participanteId, monto: a.monto),
             ],
             dividirEntre: datos.deudoresIds,
           ),

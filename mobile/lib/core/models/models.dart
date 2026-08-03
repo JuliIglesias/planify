@@ -38,6 +38,8 @@ class DetalleEvento {
     required this.tareas,
     this.fechaHoraInicio,
     this.gastos = 0,
+    this.miParticipanteId,
+    this.soyOrganizador = false,
   });
 
   final String id;
@@ -49,12 +51,15 @@ class DetalleEvento {
   final DateTime? fechaHoraInicio;
   final int gastos;
 
+  /// Id del participante que representa a quien mira (el "yo" de la pantalla).
+  final String? miParticipanteId;
+
+  /// Si quien mira ES el organizador. Lo decide el backend a partir del token,
+  /// no la mera existencia de un organizador en la lista (H-04).
+  final bool soyOrganizador;
+
   bool get estaCancelado => estado == 'cancelado';
   bool get estaFinalizado => estado == 'finalizado';
-
-  /// El participante que representa al usuario actual, si es el organizador.
-  Participante? get organizador =>
-      participantes.where((p) => p.esOrganizador).firstOrNull;
 
   factory DetalleEvento.fromJson(Map<String, dynamic> json) => DetalleEvento(
         id: json['id'] as String? ?? '',
@@ -65,6 +70,8 @@ class DetalleEvento {
             ? DateTime.tryParse(json['fechaHoraInicio'] as String)
             : null,
         gastos: json['gastos'] as int? ?? 0,
+        miParticipanteId: json['miParticipanteId'] as String?,
+        soyOrganizador: json['soyOrganizador'] as bool? ?? false,
         participantes: ((json['participantes'] as List<dynamic>?) ?? [])
             .map((p) => Participante.fromJson(p as Map<String, dynamic>))
             .toList(),

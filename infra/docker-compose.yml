@@ -1,9 +1,11 @@
-version: "3.9"
-
 # Réplica local del ambiente de AWS (EC2 + RDS) — ver docs/01-plan-de-ejecucion.md §2
-# y docs/02-decisiones.md (Duda #8 revisada). Docker no está instalado en esta máquina
-# de desarrollo, así que este archivo no se pudo probar acá — revisar con
-# `docker compose -f infra/docker-compose.yml up` apenas se tenga Docker disponible.
+# y docs/02-decisiones.md (Duda #8 revisada).
+#
+# `docker compose -f infra/docker-compose.yml up --build` deja todo listo:
+#  1. postgres arranca y queda "healthy"
+#  2. migrate aplica la migración y carga el usuario organizador semilla (H-07)
+#  3. backend arranca recién cuando migrate terminó OK
+#  4. proxy (Caddy) termina TLS delante del backend (NFR#7, H-03)
 
 services:
   postgres:
@@ -23,6 +25,22 @@ services:
       timeout: 5s
       retries: 5
 
+  # One-shot: aplica migraciones y siembra el organizador. Usa el stage `build`
+  # de la imagen porque ahí están el CLI de Prisma, ts-node y el código fuente
+  # (migraciones + seed), que la imagen final de producción no incluye (H-07).
+  migrate:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: build
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://planify:planify@postgres:5432/planify?schema=public
+    command: sh -c "npx prisma migrate deploy && npm run seed"
+    restart: "no"
+
   backend:
     build:
       context: ../backend
@@ -31,13 +49,37 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://planify:planify@postgres:5432/planify?schema=public
       PORT: 3000
-      NODE_ENV: development
-      JWT_SECRET: dev-secret-change-me
+      NODE_ENV: production
+      # En AWS este secreto viene del entorno, no hardcodeado.
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
     ports:
       - "3000:3000"
 
+  # NFR#7 — cifrado en tránsito. Delante del backend va un reverse proxy que
+  # termina TLS: así la disponibilidad, los gastos y los tokens nunca viajan en
+  # claro. Con CADDY_DOMAIN=localhost usa un certificado interno (dev); con un
+  # dominio real, Caddy saca y renueva el certificado de Let's Encrypt solo.
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      CADDY_DOMAIN: ${CADDY_DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
 volumes:
   planify_postgres_data:
+  caddy_data:
+  caddy_config:

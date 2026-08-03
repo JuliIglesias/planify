@@ -2,11 +2,14 @@ import { PrismaClient } from '@prisma/client';
 
 import {
   BcryptPasswordHasher,
+  ConsolePushNotifier,
+  InMemoryDeviceRegistry,
   JwtTokenService,
   SystemClock,
   UuidGenerator,
 } from './infrastructure/servicios-externos';
 import { PrismaUsuarioRepository } from './infrastructure/prisma/usuario.prisma.repository';
+import { PrismaAmistadRepository } from './infrastructure/prisma/amistad.prisma.repository';
 import { PrismaGrupoRepository } from './infrastructure/prisma/grupo.prisma.repository';
 import { PrismaEventoRepository } from './infrastructure/prisma/evento.prisma.repository';
 import { PrismaParticipanteRepository } from './infrastructure/prisma/participante.prisma.repository';
@@ -16,9 +19,21 @@ import { PrismaTareaRepository } from './infrastructure/prisma/tarea.prisma.repo
 import { PrismaGastoRepository } from './infrastructure/prisma/gasto.prisma.repository';
 import { PrismaDeudaRepository } from './infrastructure/prisma/deuda.prisma.repository';
 import { PrismaLogActividadRepository } from './infrastructure/prisma/log-actividad.prisma.repository';
+import { PrismaProfileAvailabilityRepository } from './infrastructure/prisma/profile-availability.prisma.repository';
+import { PrismaLocationRepository } from './infrastructure/prisma/location.prisma.repository';
 
 import { ActivityLogService } from './modules/activity-log/activity-log.service';
 import { AuthService } from './modules/auth/auth.service';
+import { FriendsService } from './modules/friends/friends.service';
+import { UsersService } from './modules/users/users.service';
+import { NotificationsService } from './modules/notifications/notifications.service';
+import { AiEventsService } from './modules/ai-events/ai-events.service';
+import { ProfileAvailabilityService } from './modules/profile/profile-availability.service';
+import { LocationsService } from './modules/profile/locations.service';
+import {
+  GeminiEventGenerator,
+  HeuristicEventGenerator,
+} from './infrastructure/ai/event-generators';
 import { AvailabilityService } from './modules/availability/availability.service';
 import { DebtsService } from './modules/debts/debts.service';
 import { EventsService } from './modules/events/events.service';
@@ -48,6 +63,12 @@ export interface Container {
     soloParticipante: RequestHandler;
   };
   auth: AuthService;
+  friends: FriendsService;
+  users: UsersService;
+  notifications: NotificationsService;
+  aiEvents: AiEventsService;
+  profileAvailability: ProfileAvailabilityService;
+  locations: LocationsService;
   participants: ParticipantsService;
   invitations: InvitationsService;
   events: EventsService;
@@ -72,24 +93,46 @@ export function createContainer(prisma: PrismaClient): Container {
 
   // ── Repositorios ────────────────────────────────────────────────────────
   const usuarios = new PrismaUsuarioRepository(prisma);
+  const amistades = new PrismaAmistadRepository(prisma);
   const grupos = new PrismaGrupoRepository(prisma);
   const eventos = new PrismaEventoRepository(prisma);
   const participantes = new PrismaParticipanteRepository(prisma);
   const invitaciones = new PrismaInvitacionRepository(prisma);
   const disponibilidad = new PrismaDisponibilidadRepository(prisma);
+  const disponibilidadPerfil = new PrismaProfileAvailabilityRepository(prisma);
+  const ubicaciones = new PrismaLocationRepository(prisma);
   const tareas = new PrismaTareaRepository(prisma);
   const gastos = new PrismaGastoRepository(prisma);
   const deudas = new PrismaDeudaRepository(prisma);
   const logs = new PrismaLogActividadRepository(prisma);
 
+  // ── Servicios externos de notificaciones (SCRUM-15) ──────────────────────
+  // Implementaciones por defecto: loguean el push y guardan devices en memoria.
+  // En producción se reemplazan por SNS/Pinpoint tocando solo estas dos líneas.
+  const push = new ConsolePushNotifier();
+  const deviceRegistry = new InMemoryDeviceRegistry();
+
   // ── Servicios de negocio ────────────────────────────────────────────────
-  const activityLog = new ActivityLogService(logs, participantes, clock);
+  const notifications = new NotificationsService(participantes, deviceRegistry, push);
+  const activityLog = new ActivityLogService(logs, participantes, clock, notifications);
+
+  // Generador de eventos por IA (SCRUM-17): Gemini si hay API key, si no la
+  // heurística offline. Ambos cumplen el mismo contrato (Duda #21).
+  const heuristico = new HeuristicEventGenerator();
+  const eventGenerator = process.env.GEMINI_API_KEY
+    ? new GeminiEventGenerator(process.env.GEMINI_API_KEY, heuristico)
+    : heuristico;
 
   const auth = new AuthService(usuarios, hasher, tokens);
+  const friends = new FriendsService(amistades, usuarios);
+  const users = new UsersService(usuarios);
+  const aiEvents = new AiEventsService(eventGenerator, amistades);
+  const profileAvailability = new ProfileAvailabilityService(disponibilidadPerfil, amistades);
+  const locations = new LocationsService(ubicaciones);
   const participants = new ParticipantsService(participantes, eventos, ids, activityLog);
   const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
   const events = new EventsService(eventos, grupos, participantes, usuarios, activityLog);
-  const eventsQuery = new EventsQueryService(eventos, participantes, deudas, tareas, gastos);
+  const eventsQuery = new EventsQueryService(eventos, participantes, deudas, tareas, gastos, clock);
   const availability = new AvailabilityService(disponibilidad, eventos, events, activityLog);
   const groups = new GroupsService(
     grupos,
@@ -99,6 +142,7 @@ export function createContainer(prisma: PrismaClient): Container {
     gastos,
     activityLog,
     clock,
+    participantes,
   );
   const tasks = new TasksService(tareas, eventos, participantes, activityLog);
   const debts = new DebtsService(
@@ -126,6 +170,12 @@ export function createContainer(prisma: PrismaClient): Container {
       soloParticipante: crearParticipantGuard(tokens, participantes),
     },
     auth,
+    friends,
+    users,
+    notifications,
+    aiEvents,
+    profileAvailability,
+    locations,
     participants,
     invitations,
     events,

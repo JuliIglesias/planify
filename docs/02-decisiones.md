@@ -270,3 +270,9 @@
 - Los montos siempre con su color semántico y con texto que aclare el sentido, nunca solo el color.
 
 **Fecha:** 2026-07-29
+
+## Duda #28 — "Continuar como Anónimo" requiere un link de invitación (registra decisión de implementación — H-08)
+**Contexto:** el mockup de Login muestra un botón "Continuar como Anónimo" que sugiere entrar sin más. Pero un `Participante` anónimo **necesita un evento** al cual unirse (no puede existir suelto), y el anónimo no crea eventos ([Duda #19](#duda-19--quién-crea-eventos-en-el-mvp-si-el-anónimo-no-puede-gap-detectado-por-el-usuario-tras-cerrar-fase-2)).
+**Decisión:** el botón "Continuar como Anónimo" abre un diálogo que **pide el token/link de invitación** (o se dispara automáticamente por deep link). Es coherente con la identidad anónima *scoped* al evento; no hay "anónimo sin evento".
+**Justificación:** se hace explícita la reinterpretación que ya estaba en el código y que la auditoría marcó como desviación no documentada respecto del AC literal de HU-01 (hallazgo H-08). No es un bug: es el comportamiento correcto dado el modelo de datos.
+**Fecha:** 2026-08-02

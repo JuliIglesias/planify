@@ -1,5 +1,6 @@
 import { NotFoundError } from '../../common/errors';
 import {
+  Clock,
   DeudaRepository,
   EventoConResumen,
   EventoRepository,
@@ -30,6 +31,14 @@ export interface DetalleEvento extends Omit<EventoConResumen, 'participantes'> {
   }[];
   tareas: TareaConAsignado[];
   gastos: number;
+  /** Id del participante que hace la request (el "yo" de esta pantalla). */
+  miParticipanteId: string | null;
+  /**
+   * Si el que mira ES el organizador. La UI usa esto (no "existe un organizador
+   * en la lista") para mostrar cancelar/cerrar gastos/confirmar horario: antes
+   * cualquier participante veía esas acciones y le daban 401 (H-04).
+   */
+  soyOrganizador: boolean;
 }
 
 /**
@@ -45,17 +54,18 @@ export class EventsQueryService {
     private readonly deudas: DeudaRepository,
     private readonly tareas: TareaRepository,
     private readonly gastos: GastoRepository,
+    private readonly clock: Clock,
   ) {}
 
   /** Home — "Próximos eventos". */
   async proximosDe(usuarioId: string): Promise<EventoConResumen[]> {
-    return this.eventos.listUpcomingForUsuario(usuarioId);
+    return this.eventos.listUpcomingForUsuario(usuarioId, this.clock.now());
   }
 
   /** Historial — eventos pasados con su estado de saldo. */
   async historialDe(usuarioId: string): Promise<EventoHistorial[]> {
     const [eventos, participaciones] = await Promise.all([
-      this.eventos.listPastForUsuario(usuarioId),
+      this.eventos.listPastForUsuario(usuarioId, this.clock.now()),
       this.participantes.listByUsuario(usuarioId),
     ]);
 
@@ -93,7 +103,7 @@ export class EventsQueryService {
     });
   }
 
-  async detalle(eventoId: string): Promise<DetalleEvento> {
+  async detalle(eventoId: string, participanteId?: string): Promise<DetalleEvento> {
     const evento = await this.eventos.findById(eventoId);
     if (!evento) throw new NotFoundError('Evento no encontrado');
 
@@ -102,6 +112,10 @@ export class EventsQueryService {
       this.tareas.listByEvento(eventoId),
       this.gastos.contarPorEvento([eventoId]),
     ]);
+
+    const yo = participanteId
+      ? participantes.find((p) => p.id === participanteId) ?? null
+      : null;
 
     return {
       ...evento,
@@ -118,6 +132,8 @@ export class EventsQueryService {
       confirmados: participantes.filter((p) => p.estadoAsistencia === 'confirmado').length,
       tareas,
       gastos: gastos[eventoId] ?? 0,
+      miParticipanteId: yo?.id ?? null,
+      soyOrganizador: yo?.esOrganizador ?? false,
     };
   }
 }

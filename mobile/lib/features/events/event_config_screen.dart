@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_scaffold.dart';
@@ -88,35 +89,43 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
         ),
         data: (evento) {
           final habilitado = !_ocupado && !evento.estaCancelado;
+          final miEstado = _miEstadoAsistencia(evento);
 
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: [
               // ── Asistencia (HU-10) ──────────────────────────────────────
+              // El botón elegido queda resaltado — antes los dos se veían
+              // siempre igual sin importar qué habías respondido (Item 4:
+              // daba la sensación de que "No voy" no quedaba guardado).
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   child: Row(
                     children: [
                       Expanded(child: Text(l10n.eventDetailAttendance)),
-                      TextButton(
+                      _BotonAsistencia(
+                        label: l10n.eventDetailNotGoing,
+                        seleccionado: miEstado == 'rechazado',
+                        color: AppColors.danger,
                         onPressed: habilitado
                             ? () => _accion(() => ref
                                 .read(eventsRepositoryProvider)
                                 .responderAsistencia(
                                     eventoId: evento.id, confirma: false))
                             : null,
-                        child: Text(l10n.eventDetailNotGoing),
                       ),
                       const SizedBox(width: AppSpacing.xs),
-                      FilledButton(
+                      _BotonAsistencia(
+                        label: l10n.eventDetailGoing,
+                        seleccionado: miEstado == 'confirmado',
+                        color: AppColors.success,
                         onPressed: habilitado
                             ? () => _accion(() => ref
                                 .read(eventsRepositoryProvider)
                                 .responderAsistencia(
                                     eventoId: evento.id, confirma: true))
                             : null,
-                        child: Text(l10n.eventDetailGoing),
                       ),
                     ],
                   ),
@@ -215,6 +224,17 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
     );
   }
 
+  /// El estado de asistencia de "yo" dentro de este evento, o `null` si
+  /// todavía no respondió (`sin_confirmar`) o no se lo pudo identificar.
+  String? _miEstadoAsistencia(DetalleEvento evento) {
+    for (final p in evento.participantes) {
+      if (p.id == evento.miParticipanteId) {
+        return p.estadoAsistencia == 'sin_confirmar' ? null : p.estadoAsistencia;
+      }
+    }
+    return null;
+  }
+
   Future<void> _confirmarHorario(AvailabilitySlot slot) async {
     // El heatmap trabaja en día de la semana + hora; se traduce a la próxima
     // fecha real que caiga en ese día (la fecha sale de acá, no del alta — F4).
@@ -232,5 +252,36 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
           .read(availabilityRepositoryProvider)
           .confirmarHorario(eventoId: widget.eventoId, fechaHoraInicio: fecha),
     );
+  }
+}
+
+/// Botón de "Voy"/"No voy" — resaltado (relleno + tilde) cuando es la
+/// respuesta actual, apagado (outline) cuando no. Item 4: sin esto, ambos
+/// botones se veían siempre igual y no había forma de saber qué habías
+/// contestado.
+class _BotonAsistencia extends StatelessWidget {
+  const _BotonAsistencia({
+    required this.label,
+    required this.seleccionado,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool seleccionado;
+  final Color color;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    if (seleccionado) {
+      return FilledButton.icon(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(backgroundColor: color),
+        icon: const Icon(Icons.check, size: 16),
+        label: Text(label),
+      );
+    }
+    return OutlinedButton(onPressed: onPressed, child: Text(label));
   }
 }

@@ -75,6 +75,8 @@ class FakeEventsRepository implements EventsRepository {
     // Por defecto la muestra es la vista del organizador; los tests del caso
     // anónimo pasan soyOrganizador: false (H-04).
     bool? soyOrganizador,
+    // Item 4 — para testear qué respondió "yo" en asistencia.
+    String miEstadoAsistencia = 'confirmado',
   }) =>
       DetalleEvento(
         id: 'evt-1',
@@ -85,11 +87,11 @@ class FakeEventsRepository implements EventsRepository {
         soyOrganizador: soyOrganizador ?? conOrganizador,
         participantes: [
           if (conOrganizador)
-            const Participante(
+            Participante(
               id: 'part-1',
               nombreDisplay: 'Marcos',
               esOrganizador: true,
-              estadoAsistencia: 'confirmado',
+              estadoAsistencia: miEstadoAsistencia,
             ),
           const Participante(id: 'part-2', nombreDisplay: 'Sofía', esAnonimo: true),
         ],

@@ -461,3 +461,56 @@ rápidas, "Mi disponibilidad", heatmap del grupo, tareas, log de actividad.
   al repositorio; guardar disponibilidad envía los bloques; un no-organizador
   no ve el hint de confirmar horario.
 - Mobile 38→41, `flutter analyze` limpio.
+
+---
+
+# Fase 4 — 6 mejoras más reportadas por el usuario
+
+> Mismo formato que la Fase 3: cada item con su propia branch/PR y su test.
+> Orden de implementación sugerido por el usuario: 4 → 1 → 3 → 6 → 2 → 5.
+
+## Item 4 — "No voy" no se veía guardado + no excluía del heatmap grupal
+
+**Investigación pedida antes del fix — no era el bug que se sospechaba.**
+Se revisó de punta a punta: mobile llama `responderAsistencia(confirma:
+false)` correctamente, el backend persiste `'rechazado'` bien (ya había un
+test en `events.service.test.ts` que lo cubre y seguía en verde), y no hay
+ningún cableado cruzado entre los botones "Voy"/"No voy". **La causa real:
+la UI nunca mostraba cuál era la respuesta actual** — los dos botones se
+veían siempre idénticos sin importar qué habías contestado, lo que daba la
+sensación de que "No voy" no quedaba guardado.
+
+Lo que sí era un gap real y sin implementar: el heatmap de disponibilidad
+del grupo **contaba a todos los participantes por igual**, sin importar su
+respuesta de asistencia — quien decía "No voy" igual sumaba en el mapa de
+calor si había cargado horarios antes de responder.
+
+**Fix (mobile) — mostrar el estado actual:**
+- `EventConfigScreen`: los botones de asistencia pasan de
+  `TextButton`/`FilledButton` fijos a `_BotonAsistencia`, que se resalta
+  (relleno + ✓) cuando es la respuesta guardada (`evento.miParticipanteId`
+  contra `evento.participantes`) y queda en outline cuando no.
+- Se probó primero con `SegmentedButton<bool>` (M3, selección visual
+  automática) pero sus segmentos internos no son tappeables de forma
+  confiable con `WidgetTester.tap` sobre el texto — se volvió a dos botones
+  independientes con estado manual, más simple y 100% testeable.
+
+**Fix (backend) — excluir del heatmap:**
+- `PrismaDisponibilidadRepository.heatmapForEvento`: el `groupBy` ahora
+  filtra `participante: { estadoAsistencia: { not: 'rechazado' } }` (join
+  contra `Participante`). Es un filtro en tiempo de consulta, no un estado
+  que se guarda aparte — por eso volver a "Voy" hace que sus horarios
+  cuenten de nuevo sin ningún paso extra.
+- `FakeDisponibilidadRepository` (test) ahora recibe una referencia a
+  `FakeParticipanteRepository` para poder replicar el mismo filtro en los
+  tests con fakes.
+
+**Validación:**
+- Backend: `availability.service.test.ts` (nuevo) — cuenta disponibilidad de
+  quien no respondió/confirmó; excluye a quien dijo "No voy"; un bloque
+  donde solo había disponibilidad de un "No voy" desaparece del heatmap;
+  volver a "Voy" reincorpora sus horarios. Backend 96→100.
+- Mobile: `event_config_screen_test.dart` — 2 tests nuevos: tocar "No voy"
+  llama al repositorio con `confirma:false`; el botón que refleja la
+  respuesta actual queda resaltado (ícono ✓) y el otro no. Mobile 41→43,
+  `flutter analyze` limpio.

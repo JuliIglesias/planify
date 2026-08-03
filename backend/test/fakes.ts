@@ -731,6 +731,13 @@ export class FakeInvitacionRepository implements R.InvitacionRepository {
 }
 
 export class FakeDisponibilidadRepository implements R.DisponibilidadRepository {
+  /**
+   * Item 4 — necesita saber el estado de asistencia de cada participante para
+   * excluir a quien dijo "No voy" del heatmap, igual que hace el repositorio
+   * real con el join a `participante` en Prisma.
+   */
+  constructor(private readonly participantes?: FakeParticipanteRepository) {}
+
   slots: { eventoId: string; participanteId: string; diaSemana: number; bloqueHora: number }[] =
     [];
 
@@ -750,6 +757,13 @@ export class FakeDisponibilidadRepository implements R.DisponibilidadRepository 
   async heatmapForEvento(eventoId: string): Promise<R.SlotHeatmap[]> {
     const conteo = new Map<string, number>();
     for (const s of this.slots.filter((x) => x.eventoId === eventoId)) {
+      const participante = this.participantes?.participantes.find(
+        (p) => p.id === s.participanteId,
+      );
+      // Sin repositorio de participantes (tests que no lo necesitan) no se
+      // filtra nada, igual que si nadie hubiera dicho "No voy".
+      if (participante?.estadoAsistencia === 'rechazado') continue;
+
       const clave = `${s.diaSemana}:${s.bloqueHora}`;
       conteo.set(clave, (conteo.get(clave) ?? 0) + 1);
     }

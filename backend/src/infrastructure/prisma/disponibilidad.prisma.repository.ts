@@ -31,7 +31,11 @@ export class PrismaDisponibilidadRepository implements DisponibilidadRepository 
   async heatmapForEvento(eventoId: string): Promise<SlotHeatmap[]> {
     const grupos = await this.prisma.disponibilidadSlot.groupBy({
       by: ['diaSemana', 'bloqueHora'],
-      where: { eventoId },
+      // Item 4 — quien dijo "No voy" no debe contar en la disponibilidad
+      // grupal, aunque haya cargado horarios antes de responder. Si después
+      // vuelve a "Voy", el filtro deja de excluirlo solo (no hay nada que
+      // restaurar: se lee el estado actual en cada consulta).
+      where: { eventoId, participante: { estadoAsistencia: { not: 'rechazado' } } },
       _count: { participanteId: true },
     });
 

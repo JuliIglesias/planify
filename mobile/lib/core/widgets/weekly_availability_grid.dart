@@ -34,6 +34,7 @@ class WeeklyAvailabilityGrid extends StatelessWidget {
     this.totalParticipantes = 0,
     this.onToggle,
     this.onSlotTap,
+    this.slotFijado,
   });
 
   /// Primera franja mostrada, en horas (ej. 8 = 08:00).
@@ -47,6 +48,12 @@ class WeeklyAvailabilityGrid extends StatelessWidget {
 
   final ValueChanged<AvailabilitySlot>? onToggle;
   final ValueChanged<AvailabilitySlot>? onSlotTap;
+
+  /// Item 5 — el horario que el organizador ya fijó para el evento (HU-09).
+  /// Se distingue del resto del heatmap con otro color + una estrella, para
+  /// que se note que es EL horario elegido y no solo un bloque con buena
+  /// disponibilidad.
+  final AvailabilitySlot? slotFijado;
 
   bool get _esHeatmap => onToggle == null;
 
@@ -101,6 +108,7 @@ class WeeklyAvailabilityGrid extends StatelessWidget {
                       disponibles: heatmap[AvailabilitySlot(dia, horaInicio + fila)] ?? 0,
                       totalParticipantes: totalParticipantes,
                       esHeatmap: _esHeatmap,
+                      esFijado: slotFijado == AvailabilitySlot(dia, horaInicio + fila),
                       onTap: () {
                         final slot = AvailabilitySlot(dia, horaInicio + fila);
                         onToggle?.call(slot);
@@ -124,6 +132,7 @@ class _Celda extends StatelessWidget {
     required this.totalParticipantes,
     required this.esHeatmap,
     required this.onTap,
+    this.esFijado = false,
   });
 
   final AvailabilitySlot slot;
@@ -131,12 +140,17 @@ class _Celda extends StatelessWidget {
   final int disponibles;
   final int totalParticipantes;
   final bool esHeatmap;
+  final bool esFijado;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final Color color;
-    if (esHeatmap) {
+    if (esFijado) {
+      // Item 5 — el horario ya elegido por el organizador se distingue del
+      // resto del heatmap: no es "buena disponibilidad", es EL horario.
+      color = AppColors.warning;
+    } else if (esHeatmap) {
       // Cuanta más gente puede, más saturado el azul.
       final ratio = totalParticipantes == 0 ? 0.0 : disponibles / totalParticipantes;
       color = ratio == 0
@@ -148,7 +162,8 @@ class _Celda extends StatelessWidget {
 
     return Semantics(
       button: true,
-      selected: seleccionado,
+      selected: seleccionado || esFijado,
+      label: esFijado ? 'Horario confirmado' : null,
       child: GestureDetector(
         onTap: onTap,
         child: Container(
@@ -159,20 +174,24 @@ class _Celda extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             border: Border.all(color: AppColors.border, width: 0.5),
           ),
-          child: esHeatmap && disponibles > 0
-              ? Center(
-                  child: Text(
-                    '$disponibles',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: disponibles / (totalParticipantes == 0 ? 1 : totalParticipantes) > 0.5
-                          ? Colors.white
-                          : AppColors.textPrimary,
-                    ),
-                  ),
-                )
-              : null,
+          child: esFijado
+              ? const Center(child: Icon(Icons.star, size: 14, color: Colors.white))
+              : (esHeatmap && disponibles > 0
+                  ? Center(
+                      child: Text(
+                        '$disponibles',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color:
+                              disponibles / (totalParticipantes == 0 ? 1 : totalParticipantes) >
+                                      0.5
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
+                        ),
+                      ),
+                    )
+                  : null),
         ),
       ),
     );

@@ -123,5 +123,36 @@ void main() {
 
       expect(find.text('3'), findsOneWidget);
     });
+
+    testWidgets(
+        'el horario fijado se distingue con una estrella en vez del conteo '
+        '(Item 5)', (tester) async {
+      await tester.pumpWidget(
+        _wrap(WeeklyAvailabilityGrid(
+          horaInicio: 10,
+          horaFin: 12,
+          totalParticipantes: 5,
+          heatmap: {const AvailabilitySlot(0, 10): 3},
+          slotFijado: const AvailabilitySlot(0, 10),
+        )),
+      );
+
+      // No se ve el número de disponibles ahí: se ve la estrella.
+      expect(find.text('3'), findsNothing);
+      expect(find.byIcon(Icons.star), findsOneWidget);
+    });
+
+    testWidgets('sin slotFijado no aparece ninguna estrella', (tester) async {
+      await tester.pumpWidget(
+        _wrap(WeeklyAvailabilityGrid(
+          horaInicio: 10,
+          horaFin: 12,
+          totalParticipantes: 5,
+          heatmap: {const AvailabilitySlot(0, 10): 3},
+        )),
+      );
+
+      expect(find.byIcon(Icons.star), findsNothing);
+    });
   });
 }

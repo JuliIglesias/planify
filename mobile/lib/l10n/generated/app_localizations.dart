@@ -176,6 +176,24 @@ abstract class AppLocalizations {
   /// **'Para entrar como anónimo necesitás un link de invitación a un evento.'**
   String get loginAnonymousHint;
 
+  /// No description provided for @loginAnonymousLinkLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Link de invitación'**
+  String get loginAnonymousLinkLabel;
+
+  /// No description provided for @loginAnonymousNameLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu nombre'**
+  String get loginAnonymousNameLabel;
+
+  /// No description provided for @loginAnonymousNameHint.
+  ///
+  /// In es, this message translates to:
+  /// **'ej. Sofía'**
+  String get loginAnonymousNameHint;
+
   /// No description provided for @navHome.
   ///
   /// In es, this message translates to:

@@ -54,6 +54,57 @@ void main() {
     expect(auth.llamadas, contains('login:organizador@planify.test'));
   });
 
+  testWidgets(
+      'continuar como anónimo pide link + nombre en un solo paso y crea la sesión (Item 5)',
+      (tester) async {
+    final auth = FakeAuthRepository();
+
+    await tester.pumpWidget(appDePrueba(const LoginScreen(), auth: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.loginContinueAnonymous));
+    await tester.pumpAndSettle();
+
+    // Un solo diálogo, no dos pasos separados (evita el doble prompt).
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text(l10n.loginAnonymousLinkLabel), findsOneWidget);
+    expect(find.text(l10n.loginAnonymousNameLabel), findsOneWidget);
+
+    final campos = find.byType(TextField);
+    await tester.enterText(campos.at(2), 'planify://invite/f210607e');
+    await tester.enterText(campos.at(3), 'Sofía');
+
+    await tester.tap(find.text(l10n.commonConfirm));
+    await tester.pumpAndSettle();
+
+    // El nombre viaja junto con el token: el anónimo queda registrado como
+    // Participante real desde el primer paso (H-01/H-02 siguen valiendo).
+    expect(auth.llamadas, contains('anonimo:evt-1:Sofía'));
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  testWidgets('el confirmar del diálogo de anónimo queda deshabilitado sin nombre (Item 5)',
+      (tester) async {
+    final auth = FakeAuthRepository();
+
+    await tester.pumpWidget(appDePrueba(const LoginScreen(), auth: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.loginContinueAnonymous));
+    await tester.pumpAndSettle();
+
+    final campos = find.byType(TextField);
+    await tester.enterText(campos.at(2), 'planify://invite/f210607e');
+    // No se completa el nombre.
+
+    await tester.tap(find.text(l10n.commonConfirm));
+    await tester.pumpAndSettle();
+
+    // El diálogo sigue abierto: no se puede unir como anónimo sin nombre.
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(auth.llamadas, isEmpty);
+  });
+
   testWidgets('muestra un mensaje si las credenciales fallan', (tester) async {
     final auth = FakeAuthRepository(fallaLogin: true);
 

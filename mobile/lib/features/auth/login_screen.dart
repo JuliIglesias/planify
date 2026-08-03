@@ -68,6 +68,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
   }
 
+  /// Deep link entrante: el token ya viene resuelto por la URI, solo falta el
+  /// nombre. Un único diálogo (HU-01) — evita el doble prompt reportado al
+  /// abrir un link de invitación.
   Future<void> _unirseConToken(String tokenInput) async {
     final cleanToken = tokenInput
         .replaceAll('planify://invite/', '')
@@ -85,7 +88,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (!mounted) return;
 
-      final unirse = await showDialog<bool>(
+      final nombre = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(l10n.eventDetailInviteTitle),
@@ -93,25 +96,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Te invitaron a un evento. Ingresá tu nombre para unirte:'),
+              Text(l10n.loginAnonymousNameLabel),
               const SizedBox(height: AppSpacing.sm),
               TextField(
                 controller: nombreController,
                 autofocus: true,
-                decoration: const InputDecoration(hintText: 'Tu nombre (ej. Sofía)'),
+                decoration: InputDecoration(hintText: l10n.loginAnonymousNameHint),
               ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
+              onPressed: () => Navigator.pop(ctx),
               child: Text(l10n.commonCancel),
             ),
             FilledButton(
               onPressed: () {
-                if (nombreController.text.trim().isNotEmpty) {
-                  Navigator.pop(ctx, true);
-                }
+                final nombre = nombreController.text.trim();
+                if (nombre.isNotEmpty) Navigator.pop(ctx, nombre);
               },
               child: Text(l10n.commonConfirm),
             ),
@@ -119,39 +121,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
       );
 
-      if (unirse == true && mounted) {
-        await ref.read(sessionControllerProvider.notifier).unirseComoAnonimo(
-              eventoId: eventoId,
-              nombreDisplay: nombreController.text.trim(),
-            );
+      if (nombre != null && mounted) {
+        await _unirseComoAnonimo(eventoId: eventoId, nombreDisplay: nombre);
       }
     } catch (err) {
       if (mounted) _mensaje('No se pudo resolver la invitación: $err');
     } finally {
-      nombreController.dispose();
+      // Se difiere al próximo frame: el diálogo todavía puede estar animando
+      // su cierre y el TextField sigue usando el controller en ese frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) => nombreController.dispose());
     }
   }
 
-  Future<void> _pedirTokenManual() async {
+  /// "Continuar como Anónimo": un único paso pidiendo el link de invitación y
+  /// el nombre para mostrar (HU-01). El anónimo nunca se crea sin nombre — así
+  /// queda registrado como Participante real y aparece en listas de
+  /// miembros/gastos/disponibilidad (H-01/H-02).
+  Future<void> _continuarComoAnonimo() async {
     final l10n = AppLocalizations.of(context)!;
     final tokenController = TextEditingController();
+    final nombreController = TextEditingController();
 
-    final token = await showDialog<String>(
+    final datos = await showDialog<(String, String)>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Unirse por invitación'),
+        title: Text(l10n.loginContinueAnonymous),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(l10n.loginAnonymousHint),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.md),
+            Text(l10n.loginAnonymousLinkLabel),
+            const SizedBox(height: AppSpacing.xs),
             TextField(
               controller: tokenController,
               autofocus: true,
               decoration: const InputDecoration(
                 hintText: 'ej. planify://invite/f210607e...',
               ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(l10n.loginAnonymousNameLabel),
+            const SizedBox(height: AppSpacing.xs),
+            TextField(
+              controller: nombreController,
+              decoration: InputDecoration(hintText: l10n.loginAnonymousNameHint),
             ),
           ],
         ),
@@ -161,19 +176,57 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Text(l10n.commonCancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(ctx, tokenController.text.trim()),
-            child: Text(l10n.eventNext),
+            onPressed: () {
+              final token = tokenController.text.trim();
+              final nombre = nombreController.text.trim();
+              if (token.isNotEmpty && nombre.isNotEmpty) {
+                Navigator.pop(ctx, (token, nombre));
+              }
+            },
+            child: Text(l10n.commonConfirm),
           ),
         ],
       ),
     );
 
-    tokenController.dispose();
+    // Se difiere al próximo frame: el diálogo todavía puede estar animando
+    // su cierre y los TextField siguen usando los controllers en ese frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      tokenController.dispose();
+      nombreController.dispose();
+    });
 
-    if (token != null && token.isNotEmpty) {
-      await _unirseConToken(token);
+    if (datos == null) return;
+    await _unirseConTokenYNombre(datos.$1, datos.$2);
+  }
+
+  /// Resuelve el token de invitación y une con el nombre ya recolectado, sin
+  /// mostrar ningún diálogo adicional.
+  Future<void> _unirseConTokenYNombre(String tokenInput, String nombreDisplay) async {
+    final cleanToken = tokenInput
+        .replaceAll('planify://invite/', '')
+        .replaceAll('planify://', '')
+        .trim();
+    if (cleanToken.isEmpty) return;
+
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final eventoId = await authRepo.resolverInvitacion(cleanToken);
+      if (!mounted) return;
+      await _unirseComoAnonimo(eventoId: eventoId, nombreDisplay: nombreDisplay);
+    } catch (err) {
+      if (mounted) _mensaje('No se pudo resolver la invitación: $err');
     }
   }
+
+  Future<void> _unirseComoAnonimo({
+    required String eventoId,
+    required String nombreDisplay,
+  }) =>
+      ref.read(sessionControllerProvider.notifier).unirseComoAnonimo(
+            eventoId: eventoId,
+            nombreDisplay: nombreDisplay,
+          );
 
 
   Future<void> _ingresar() async {
@@ -261,7 +314,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Text(l10n.loginOr, style: theme.textTheme.bodySmall),
                 const SizedBox(height: AppSpacing.md),
                 OutlinedButton.icon(
-                  onPressed: cargando ? null : _pedirTokenManual,
+                  onPressed: cargando ? null : _continuarComoAnonimo,
                   icon: const Icon(Icons.visibility_off_outlined),
                   label: Text(l10n.loginContinueAnonymous),
                   style: OutlinedButton.styleFrom(

@@ -12,7 +12,7 @@
 | Backend Jest | 70 | 84 ✅ |
 | Backend `tsc` | ✅ | ✅ |
 | Backend `eslint .` (ampliado) | 2 err | 0 ✅ |
-| Mobile `flutter test` | 26 | 27 ✅ |
+| Mobile `flutter test` | 26 | 29 ✅ |
 | Mobile `flutter analyze` | 2 info | 0 ✅ |
 
 ---
@@ -201,3 +201,47 @@ Backend 87→**90** tests; mobile analyze sin issues, 27 tests. Nueva migración
 **Validación:** `extras.test.ts` (disponibilidad de perfil con validación de
 rangos y reemplazo; coincidencias que cuentan por bloque; ubicaciones con
 ownership). Mobile: analyze limpio, 27 tests.
+
+---
+
+# Fase 3 — 5 issues de UX/funcionalidad reportados por el usuario
+
+> Cada item tiene su propia branch/PR. Se implementan en orden 5 → 2 → 1 → 3 → 4
+> porque el 2 reutiliza el paso de username del 5, y el 4 reestructura la
+> pantalla de evento apoyándose en el 1 (carrusel de grupos) y el 3 (grillas
+> colapsables).
+
+## Item 5 — "Continuar como Anónimo" ahora pide un username en un solo paso
+
+**Causa raíz:** el botón "Continuar como Anónimo" (`login_screen.dart`) abría
+un diálogo pidiendo el **link de invitación** (`_pedirTokenManual`) y, recién
+después de resolverlo, un **segundo diálogo separado** pedía el nombre
+(`_unirseConToken`) — dos pasos secuenciales con títulos distintos ("Unirse
+por invitación" y luego "Invitar al evento"), lo cual coincide con el hallazgo
+[H-08](04-auditoria.md#h-08) (el botón se desvía del mockup/HU-01). El dato de
+`nombreDisplay` en sí **ya era obligatorio** antes de crear la sesión anónima
+(el fix de [H-01](#h-01-los-miembros-del-grupo-ahora-se-vuelven-participantes-del-evento-bloqueante)/[H-02](#h-02-lista-de-participantes-fresca-al-asignar-un-gasto-bloqueante)
+sigue vigente y no se tocó), pero la experiencia de "dos diálogos seguidos"
+es la raíz de la confusión reportada.
+
+**Fix:**
+- `_continuarComoAnonimo` (antes `_pedirTokenManual`) muestra **un único
+  diálogo** con dos campos — link de invitación y nombre — y solo cierra
+  cuando ambos están completos. Resuelve la invitación y crea la sesión
+  anónima sin ningún paso intermedio adicional.
+- `_unirseConToken` (usado por el deep link, ver Item 2) se simplificó para
+  pedir solo el nombre, ya que el token viaja en la URI.
+- **Bug real encontrado al testear:** los `TextEditingController` de ambos
+  diálogos se disponían sincrónicamente apenas el `await showDialog` volvía,
+  pero el diálogo todavía estaba animando su cierre y el `TextField` seguía
+  usando el controller en ese frame → `TextEditingController was used after
+  being disposed`. Estaba latente en el código original (nadie lo había
+  testeado end-to-end). Se corrige difiriendo el `dispose()` a
+  `WidgetsBinding.instance.addPostFrameCallback`.
+- Nuevas claves i18n ES/EN: `loginAnonymousLinkLabel`, `loginAnonymousNameLabel`,
+  `loginAnonymousNameHint`.
+
+**Validación:** `login_screen_test.dart` — 2 tests nuevos: el diálogo único
+pide link+nombre y crea la sesión (`FakeAuthRepository.llamadas` contiene
+`anonimo:evt-1:Sofía`), y no se puede confirmar sin nombre. Mobile 27→29,
+`flutter analyze` limpio.

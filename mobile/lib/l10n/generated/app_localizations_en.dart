@@ -49,6 +49,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'To join as a guest you need an event invitation link.';
 
   @override
+  String get loginAnonymousLinkLabel => 'Invitation link';
+
+  @override
+  String get loginAnonymousNameLabel => 'Your name';
+
+  @override
+  String get loginAnonymousNameHint => 'e.g. Sofía';
+
+  @override
   String get navHome => 'Home';
 
   @override

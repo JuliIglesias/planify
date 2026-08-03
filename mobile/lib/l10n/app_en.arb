@@ -97,6 +97,26 @@
   "eventNewGroupName": "Group name",
   "eventCreateError": "We couldn't create the event",
   "eventDateComesLater": "The date is set later, once everyone shares their availability",
+  "eventAiButton": "Generate with AI",
+  "eventAiTitle": "Describe your event",
+  "eventAiHint": "E.g.: a barbecue at Juli's place with Marcos and Sofía",
+  "eventAiGenerate": "Generate",
+  "eventAiUnmatched": "Couldn't find these among your friends: {nombres}",
+  "@eventAiUnmatched": {
+    "placeholders": {
+      "nombres": { "type": "String" }
+    }
+  },
+  "eventSavedPlaces": "Saved places",
+  "eventSavePlace": "Save this place",
+  "eventPlaceLabelHint": "Label (e.g. Juli's place)",
+  "friendMatchesTitle": "Matches with friends",
+  "friendMatchesHint": "Slots where you and your friends ({count}) overlap. Darker = more people free.",
+  "@friendMatchesHint": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "eventDetailAvailability": "Group availability",
   "eventDetailMyAvailability": "My availability",
   "eventDetailSaveAvailability": "Save availability",
@@ -222,7 +242,23 @@
   "eventDetailAssignTo": "Assign to someone",
   "eventDetailTapToConfirm": "Tap a block on the map to confirm the time",
   "eventDetailWhoPaid": "Who paid?",
+  "eventDetailDivideBetween": "Divide between:",
+  "eventDetailSelectAtLeastOne": "Select at least one person",
   "eventDetailExpenseInvalid": "Enter a description and a valid amount",
+  "eventDetailSplitEqually": "Split",
+  "eventDetailPayersMustSum": "The payers' contributions must add up to the total",
+  "eventDetailContributed": "Contributed: ${aportado} of ${total}",
+  "@eventDetailContributed": {
+    "placeholders": {
+      "aportado": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "eventDetailInvite": "Invite",
+  "eventDetailInviteTitle": "Invite to event",
+  "eventDetailInviteHint": "Share this invitation link with your friends so they can join the event:",
+  "eventDetailCopyLink": "Copy link",
+  "eventDetailLinkCopied": "Invitation link copied to clipboard!",
   "groupsManage": "Manage group",
   "groupsRename": "Rename",
   "groupsAddMember": "Add friend",
@@ -231,6 +267,31 @@
   "groupsMembers": "Members",
   "groupsNewName": "New name",
   "groupsFriendId": "Friend ID",
+  "friendsPickTitle": "Pick friends",
+  "friendsEmpty": "You have no friends to add yet. Add friends from your profile.",
+  "friendsPickConfirm": "Add ({count})",
+  "@friendsPickConfirm": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "friendsTitle": "My friends",
+  "friendsSearchHint": "Search by name or email",
+  "friendsAdd": "Add",
+  "friendsRequests": "Requests",
+  "friendsAccept": "Accept",
+  "friendsRequestSent": "Request sent",
+  "friendsNoResults": "No results",
+  "profileEdit": "Edit profile",
+  "profileName": "Name",
+  "profileLanguage": "Language",
+  "profileSave": "Save",
+  "registerTitle": "Create account",
+  "registerName": "Name",
+  "registerEmail": "Email",
+  "registerPassword": "Password",
+  "registerSubmit": "Sign up",
+  "registerHaveAccount": "Already have an account? Sign in",
   "commonConfirm": "Confirm",
   "activityExpensesClosed": "{actor} closed the expenses",
   "@activityExpensesClosed": {

@@ -8,6 +8,8 @@ abstract final class StorageKeys {
   static const organizerToken = 'organizer_token';
   static const participantToken = 'participant_token';
   static const anonEventId = 'anon_event_id';
+  static const profileAvailability = 'profile_availability';
+  static const localeCode = 'locale_code';
 }
 
 /// Interfaz mínima de almacenamiento. Existe para que el código de la app no

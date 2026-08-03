@@ -382,6 +382,26 @@ void main() {
       expect(events.llamadas, isEmpty);
     });
 
+    testWidgets('un anónimo no ve las acciones de organizador (H-04)', (tester) async {
+      // Vista del organizador: el menú (cancelar / cerrar gastos) está.
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(appDePrueba(const EventDetailScreen(eventoId: 'evt-1')));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+
+      // Vista de un participante no-organizador: el menú NO está (antes lo veía
+      // y las acciones le devolvían 401).
+      final anon = FakeEventsRepository(
+        detalleEvento: FakeEventsRepository.detalleDeEjemplo(soyOrganizador: false),
+      );
+      await tester.pumpWidget(
+        appDePrueba(const EventDetailScreen(eventoId: 'evt-1'), events: anon),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.more_vert), findsNothing);
+      expect(find.text(l10n.eventDetailTapToConfirm), findsNothing);
+    });
+
     testWidgets('el feed traduce los tipos de actividad (HU-24)', (tester) async {
       final activityLog = FakeActivityLogRepository(
         entradas: [

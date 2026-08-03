@@ -8,9 +8,10 @@ final apiClientProvider = Provider<Dio>((ref) {
 
   final dio = Dio(
     BaseOptions(
-      // 10.0.2.2 es el localhost de la máquina desde el emulador de Android.
-      // Al desplegar, apuntar al EC2 del ambiente demo (ver infra/README.md):
-      //   flutter run --dart-define=PLANIFY_API_URL=http://<ec2-host>:3000
+      // 10.0.2.2 es el localhost de la máquina desde el emulador de Android
+      // (dev, HTTP directo al backend). Al desplegar, apuntar al proxy TLS del
+      // ambiente demo por HTTPS — NFR#7, cifrado en tránsito (ver infra/Caddyfile):
+      //   flutter run --dart-define=PLANIFY_API_URL=https://<dominio-demo>
       baseUrl: const String.fromEnvironment(
         'PLANIFY_API_URL',
         defaultValue: 'http://10.0.2.2:3000',

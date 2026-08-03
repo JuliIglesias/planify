@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { AsistenciaEstado, Participante } from '../../domain/entities';
 import {
   CrearParticipanteAnonimoData,
+  CrearParticipanteRegistradoData,
   ParticipanteRepository,
 } from '../../domain/repositories';
 import { toParticipante } from './mappers';
@@ -51,6 +52,25 @@ export class PrismaParticipanteRepository implements ParticipanteRepository {
         nombreDisplay: data.nombreDisplay,
         esAnonimo: true,
         tokenSesion: data.tokenSesion,
+      },
+    });
+    return toParticipante(row);
+  }
+
+  async createParaUsuario(data: CrearParticipanteRegistradoData): Promise<Participante> {
+    // Idempotente: si el usuario ya participa de este evento, no se duplica.
+    const existente = await this.prisma.participante.findFirst({
+      where: { eventoId: data.eventoId, usuarioId: data.usuarioId },
+    });
+    if (existente) return toParticipante(existente);
+
+    const row = await this.prisma.participante.create({
+      data: {
+        eventoId: data.eventoId,
+        usuarioId: data.usuarioId,
+        nombreDisplay: data.nombreDisplay,
+        esAnonimo: false,
+        esOrganizador: false,
       },
     });
     return toParticipante(row);

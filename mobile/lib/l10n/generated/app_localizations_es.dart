@@ -227,6 +227,40 @@ class AppLocalizationsEs extends AppLocalizations {
       'La fecha se define después, cuando todos carguen su disponibilidad';
 
   @override
+  String get eventAiButton => 'Generar con IA';
+
+  @override
+  String get eventAiTitle => 'Describí tu evento';
+
+  @override
+  String get eventAiHint => 'Ej: un asado en casa de Juli con Marcos y Sofía';
+
+  @override
+  String get eventAiGenerate => 'Generar';
+
+  @override
+  String eventAiUnmatched(String nombres) {
+    return 'No encontré entre tus amigos a: $nombres';
+  }
+
+  @override
+  String get eventSavedPlaces => 'Ubicaciones guardadas';
+
+  @override
+  String get eventSavePlace => 'Guardar esta ubicación';
+
+  @override
+  String get eventPlaceLabelHint => 'Etiqueta (ej. Casa de Juli)';
+
+  @override
+  String get friendMatchesTitle => 'Coincidencias con amigos';
+
+  @override
+  String friendMatchesHint(int count) {
+    return 'Bloques donde vos y tus amigos ($count) coinciden. Más intenso = más gente libre.';
+  }
+
+  @override
   String get eventDetailAvailability => 'Disponibilidad del grupo';
 
   @override
@@ -395,8 +429,44 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventDetailWhoPaid => '¿Quién pagó?';
 
   @override
+  String get eventDetailDivideBetween => '¿Entre quiénes se divide?';
+
+  @override
+  String get eventDetailSelectAtLeastOne =>
+      'Debe seleccionar al menos una persona';
+
+  @override
   String get eventDetailExpenseInvalid =>
       'Completá una descripción y un monto válido';
+
+  @override
+  String get eventDetailSplitEqually => 'Repartir';
+
+  @override
+  String get eventDetailPayersMustSum =>
+      'Los aportes de los pagadores deben sumar el total';
+
+  @override
+  String eventDetailContributed(String aportado, String total) {
+    return 'Aportado: \$$aportado de \$$total';
+  }
+
+  @override
+  String get eventDetailInvite => 'Invitar';
+
+  @override
+  String get eventDetailInviteTitle => 'Invitar al evento';
+
+  @override
+  String get eventDetailInviteHint =>
+      'Compartí este enlace de invitación con tus amigos para que se sumen al evento:';
+
+  @override
+  String get eventDetailCopyLink => 'Copiar enlace';
+
+  @override
+  String get eventDetailLinkCopied =>
+      '¡Enlace de invitación copiado al portapapeles!';
 
   @override
   String get groupsManage => 'Administrar grupo';
@@ -422,6 +492,69 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get groupsFriendId => 'ID del amigo';
+
+  @override
+  String get friendsPickTitle => 'Elegir amigos';
+
+  @override
+  String get friendsEmpty =>
+      'Todavía no tenés amigos para agregar. Agregá amigos desde tu perfil.';
+
+  @override
+  String friendsPickConfirm(int count) {
+    return 'Agregar ($count)';
+  }
+
+  @override
+  String get friendsTitle => 'Mis amigos';
+
+  @override
+  String get friendsSearchHint => 'Buscar por nombre o email';
+
+  @override
+  String get friendsAdd => 'Agregar';
+
+  @override
+  String get friendsRequests => 'Solicitudes';
+
+  @override
+  String get friendsAccept => 'Aceptar';
+
+  @override
+  String get friendsRequestSent => 'Solicitud enviada';
+
+  @override
+  String get friendsNoResults => 'Sin resultados';
+
+  @override
+  String get profileEdit => 'Editar perfil';
+
+  @override
+  String get profileName => 'Nombre';
+
+  @override
+  String get profileLanguage => 'Idioma';
+
+  @override
+  String get profileSave => 'Guardar';
+
+  @override
+  String get registerTitle => 'Crear cuenta';
+
+  @override
+  String get registerName => 'Nombre';
+
+  @override
+  String get registerEmail => 'Email';
+
+  @override
+  String get registerPassword => 'Contraseña';
+
+  @override
+  String get registerSubmit => 'Registrarme';
+
+  @override
+  String get registerHaveAccount => '¿Ya tenés cuenta? Ingresar';
 
   @override
   String get commonConfirm => 'Confirmar';

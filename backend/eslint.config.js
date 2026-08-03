@@ -21,6 +21,14 @@ module.exports = tseslint.config(
     },
   },
   {
+    // Los archivos de configuración (este mismo, jest.config.js) son CommonJS
+    // legítimo: no tiene sentido prohibirles `require()` (H-11).
+    files: ['**/*.js'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
     ignores: ['dist/**', 'node_modules/**', 'coverage/**'],
   },
 );

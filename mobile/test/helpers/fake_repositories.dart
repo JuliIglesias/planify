@@ -31,6 +31,13 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<SesionOrganizadorDto> register(String nombre, String email, String password) async {
+    llamadas.add('register:$email');
+    if (fallaLogin) throw Exception('No se pudo registrar');
+    return SesionOrganizadorDto(token: 'token-test', usuarioId: 'usr-1', nombre: nombre);
+  }
+
+  @override
   Future<SesionAnonimaDto> unirseComoAnonimo({
     required String eventoId,
     required String nombreDisplay,
@@ -59,12 +66,17 @@ class FakeEventsRepository implements EventsRepository {
     String estado = 'planificacion',
     List<Tarea> tareas = const [],
     bool conOrganizador = true,
+    // Por defecto la muestra es la vista del organizador; los tests del caso
+    // anónimo pasan soyOrganizador: false (H-04).
+    bool? soyOrganizador,
   }) =>
       DetalleEvento(
         id: 'evt-1',
         nombre: 'Asado en lo de Marcos',
         lugarTexto: 'Casa de Nacho',
         estado: estado,
+        miParticipanteId: 'part-1',
+        soyOrganizador: soyOrganizador ?? conOrganizador,
         participantes: [
           if (conOrganizador)
             const Participante(
@@ -115,9 +127,13 @@ class FakeEventsRepository implements EventsRepository {
 }
 
 class FakeAvailabilityRepository implements AvailabilityRepository {
-  FakeAvailabilityRepository({this.slots = const []});
+  FakeAvailabilityRepository({
+    this.slots = const [],
+    this.misSlots = const [],
+  });
 
   List<HeatmapSlot> slots;
+  List<({int diaSemana, int bloqueHora})> misSlots;
   final List<String> llamadas = [];
 
   @override
@@ -125,8 +141,12 @@ class FakeAvailabilityRepository implements AvailabilityRepository {
     required String eventoId,
     required List<({int diaSemana, int bloqueHora})> slots,
   }) async {
+    misSlots = slots;
     llamadas.add('guardar:${slots.length}');
   }
+
+  @override
+  Future<List<({int diaSemana, int bloqueHora})>> obtenerMiDisponibilidad(String eventoId) async => misSlots;
 
   @override
   Future<List<HeatmapSlot>> heatmap(String eventoId) async => slots;
@@ -179,6 +199,7 @@ class FakeExpensesRepository implements ExpensesRepository {
     required String montoTotal,
     required List<AporteGasto> acreedores,
     List<AporteGasto>? deudores,
+    List<String>? dividirEntre,
   }) async {
     llamadas.add('gasto:$descripcion:$montoTotal:${acreedores.first.participanteId}');
   }
@@ -186,6 +207,7 @@ class FakeExpensesRepository implements ExpensesRepository {
   @override
   Future<void> cerrar(String eventoId) async => llamadas.add('cerrar:$eventoId');
 }
+
 
 class FakeActivityLogRepository implements ActivityLogRepository {
   FakeActivityLogRepository({this.entradas = const [], this.recientesEntradas = const []});

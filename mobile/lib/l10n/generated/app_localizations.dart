@@ -512,6 +512,66 @@ abstract class AppLocalizations {
   /// **'La fecha se define después, cuando todos carguen su disponibilidad'**
   String get eventDateComesLater;
 
+  /// No description provided for @eventAiButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Generar con IA'**
+  String get eventAiButton;
+
+  /// No description provided for @eventAiTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Describí tu evento'**
+  String get eventAiTitle;
+
+  /// No description provided for @eventAiHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Ej: un asado en casa de Juli con Marcos y Sofía'**
+  String get eventAiHint;
+
+  /// No description provided for @eventAiGenerate.
+  ///
+  /// In es, this message translates to:
+  /// **'Generar'**
+  String get eventAiGenerate;
+
+  /// No description provided for @eventAiUnmatched.
+  ///
+  /// In es, this message translates to:
+  /// **'No encontré entre tus amigos a: {nombres}'**
+  String eventAiUnmatched(String nombres);
+
+  /// No description provided for @eventSavedPlaces.
+  ///
+  /// In es, this message translates to:
+  /// **'Ubicaciones guardadas'**
+  String get eventSavedPlaces;
+
+  /// No description provided for @eventSavePlace.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar esta ubicación'**
+  String get eventSavePlace;
+
+  /// No description provided for @eventPlaceLabelHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Etiqueta (ej. Casa de Juli)'**
+  String get eventPlaceLabelHint;
+
+  /// No description provided for @friendMatchesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Coincidencias con amigos'**
+  String get friendMatchesTitle;
+
+  /// No description provided for @friendMatchesHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Bloques donde vos y tus amigos ({count}) coinciden. Más intenso = más gente libre.'**
+  String friendMatchesHint(int count);
+
   /// No description provided for @eventDetailAvailability.
   ///
   /// In es, this message translates to:
@@ -800,11 +860,71 @@ abstract class AppLocalizations {
   /// **'¿Quién pagó?'**
   String get eventDetailWhoPaid;
 
+  /// No description provided for @eventDetailDivideBetween.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Entre quiénes se divide?'**
+  String get eventDetailDivideBetween;
+
+  /// No description provided for @eventDetailSelectAtLeastOne.
+  ///
+  /// In es, this message translates to:
+  /// **'Debe seleccionar al menos una persona'**
+  String get eventDetailSelectAtLeastOne;
+
   /// No description provided for @eventDetailExpenseInvalid.
   ///
   /// In es, this message translates to:
   /// **'Completá una descripción y un monto válido'**
   String get eventDetailExpenseInvalid;
+
+  /// No description provided for @eventDetailSplitEqually.
+  ///
+  /// In es, this message translates to:
+  /// **'Repartir'**
+  String get eventDetailSplitEqually;
+
+  /// No description provided for @eventDetailPayersMustSum.
+  ///
+  /// In es, this message translates to:
+  /// **'Los aportes de los pagadores deben sumar el total'**
+  String get eventDetailPayersMustSum;
+
+  /// No description provided for @eventDetailContributed.
+  ///
+  /// In es, this message translates to:
+  /// **'Aportado: \${aportado} de \${total}'**
+  String eventDetailContributed(String aportado, String total);
+
+  /// No description provided for @eventDetailInvite.
+  ///
+  /// In es, this message translates to:
+  /// **'Invitar'**
+  String get eventDetailInvite;
+
+  /// No description provided for @eventDetailInviteTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Invitar al evento'**
+  String get eventDetailInviteTitle;
+
+  /// No description provided for @eventDetailInviteHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartí este enlace de invitación con tus amigos para que se sumen al evento:'**
+  String get eventDetailInviteHint;
+
+  /// No description provided for @eventDetailCopyLink.
+  ///
+  /// In es, this message translates to:
+  /// **'Copiar enlace'**
+  String get eventDetailCopyLink;
+
+  /// No description provided for @eventDetailLinkCopied.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Enlace de invitación copiado al portapapeles!'**
+  String get eventDetailLinkCopied;
 
   /// No description provided for @groupsManage.
   ///
@@ -853,6 +973,126 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'ID del amigo'**
   String get groupsFriendId;
+
+  /// No description provided for @friendsPickTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir amigos'**
+  String get friendsPickTitle;
+
+  /// No description provided for @friendsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no tenés amigos para agregar. Agregá amigos desde tu perfil.'**
+  String get friendsEmpty;
+
+  /// No description provided for @friendsPickConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar ({count})'**
+  String friendsPickConfirm(int count);
+
+  /// No description provided for @friendsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mis amigos'**
+  String get friendsTitle;
+
+  /// No description provided for @friendsSearchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar por nombre o email'**
+  String get friendsSearchHint;
+
+  /// No description provided for @friendsAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar'**
+  String get friendsAdd;
+
+  /// No description provided for @friendsRequests.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitudes'**
+  String get friendsRequests;
+
+  /// No description provided for @friendsAccept.
+  ///
+  /// In es, this message translates to:
+  /// **'Aceptar'**
+  String get friendsAccept;
+
+  /// No description provided for @friendsRequestSent.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud enviada'**
+  String get friendsRequestSent;
+
+  /// No description provided for @friendsNoResults.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin resultados'**
+  String get friendsNoResults;
+
+  /// No description provided for @profileEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar perfil'**
+  String get profileEdit;
+
+  /// No description provided for @profileName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre'**
+  String get profileName;
+
+  /// No description provided for @profileLanguage.
+  ///
+  /// In es, this message translates to:
+  /// **'Idioma'**
+  String get profileLanguage;
+
+  /// No description provided for @profileSave.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar'**
+  String get profileSave;
+
+  /// No description provided for @registerTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear cuenta'**
+  String get registerTitle;
+
+  /// No description provided for @registerName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre'**
+  String get registerName;
+
+  /// No description provided for @registerEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Email'**
+  String get registerEmail;
+
+  /// No description provided for @registerPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña'**
+  String get registerPassword;
+
+  /// No description provided for @registerSubmit.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrarme'**
+  String get registerSubmit;
+
+  /// No description provided for @registerHaveAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Ya tenés cuenta? Ingresar'**
+  String get registerHaveAccount;
 
   /// No description provided for @commonConfirm.
   ///

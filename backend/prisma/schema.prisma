@@ -53,6 +53,8 @@ model Usuario {
   participaciones   Participante[]
   amistadesEnviadas Amistad[]      @relation("AmistadUsuario1")
   amistadesRecibidas Amistad[]     @relation("AmistadUsuario2")
+  disponibilidadPerfil DisponibilidadPerfil[]
+  ubicacionesFavoritas UbicacionFavorita[]
 
   @@map("usuarios")
 }
@@ -255,4 +257,31 @@ model Amistad {
 
   @@unique([usuarioId1, usuarioId2])
   @@map("amistades")
+}
+
+// H-14 — disponibilidad semanal de perfil (por usuario, no por evento).
+// Sirve para pre-llenar la del evento y para las coincidencias entre amigos (HU-B4).
+model DisponibilidadPerfil {
+  id         String @id @default(uuid())
+  usuarioId  String @map("usuario_id")
+  diaSemana  Int    @map("dia_semana")
+  bloqueHora Int    @map("bloque_hora")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, diaSemana, bloqueHora])
+  @@map("disponibilidad_perfil")
+}
+
+// HU-B5 — ubicaciones usuales guardadas como favoritas, reutilizables al crear eventos.
+model UbicacionFavorita {
+  id        String   @id @default(uuid())
+  usuarioId String   @map("usuario_id")
+  etiqueta  String
+  texto     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("ubicaciones_favoritas")
 }

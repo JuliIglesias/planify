@@ -47,6 +47,23 @@ export class PrismaEventoRepository implements EventoRepository {
         },
       });
 
+      // Los demás miembros del grupo también participan del evento (H-01): sin
+      // esto no aparecerían para asignarles gastos/tareas ni podrían confirmar.
+      const otros = (data.otrosMiembros ?? []).filter(
+        (m) => m.usuarioId !== data.organizadorUsuarioId,
+      );
+      if (otros.length > 0) {
+        await tx.participante.createMany({
+          data: otros.map((m) => ({
+            eventoId: creado.id,
+            usuarioId: m.usuarioId,
+            nombreDisplay: m.nombre,
+            esAnonimo: false,
+            esOrganizador: false,
+          })),
+        });
+      }
+
       const evento = await tx.evento.update({
         where: { id: creado.id },
         data: { creadoPor: organizador.id },
@@ -69,11 +86,16 @@ export class PrismaEventoRepository implements EventoRepository {
     return toEvento(row);
   }
 
-  async listUpcomingForUsuario(usuarioId: string): Promise<EventoConResumen[]> {
+  async listUpcomingForUsuario(usuarioId: string, ahora: Date): Promise<EventoConResumen[]> {
     const rows = await this.prisma.evento.findMany({
       where: {
         participantes: { some: { usuarioId } },
-        estado: { in: ['planificacion', 'confirmado'] },
+        // En planificación (sin fecha) o confirmado con fecha aún por venir.
+        OR: [
+          { estado: 'planificacion' },
+          { estado: 'confirmado', fechaHoraInicio: null },
+          { estado: 'confirmado', fechaHoraInicio: { gte: ahora } },
+        ],
       },
       orderBy: [{ fechaHoraInicio: 'asc' }, { createdAt: 'desc' }],
       include: RESUMEN_INCLUDE,
@@ -82,11 +104,16 @@ export class PrismaEventoRepository implements EventoRepository {
     return rows.map(this.toResumen);
   }
 
-  async listPastForUsuario(usuarioId: string): Promise<EventoConResumen[]> {
+  async listPastForUsuario(usuarioId: string, ahora: Date): Promise<EventoConResumen[]> {
     const rows = await this.prisma.evento.findMany({
       where: {
         participantes: { some: { usuarioId } },
-        estado: { in: ['finalizado', 'cancelado', 'confirmado'] },
+        // Terminado, cancelado, o confirmado cuya fecha ya pasó.
+        OR: [
+          { estado: 'finalizado' },
+          { estado: 'cancelado' },
+          { estado: 'confirmado', fechaHoraInicio: { lt: ahora } },
+        ],
       },
       orderBy: { createdAt: 'desc' },
       include: RESUMEN_INCLUDE,

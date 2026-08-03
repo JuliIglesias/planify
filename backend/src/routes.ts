@@ -37,6 +37,151 @@ export function createRoutes(c: Container): Router {
     }),
   );
 
+  // ── SCRUM-14 · Registro, recuperación y perfil ──────────────────────────
+  router.post(
+    '/auth/register',
+    asyncHandler(async (req: Request, res: Response) => {
+      const { nombre, email, password } = req.body ?? {};
+      res.status(201).json(await c.auth.register(nombre, email, password));
+    }),
+  );
+
+  router.post(
+    '/auth/reset/request',
+    asyncHandler(async (req: Request, res: Response) => {
+      const { email } = req.body ?? {};
+      if (!email) throw new BadRequestError('email es requerido');
+      // Siempre 200: no se revela si el email existe. En prod el token se
+      // envía por correo (no se devuelve acá) — ver docs/06-estado-final.md.
+      const { token } = await c.auth.solicitarReset(email);
+      res.json({ ok: true, ...(process.env.NODE_ENV !== 'production' ? { token } : {}) });
+    }),
+  );
+
+  router.post(
+    '/auth/reset/confirm',
+    asyncHandler(async (req: Request, res: Response) => {
+      const { token, password } = req.body ?? {};
+      if (!token) throw new BadRequestError('token es requerido');
+      await c.auth.confirmarReset(token, password);
+      res.json({ ok: true });
+    }),
+  );
+
+  router.get(
+    '/me/profile',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.users.miPerfil(exigirUsuario(req)));
+    }),
+  );
+
+  router.patch(
+    '/me/profile',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.users.actualizar(exigirUsuario(req), req.body ?? {}));
+    }),
+  );
+
+  // ── SCRUM-14 · Disponibilidad de perfil (H-14) y coincidencias (HU-B4) ───
+  router.get(
+    '/me/availability',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.profileAvailability.obtener(exigirUsuario(req)));
+    }),
+  );
+
+  router.put(
+    '/me/availability',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      await c.profileAvailability.guardar(exigirUsuario(req), req.body?.slots ?? []);
+      res.status(204).send();
+    }),
+  );
+
+  router.get(
+    '/me/availability/friend-matches',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.profileAvailability.coincidenciasConAmigos(exigirUsuario(req)));
+    }),
+  );
+
+  // ── HU-B5 · Ubicaciones favoritas ────────────────────────────────────────
+  router.get(
+    '/me/locations',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.locations.listar(exigirUsuario(req)));
+    }),
+  );
+
+  router.post(
+    '/me/locations',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      const { etiqueta, texto } = req.body ?? {};
+      res.status(201).json(await c.locations.crear(exigirUsuario(req), etiqueta, texto));
+    }),
+  );
+
+  router.delete(
+    '/me/locations/:id',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      await c.locations.eliminar(exigirUsuario(req), String(req.params.id));
+      res.status(204).send();
+    }),
+  );
+
+  // ── SCRUM-14 · Amigos (HU-31/HU-32) ─────────────────────────────────────
+  router.get(
+    '/users/search',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.friends.buscar(exigirUsuario(req), String(req.query.q ?? '')));
+    }),
+  );
+
+  router.get(
+    '/friends',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.friends.listar(exigirUsuario(req)));
+    }),
+  );
+
+  router.get(
+    '/friends/requests',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.friends.solicitudesPendientes(exigirUsuario(req)));
+    }),
+  );
+
+  router.post(
+    '/friends/request',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      const { usuarioId } = req.body ?? {};
+      if (!usuarioId) throw new BadRequestError('usuarioId es requerido');
+      await c.friends.enviarSolicitud(exigirUsuario(req), usuarioId);
+      res.status(201).json({ ok: true });
+    }),
+  );
+
+  router.post(
+    '/friends/:id/accept',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      await c.friends.aceptar(exigirUsuario(req), String(req.params.id));
+      res.json({ ok: true });
+    }),
+  );
+
   router.post(
     '/participants/anonymous',
     asyncHandler(async (req: Request, res: Response) => {
@@ -92,8 +237,8 @@ export function createRoutes(c: Container): Router {
   router.get(
     '/events/:id',
     soloParticipante,
-    asyncHandler(async (req: Request, res: Response) => {
-      res.json(await c.eventsQuery.detalle(String(req.params.id)));
+    asyncHandler(async (req: ParticipantRequest, res: Response) => {
+      res.json(await c.eventsQuery.detalle(String(req.params.id), req.participanteId));
     }),
   );
 
@@ -133,12 +278,26 @@ export function createRoutes(c: Container): Router {
   );
 
   router.get(
+    '/events/:id/availability/me',
+    soloParticipante,
+    asyncHandler(async (req: ParticipantRequest, res: Response) => {
+      res.json(
+        await c.availability.obtenerDeParticipante(
+          String(req.params.id),
+          exigirParticipante(req),
+        ),
+      );
+    }),
+  );
+
+  router.get(
     '/events/:id/availability/heatmap',
     soloParticipante,
     asyncHandler(async (req: Request, res: Response) => {
       res.json(await c.availability.heatmap(String(req.params.id)));
     }),
   );
+
 
   router.patch(
     '/events/:id/confirm',
@@ -354,18 +513,27 @@ export function createRoutes(c: Container): Router {
     }),
   );
 
-  // ── SCRUM-15 y SCRUM-17 · comprometidos en Jira, todavía sin implementar ─
-  const noImplementado = (epica: string, detalle: string) => (_req: Request, res: Response) =>
-    res.status(501).json({ error: 'Not implemented yet', epica, detalle });
-
+  // ── SCRUM-15 · Notificaciones push (HU-35) ──────────────────────────────
   router.post(
     '/notifications/register-device',
-    noImplementado('SCRUM-15', 'HU-35 registrar device para push (SNS/Pinpoint)'),
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      const { deviceToken } = req.body ?? {};
+      if (!deviceToken) throw new BadRequestError('deviceToken es requerido');
+      await c.notifications.registrarDevice(exigirUsuario(req), String(deviceToken));
+      res.status(201).json({ ok: true });
+    }),
   );
 
+  // ── SCRUM-17 · IA: generar un borrador de evento desde texto (HU-42/43/44b) ─
   router.post(
     '/events/generate-from-text',
-    noImplementado('SCRUM-17', 'HU-42/43/44b generación de evento por IA (Gemini)'),
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      const { descripcion } = req.body ?? {};
+      if (!descripcion) throw new BadRequestError('descripcion es requerida');
+      res.json(await c.aiEvents.generarDesdeTexto(exigirUsuario(req), String(descripcion)));
+    }),
   );
 
   return router;

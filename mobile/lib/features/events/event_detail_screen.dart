@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 
 import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
@@ -21,6 +23,8 @@ import 'widgets/activity_presentation.dart';
 import 'widgets/task_dialogs.dart';
 import '../balances/data/balances_repository.dart';
 
+import '../profile/profile_availability_provider.dart';
+
 /// Detalle del evento: asistencia (HU-10), disponibilidad y heatmap
 /// (HU-07/08/09), tareas (HU-20..23), gastos y deudas (HU-13..19) y log de
 /// actividad (HU-24).
@@ -35,6 +39,7 @@ class EventDetailScreen extends ConsumerStatefulWidget {
 
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   final _miDisponibilidad = <AvailabilitySlot>{};
+  bool _disponibilidadInicializada = false;
   bool _ocupado = false;
 
   /// Ejecuta una acción mostrando el estado de carga y refrescando al terminar.
@@ -59,13 +64,40 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final detalle = ref.watch(eventDetailProvider(widget.eventoId));
+    final savedAvailAsync = ref.watch(myEventAvailabilityProvider(widget.eventoId));
+    final profileAvailAsync = ref.watch(profileAvailabilityProvider);
+
+    if (!_disponibilidadInicializada) {
+      if (savedAvailAsync.hasValue) {
+        final eventSlots = savedAvailAsync.value!;
+        if (eventSlots.isNotEmpty) {
+          _miDisponibilidad.clear();
+          _miDisponibilidad.addAll(
+            eventSlots.map((s) => AvailabilitySlot(s.diaSemana, s.bloqueHora)),
+          );
+          _disponibilidadInicializada = true;
+        } else if (profileAvailAsync.hasValue) {
+          final profileSlots = profileAvailAsync.value!;
+          if (profileSlots.isNotEmpty) {
+            _miDisponibilidad.clear();
+            _miDisponibilidad.addAll(profileSlots);
+          }
+          _disponibilidadInicializada = true;
+        }
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         title: Text(detalle.value?.nombre ?? l10n.commonLoading),
         actions: [
-          if (detalle.value?.organizador != null && !(detalle.value?.estaCancelado ?? false))
+          IconButton(
+            icon: const Icon(Icons.person_add_outlined),
+            tooltip: l10n.eventDetailInviteTitle,
+            onPressed: !(detalle.value?.estaCancelado ?? false) ? _invitar : null,
+          ),
+          if ((detalle.value?.soyOrganizador ?? false) && !(detalle.value?.estaCancelado ?? false))
             PopupMenuButton<String>(
               onSelected: (opcion) => switch (opcion) {
                 'cerrar' => _accion(() => ref
@@ -94,12 +126,76 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           miDisponibilidad: _miDisponibilidad,
           ocupado: _ocupado,
           onToggleSlot: (slot) => setState(() {
+            _disponibilidadInicializada = true;
             if (!_miDisponibilidad.remove(slot)) _miDisponibilidad.add(slot);
           }),
           onAccion: _accion,
+          onInvitar: _invitar,
         ),
       ),
     );
+  }
+
+  Future<void> _invitar() async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final token = await ref.read(eventsRepositoryProvider).crearInvitacion(widget.eventoId);
+      final inviteLink = 'planify://invite/$token';
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.eventDetailInviteTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.eventDetailInviteHint),
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: SelectableText(
+                  inviteLink,
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.commonCancel),
+            ),
+            FilledButton.icon(
+              icon: const Icon(Icons.copy, size: 18),
+              label: Text(l10n.eventDetailCopyLink),
+              onPressed: () async {
+                // Se captura el messenger antes del await para no usar el
+                // BuildContext cruzando un gap async (H-12).
+                final messenger = ScaffoldMessenger.of(context);
+                await Clipboard.setData(ClipboardData(text: inviteLink));
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(l10n.eventDetailLinkCopied)),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      );
+    } catch (err) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$err')));
+      }
+    }
   }
 
   Future<void> _confirmarCancelacion() async {
@@ -138,6 +234,7 @@ class _Contenido extends ConsumerWidget {
     required this.ocupado,
     required this.onToggleSlot,
     required this.onAccion,
+    required this.onInvitar,
   });
 
   final DetalleEvento evento;
@@ -145,6 +242,7 @@ class _Contenido extends ConsumerWidget {
   final bool ocupado;
   final ValueChanged<AvailabilitySlot> onToggleSlot;
   final Future<void> Function(Future<void> Function()) onAccion;
+  final VoidCallback onInvitar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -157,7 +255,14 @@ class _Contenido extends ConsumerWidget {
 
     final habilitado = !ocupado && !evento.estaCancelado;
 
-    return ListView(
+    // Pull-to-refresh: si alguien se une al evento (anónimo por link) después de
+    // abrir esta pantalla, el organizador puede refrescar y verlo (H-02).
+    return RefreshIndicator(
+      onRefresh: () async {
+        invalidateEventData(ref, evento.id);
+        await ref.read(eventDetailProvider(evento.id).future);
+      },
+      child: ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
         Row(
@@ -209,6 +314,12 @@ class _Contenido extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 QuickActionButton(
+                  icon: Icons.person_add_outlined,
+                  label: l10n.eventDetailInvite,
+                  color: AppColors.primary,
+                  onPressed: habilitado ? onInvitar : null,
+                ),
+                QuickActionButton(
                   icon: Icons.receipt_long_outlined,
                   label: l10n.eventDetailAddExpense,
                   color: AppColors.danger,
@@ -249,15 +360,18 @@ class _Contenido extends ConsumerWidget {
                   width: double.infinity,
                   child: FilledButton(
                     onPressed: habilitado
-                        ? () => onAccion(() => ref
-                            .read(availabilityRepositoryProvider)
-                            .guardar(
-                              eventoId: evento.id,
-                              slots: miDisponibilidad
-                                  .map((s) =>
-                                      (diaSemana: s.diaSemana, bloqueHora: s.bloqueHora))
-                                  .toList(),
-                            ))
+                        ? () => onAccion(() async {
+                            await ref
+                                .read(availabilityRepositoryProvider)
+                                .guardar(
+                                  eventoId: evento.id,
+                                  slots: miDisponibilidad
+                                      .map((s) =>
+                                          (diaSemana: s.diaSemana, bloqueHora: s.bloqueHora))
+                                      .toList(),
+                                );
+                            ref.invalidate(myEventAvailabilityProvider(evento.id));
+                          })
                         : null,
                     child: Text(l10n.eventDetailSaveAvailability),
                   ),
@@ -286,11 +400,11 @@ class _Contenido extends ConsumerWidget {
                             AvailabilitySlot(s.diaSemana, s.bloqueHora): s.disponibles,
                         },
                         // HU-09: tocar un bloque del heatmap confirma el horario.
-                        onSlotTap: habilitado && evento.organizador != null
+                        onSlotTap: habilitado && evento.soyOrganizador
                             ? (slot) => _confirmarHorario(context, ref, slot)
                             : null,
                       ),
-                      if (evento.organizador != null) ...[
+                      if (evento.soyOrganizador) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           l10n.eventDetailTapToConfirm,
@@ -357,6 +471,7 @@ class _Contenido extends ConsumerWidget {
             ),
         const SizedBox(height: AppSpacing.xl),
       ],
+      ),
     );
   }
 
@@ -369,20 +484,35 @@ class _Contenido extends ConsumerWidget {
   }
 
   Future<void> _agregarGasto(BuildContext context, WidgetRef ref) async {
-    final datos = await pedirDatosGasto(context, evento.participantes);
+    // Traer la lista más fresca antes de abrir el diálogo: alguien pudo unirse
+    // (anónimo por link) después de que se cargó la pantalla (H-02). Si el
+    // refetch falla, se usa lo que ya estaba en memoria.
+    var participantes = evento.participantes;
+    try {
+      ref.invalidate(eventDetailProvider(evento.id));
+      participantes = (await ref.read(eventDetailProvider(evento.id).future)).participantes;
+    } catch (_) {
+      // Sin red: seguimos con la lista actual en vez de bloquear la carga.
+    }
+    if (!context.mounted) return;
+
+    final datos = await pedirDatosGasto(context, participantes);
     if (datos == null) return;
 
     await onAccion(
       () => ref.read(expensesRepositoryProvider).crear(
             eventoId: evento.id,
             descripcion: datos.descripcion,
-            montoTotal: datos.monto,
+            montoTotal: datos.montoTotal,
             acreedores: [
-              AporteGasto(participanteId: datos.pagadorId, monto: datos.monto),
+              for (final a in datos.acreedores)
+                AporteGasto(participanteId: a.participanteId, monto: a.monto),
             ],
+            dividirEntre: datos.deudoresIds,
           ),
     );
   }
+
 
   Future<void> _mostrarDeudas(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;

@@ -6,6 +6,7 @@ import {
   GastoRepository,
   GrupoConMiembros,
   GrupoRepository,
+  ParticipanteRepository,
   TareaRepository,
   UsuarioRepository,
 } from '../../domain/repositories';
@@ -47,6 +48,7 @@ export class GroupsService {
     private readonly gastos: GastoRepository,
     private readonly log: ActivityLogService,
     private readonly clock: Clock,
+    private readonly participantes: ParticipanteRepository,
   ) {}
 
   async listarDe(usuarioId: string): Promise<GrupoConMiembros[]> {
@@ -58,7 +60,7 @@ export class GroupsService {
     const [grupos, noLeidosPorEvento, proximos] = await Promise.all([
       this.grupos.listByUsuario(usuarioId),
       this.log.contarNoLeidasPorEvento(usuarioId),
-      this.eventos.listUpcomingForUsuario(usuarioId),
+      this.eventos.listUpcomingForUsuario(usuarioId, this.clock.now()),
     ]);
 
     const eventosPorGrupo = await Promise.all(
@@ -143,6 +145,21 @@ export class GroupsService {
     if (yaEsta) throw new BadRequestError('Esa persona ya es miembro del grupo');
 
     await this.grupos.agregarMiembro(grupoId, nuevoUsuarioId);
+
+    // Duda #12.2: sumar un amigo al grupo le da visibilidad de todos sus
+    // eventos. Se materializa como participante de cada evento aún activo, para
+    // que aparezca al asignar gastos/tareas y pueda confirmar asistencia (H-01).
+    const eventos = await this.eventos.listByGrupo(grupoId);
+    const activos = eventos.filter(
+      (e) => e.estado === 'planificacion' || e.estado === 'confirmado',
+    );
+    for (const evento of activos) {
+      await this.participantes.createParaUsuario({
+        eventoId: evento.id,
+        usuarioId: nuevoUsuarioId,
+        nombreDisplay: nuevo.nombre,
+      });
+    }
   }
 
   /**

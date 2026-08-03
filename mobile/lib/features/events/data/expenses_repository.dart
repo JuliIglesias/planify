@@ -24,6 +24,7 @@ abstract interface class ExpensesRepository {
     required String montoTotal,
     required List<AporteGasto> acreedores,
     List<AporteGasto>? deudores,
+    List<String>? dividirEntre,
   });
 
   /// HU-19 — cerrar los gastos del evento (solo organizador).
@@ -42,6 +43,7 @@ class ExpensesRepositoryHttp implements ExpensesRepository {
     required String montoTotal,
     required List<AporteGasto> acreedores,
     List<AporteGasto>? deudores,
+    List<String>? dividirEntre,
   }) =>
       ejecutar(() async {
         await _dio.post<void>(
@@ -51,9 +53,11 @@ class ExpensesRepositoryHttp implements ExpensesRepository {
             'montoTotal': montoTotal,
             'acreedores': acreedores.map((a) => a.toJson()).toList(),
             if (deudores != null) 'deudores': deudores.map((d) => d.toJson()).toList(),
+            if (dividirEntre != null) 'dividirEntre': dividirEntre,
           },
         );
       });
+
 
   @override
   Future<void> cerrar(String eventoId) => ejecutar(() async {

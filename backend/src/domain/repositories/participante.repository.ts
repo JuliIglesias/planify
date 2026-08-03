@@ -6,6 +6,12 @@ export interface CrearParticipanteAnonimoData {
   tokenSesion: string;
 }
 
+export interface CrearParticipanteRegistradoData {
+  eventoId: string;
+  usuarioId: string;
+  nombreDisplay: string;
+}
+
 export interface ParticipanteRepository {
   findById(id: string): Promise<Participante | null>;
   findByTokenSesion(token: string): Promise<Participante | null>;
@@ -20,6 +26,13 @@ export interface ParticipanteRepository {
   listByUsuario(usuarioId: string): Promise<Participante[]>;
 
   createAnonimo(data: CrearParticipanteAnonimoData): Promise<Participante>;
+
+  /**
+   * Materializa a un miembro registrado del grupo como participante del evento.
+   * Idempotente: si ya participa, devuelve el participante existente (agregar a
+   * alguien dos veces no debe duplicarlo ni explotar).
+   */
+  createParaUsuario(data: CrearParticipanteRegistradoData): Promise<Participante>;
   updateAsistencia(id: string, estado: AsistenciaEstado): Promise<Participante>;
   marcarLeido(id: string, cuando: Date): Promise<Participante>;
 

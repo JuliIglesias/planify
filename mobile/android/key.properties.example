@@ -1,0 +1,14 @@
+# SCRUM-18 — firma de release para Play Store.
+# Copiá este archivo a `android/key.properties` (NO se commitea) y completá con
+# los datos de tu keystore. Generá el keystore una sola vez con:
+#
+#   keytool -genkey -v -keystore ~/planify-upload.jks -keyalg RSA \
+#     -keysize 2048 -validity 10000 -alias planify
+#
+# Luego: `flutter build appbundle` produce el .aab firmado para subir a la
+# pista de testing interno de Play Console.
+
+storePassword=CAMBIAR
+keyPassword=CAMBIAR
+keyAlias=planify
+storeFile=/ruta/absoluta/a/planify-upload.jks

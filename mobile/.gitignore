@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# SCRUM-18 — secretos de firma release (no commitear)
+android/key.properties
+**/*.jks
+**/*.keystore

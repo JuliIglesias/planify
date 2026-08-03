@@ -5,6 +5,7 @@ import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../friends/friend_picker.dart';
 import '../home/home_providers.dart';
 import 'data/groups_repository.dart';
 
@@ -102,22 +103,19 @@ class _GestionGrupoSheetState extends ConsumerState<_GestionGrupoSheet> {
               },
             ),
 
-            // HU-32 — agregar un amigo registrado
+            // HU-32 — agregar un amigo registrado (selector de amigos, H-10)
             ListTile(
               leading: const Icon(Icons.person_add_alt_1_outlined),
               title: Text(l10n.groupsAddMember),
               enabled: !_ocupado,
               onTap: () async {
-                // Hasta que exista la gestión de amigos completa (SCRUM-14),
-                // se agrega por id. Cuando esté, acá va un selector de amigos.
-                final usuarioId = await _pedirTexto(
-                  context,
-                  titulo: l10n.groupsAddMember,
-                  label: l10n.groupsFriendId,
-                );
-                if (usuarioId == null) return;
+                final elegidos = await elegirAmigos(context, ref);
+                if (elegidos == null || elegidos.isEmpty) return;
                 await _accion(
-                  () => repo.agregarMiembro(grupoId: widget.grupo.id, usuarioId: usuarioId),
+                  () => repo.agregarMiembro(
+                    grupoId: widget.grupo.id,
+                    usuarioId: elegidos.first.id,
+                  ),
                   cerrar: true,
                 );
               },

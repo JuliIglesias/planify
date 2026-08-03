@@ -112,10 +112,10 @@ describe('TasksService — estados de tarea (Duda #4)', () => {
 });
 
 function armarGroups() {
-  const grupos = new FakeGrupoRepository();
+  const usuarios = new FakeUsuarioRepository();
+  const grupos = new FakeGrupoRepository(usuarios);
   const participantes = new FakeParticipanteRepository();
   const eventos = new FakeEventoRepository(participantes);
-  const usuarios = new FakeUsuarioRepository();
   const tareas = new FakeTareaRepository();
   const gastos = new FakeGastoRepository();
   const logs = new FakeLogActividadRepository();
@@ -123,7 +123,16 @@ function armarGroups() {
   const log = new ActivityLogService(logs, participantes, clock);
 
   return {
-    service: new GroupsService(grupos, eventos, usuarios, tareas, gastos, log, clock),
+    service: new GroupsService(
+      grupos,
+      eventos,
+      usuarios,
+      tareas,
+      gastos,
+      log,
+      clock,
+      participantes,
+    ),
     grupos,
     eventos,
     usuarios,

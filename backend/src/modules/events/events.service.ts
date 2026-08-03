@@ -58,12 +58,23 @@ export class EventsService {
           ...(input.miembroUsuarioIds ?? []),
         ])).id;
 
+    // Todos los miembros registrados del grupo se vuelven participantes del
+    // evento (H-01): así aparecen para asignarles gastos/tareas y pueden
+    // confirmar asistencia. El organizador se excluye porque ya lo crea
+    // `createWithOrganizer`.
+    const miembros = await this.grupos.listMiembros(grupoId);
+    const otrosMiembros = miembros.filter((m) => m.id !== usuarioId).map((m) => ({
+      usuarioId: m.id,
+      nombre: m.nombre,
+    }));
+
     const resultado = await this.eventos.createWithOrganizer({
       grupoId,
       nombre,
       lugarTexto: lugar,
       organizadorUsuarioId: usuarioId,
       organizadorNombre: usuario.nombre,
+      otrosMiembros,
     });
 
     await this.log.registrar({

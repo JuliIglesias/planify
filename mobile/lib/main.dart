@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'core/locale_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/session_controller.dart';
@@ -16,17 +17,18 @@ Future<void> main() async {
   runApp(const ProviderScope(child: PlanifyApp()));
 }
 
-class PlanifyApp extends StatelessWidget {
+class PlanifyApp extends ConsumerWidget {
   const PlanifyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // El MVP arranca en español; el usuario puede cambiar a inglés y la
+    // preferencia queda guardada (H-13). i18n-ready desde el día 1.
+    final locale = ref.watch(localeProvider).value ?? const Locale('es');
     return MaterialApp(
       onGenerateTitle: (context) => AppLocalizations.of(context)!.appName,
       theme: AppTheme.light,
-      // El MVP sale en español; el inglés se completa más adelante
-      // (docs/02-decisiones.md Duda #15/F5), pero la arquitectura queda i18n-ready.
-      locale: const Locale('es'),
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: const _RootRouter(),

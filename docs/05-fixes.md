@@ -374,3 +374,47 @@ con ampliar la respuesta que ya existía.
   volver al primero los conserva intactos** (el criterio de aceptación
   literal del item), y un grupo sin eventos activos muestra el estado vacío.
   Mobile 33→35, `flutter analyze` limpio.
+
+## Item 3 — Disponibilidad: 24hs completas + secciones colapsables
+
+**Causa raíz:** `WeeklyAvailabilityGrid` (componente propio, sin librería de
+por medio) es la misma grilla en dos pantallas: Perfil arrancaba en `horaInicio: 8`
+(faltaban 00-07h) y el detalle de evento en `horaInicio: 10` (faltaban 00-09h)
+para "Mi disponibilidad" y el heatmap del grupo. Al estar embebidas en un
+`ListView`/`Column` normal, competían por espacio con el resto de la
+pantalla — de ahí el scroll largo.
+
+**Decisión de diseño (aclarada por el usuario, distinta de mi primera
+propuesta de dropdowns por franja horaria):** no se reemplaza la grilla
+semanal por dropdowns de horario. Se agrega un **acordeón**: "Mi
+disponibilidad" y "Disponibilidad del grupo" arrancan **cerradas** (solo se
+ve el título) y al tocarlas se abren mostrando la grilla semanal con heatmap
+tal cual está hoy — se gana espacio en pantalla sin perder la vista.
+
+**Fix:**
+- `CollapsibleSection` (nuevo, `core/widgets/`): título + contenido
+  colapsable dentro de una `Card`, con `initiallyExpanded` configurable.
+- `EventDetailScreen`: "Mi disponibilidad" y "Disponibilidad" (heatmap del
+  grupo) pasan de `Card` fija a `CollapsibleSection`, **cerradas por
+  defecto** (la pantalla ya tiene mucho contenido — asistencia, acciones
+  rápidas, tareas, log). `horaInicio` pasa de `10` a `0` en ambas.
+- `ProfileScreen`: "Disponibilidad Semanal" pasa a `CollapsibleSection` con
+  `initiallyExpanded: true` (es el contenido principal de esa sección, no
+  tiene sentido arrancar cerrada). `horaInicio` pasa de `8` a `0`.
+- **Bug de test infra corregido de paso:** `appDePrueba` montaba la pantalla
+  directamente como `home:` de `MaterialApp`, sin `Scaffold`. Nunca había
+  hecho falta porque ninguna pantalla testeada hasta ahora usaba `ListTile`
+  (que exige un ancestro `Material`) — `ProfileScreen` sí, y es la primera
+  vez que se testea. Se envuelve `pantalla` en `Scaffold(body: SafeArea(...))`,
+  igual que hace `AppShell` en producción.
+
+**Validación:**
+- `widgets_test.dart` — 2 tests nuevos de `CollapsibleSection`: arranca
+  cerrada y se abre/cierra al tocar el título; `initiallyExpanded` la muestra
+  abierta desde el arranque.
+- `profile_screen_test.dart` (nuevo) — la grilla cubre 00h a 23h y no hace
+  falta tocar nada para verla (arranca expandida).
+- `screens_test.dart` — el test de guardar disponibilidad (HU-07) ahora abre
+  la sección antes de tocar la grilla (documenta que arranca cerrada en el
+  detalle de evento).
+- Mobile 35→38, `flutter analyze` limpio.

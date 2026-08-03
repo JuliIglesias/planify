@@ -126,6 +126,45 @@ void main() {
       expect(find.text(l10n.activityDebtSettled('Mati')), findsOneWidget);
       expect(find.text(r'+$450.00'), findsOneWidget);
     });
+
+    testWidgets(
+        'una racha del mismo usuario/tipo/evento se agrupa en una sola línea '
+        'con (×N) (Item 2)', (tester) async {
+      usarPantallaAlta(tester);
+
+      final activityLog = FakeActivityLogRepository(
+        recientesEntradas: [
+          for (var i = 0; i < 3; i++)
+            ActividadLog(
+              id: 'a$i',
+              tipo: 'deuda_saldada',
+              actorNombre: 'Mati',
+              createdAt: DateTime(2026, 7, 28, 20, 30 - i),
+              eventoId: 'evt-1',
+              eventoNombre: 'Asado en lo de Marcos',
+              payload: const {'monto': '450.00'},
+            ),
+          ActividadLog(
+            id: 'a-otro',
+            tipo: 'tarea_creada',
+            actorNombre: 'Sofía',
+            createdAt: DateTime(2026, 7, 28, 20, 0),
+            eventoId: 'evt-1',
+            eventoNombre: 'Asado en lo de Marcos',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(appDePrueba(const HomeScreen(), activityLog: activityLog));
+      await tester.pumpAndSettle();
+
+      // Las 3 de Mati quedan en una sola línea; no se ve un monto puntual
+      // para una línea que resume varias.
+      expect(find.text('${l10n.activityDebtSettled('Mati')} (×3)'), findsOneWidget);
+      expect(find.text(r'+$450.00'), findsNothing);
+      // La actividad distinta de Sofía se sigue viendo aparte.
+      expect(find.text(l10n.activityTaskCreated('Sofía')), findsOneWidget);
+    });
   });
 
   group('GroupsScreen (Item 1 — carrusel + eventos por grupo)', () {
@@ -559,6 +598,45 @@ void main() {
 
       expect(find.text(l10n.activityExpenseAdded('Marcos')), findsOneWidget);
       expect(find.text(l10n.activityScheduleConfirmed('Julieta')), findsOneWidget);
+    });
+
+    testWidgets(
+        'varias deudas saldadas seguidas del mismo actor se fusionan '
+        'nombrando a las contrapartes (Item 2)', (tester) async {
+      final activityLog = FakeActivityLogRepository(
+        entradas: [
+          ActividadLog(
+            id: 'a1',
+            tipo: 'deuda_saldada',
+            actorNombre: 'Marcos',
+            createdAt: DateTime(2026, 7, 28, 20, 30),
+            payload: const {'contraparteNombre': 'Sofía'},
+          ),
+          ActividadLog(
+            id: 'a2',
+            tipo: 'deuda_saldada',
+            actorNombre: 'Marcos',
+            createdAt: DateTime(2026, 7, 28, 20, 29),
+            payload: const {'contraparteNombre': 'Juan'},
+          ),
+        ],
+      );
+
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(
+        appDePrueba(
+          const EventDetailScreen(eventoId: 'evt-1'),
+          activityLog: activityLog,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.activityDebtSettledWith('Marcos', 'Sofía y Juan')),
+        findsOneWidget,
+      );
+      // No queda una línea individual por cada una.
+      expect(find.text(l10n.activityDebtSettled('Marcos')), findsNothing);
     });
   });
 }

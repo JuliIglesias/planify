@@ -175,6 +175,17 @@
       }
     }
   },
+  "activityDebtSettledWith": "{actor} settled up with {personas}",
+  "@activityDebtSettledWith": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "personas": {
+        "type": "String"
+      }
+    }
+  },
   "activityTaskCreated": "{actor} created a task",
   "@activityTaskCreated": {
     "placeholders": {

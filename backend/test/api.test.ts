@@ -259,6 +259,10 @@ describe('Flujo completo del MVP', () => {
 
     expect(repos.eventos.eventos.find((e) => e.id === eventoId)!.estado).toBe('finalizado');
     expect(repos.logs.tipos()).toContain('deuda_saldada');
+    // Item 2 (Fase 4) — el nombre de la contraparte viaja en el payload,
+    // para poder agrupar varios saldos seguidos en el log del evento.
+    const entradaSaldado = repos.logs.entradas.find((e) => e.tipo === 'deuda_saldada');
+    expect(entradaSaldado?.payload).toMatchObject({ contraparteNombre: 'Marcos' });
   });
 
   it('permite elegir deudores específicos al crear un gasto (dividirEntre)', async () => {

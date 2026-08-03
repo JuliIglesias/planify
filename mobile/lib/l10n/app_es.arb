@@ -175,6 +175,17 @@
       }
     }
   },
+  "activityDebtSettledWith": "{actor} saldó cuentas con {personas}",
+  "@activityDebtSettledWith": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "personas": {
+        "type": "String"
+      }
+    }
+  },
   "activityTaskCreated": "{actor} creó una tarea",
   "@activityTaskCreated": {
     "placeholders": {

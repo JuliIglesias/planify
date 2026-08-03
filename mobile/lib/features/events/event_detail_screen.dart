@@ -403,12 +403,16 @@ class _Contenido extends ConsumerWidget {
                   ? _TextoVacio(l10n.eventDetailNoActivity)
                   : Column(
                       children: [
-                        for (final entrada in entradas)
+                        // Item 2 — varios "saldó su deuda" seguidos del
+                        // mismo actor se fusionan nombrando a todas las
+                        // contrapartes en una sola línea.
+                        for (final grupo in agruparLogDeEvento(entradas))
                           ActivityFeedItem(
-                            icon: iconoDeActividad(entrada.tipo),
-                            iconColor: colorDeActividad(entrada.tipo),
-                            titulo: textoActividad(l10n, entrada),
-                            trailing: DateFormat('dd/MM HH:mm').format(entrada.createdAt),
+                            icon: iconoDeActividad(grupo.entrada.tipo),
+                            iconColor: colorDeActividad(grupo.entrada.tipo),
+                            titulo: textoActividadLogAgrupada(l10n, grupo),
+                            trailing:
+                                DateFormat('dd/MM HH:mm').format(grupo.entrada.createdAt),
                           ),
                       ],
                     ),

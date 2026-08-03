@@ -123,13 +123,19 @@ class HomeScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                         child: Column(
                           children: [
-                            for (final entrada in entradas)
+                            // Item 2 — tope de 5 líneas; una racha del mismo
+                            // usuario haciendo lo mismo se agrupa en una sola.
+                            for (final grupo in agruparActividades(entradas))
                               ActivityFeedItem(
-                                icon: iconoDeActividad(entrada.tipo),
-                                iconColor: colorDeActividad(entrada.tipo),
-                                titulo: textoActividad(l10n, entrada),
-                                subtitulo: entrada.eventoNombre,
-                                trailing: montoDeActividad(entrada),
+                                icon: iconoDeActividad(grupo.entrada.tipo),
+                                iconColor: colorDeActividad(grupo.entrada.tipo),
+                                titulo: textoActividadAgrupada(l10n, grupo),
+                                subtitulo: grupo.entrada.eventoNombre,
+                                // Un monto puntual no tiene sentido para una
+                                // línea que resume varias actividades.
+                                trailing: grupo.cantidad > 1
+                                    ? null
+                                    : montoDeActividad(grupo.entrada),
                               ),
                           ],
                         ),

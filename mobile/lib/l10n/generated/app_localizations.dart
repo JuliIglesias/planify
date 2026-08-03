@@ -752,6 +752,12 @@ abstract class AppLocalizations {
   /// **'{actor} saldó su deuda'**
   String activityDebtSettled(String actor);
 
+  /// No description provided for @activityDebtSettledWith.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} saldó cuentas con {personas}'**
+  String activityDebtSettledWith(String actor, String personas);
+
   /// No description provided for @activityTaskCreated.
   ///
   /// In es, this message translates to:

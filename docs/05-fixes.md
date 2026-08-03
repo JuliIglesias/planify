@@ -625,3 +625,53 @@ elegir un amigo llama a `agregarMiembro` con el `grupoId` correcto y
 muestra la confirmación; "Compartir link" sigue mostrando el botón de
 copiar (regresión, documenta que ya existía). Mobile 48→51, `flutter
 analyze` limpio.
+
+## Item 2 — Actividad reciente: tope de 5 + agrupación
+
+**Definición confirmada con el usuario** (dos reglas distintas según la
+pantalla):
+- **Home ("Actividad reciente"):** se agrupan entradas consecutivas del
+  mismo actor + mismo tipo + **mismo evento**, sin nombrar a nadie más que
+  el actor ("Mati saldó su deuda (×3)"). Cada grupo cuenta como **una sola**
+  entrada dentro del tope de 5.
+- **Log de un evento puntual (`EventDetailScreen`):** ahí sí interesa con
+  quién — varias `deuda_saldada` seguidas del mismo actor se fusionan
+  nombrando a todas las contrapartes ("Marcos saldó cuentas con Sofía y
+  Juan"). No tiene tope de 5 (es el historial completo de ESE evento, no un
+  resumen).
+
+**Fix (backend):** `DebtsService.saldar()` (HU-18, el "saldar" puntual
+desde el evento) ahora resuelve y guarda el nombre de la contraparte en el
+payload (`contraparteNombre`) — antes solo llevaba `deudaId` y `monto`, no
+alcanzaba para armar "con quién". `saldarTodo` (compensación cruzada, HU-19)
+no se tocó: ya registra una sola entrada agregada por evento afectado.
+
+**Fix (mobile), todo en `activity_presentation.dart`** (el archivo
+compartido de formateo de actividad, mismo lugar que ya usan Home y el
+evento):
+- `agruparActividades(entradas, {limite: 5})` — agrupa por actor+tipo+evento
+  consecutivos, cortando en `limite` grupos **sin perder una racha que
+  sigue después del corte**: una entrada que ya no entra como grupo nuevo
+  igual puede fusionarse con el último grupo visible, así el tope de 5
+  líneas no le "come" una racha al usuario que ya estaba mostrando.
+  `textoActividadAgrupada` agrega el sufijo "(×N)" cuando corresponde, y
+  `home_screen.dart` oculta el monto puntual (`trailing`) de una línea
+  agrupada — no tiene sentido mostrar un solo monto para varias.
+- `agruparLogDeEvento(entradas)` — agrupa solo `deuda_saldada` consecutivas
+  del mismo actor (sin importar tope ni evento, ya está scopeado a uno) y
+  junta los nombres de las contrapartes. `textoActividadLogAgrupada` arma
+  la frase con la nueva clave `activityDebtSettledWith`.
+
+**Validación:**
+- Backend: `api.test.ts` — el payload de `deuda_saldada` al saldar una
+  deuda puntual incluye `contraparteNombre`. Backend 100 tests (se amplió
+  un test existente).
+- Mobile: `activity_grouping_test.dart` (nuevo, tests de lógica pura) — 7
+  casos: agrupa consecutivos iguales; no agrupa si se interrumpe con
+  otro tipo/actor; no agrupa entre eventos distintos; nunca pasa de 5
+  grupos pero sigue fusionando el último; el log del evento nombra
+  contrapartes; una sola deuda no cambia el texto; tipos distintos no se
+  agrupan entre sí. Más 2 tests de integración en `screens_test.dart`
+  (Home muestra "(×3)" sin monto y sin perder la actividad distinta;
+  el log del evento nombra a las dos contrapartes). Mobile 51→60,
+  `flutter analyze` limpio.

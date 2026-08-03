@@ -16,6 +16,7 @@
   "loginAnonymousLinkLabel": "Link de invitación",
   "loginAnonymousNameLabel": "Tu nombre",
   "loginAnonymousNameHint": "ej. Sofía",
+  "loginPendingInvitation": "Te invitaron a un evento. Iniciá sesión, creá una cuenta o continuá como anónimo para unirte.",
   "navHome": "Inicio",
   "navGroups": "Grupos",
   "navBalances": "Saldos",

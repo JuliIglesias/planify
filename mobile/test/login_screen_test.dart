@@ -105,6 +105,43 @@ void main() {
     expect(auth.llamadas, isEmpty);
   });
 
+  testWidgets(
+      'con una invitación pendiente, el Login muestra el aviso pero sigue '
+      'ofreciendo las 3 vías (Item 2)', (tester) async {
+    await tester.pumpWidget(
+      appDePrueba(const LoginScreen(), pendingInvitation: 'tok-pendiente'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.loginPendingInvitation), findsOneWidget);
+    // Ninguna de las 3 vías queda bloqueada por la invitación pendiente.
+    expect(find.text(l10n.loginSubmit), findsOneWidget);
+    expect(find.text(l10n.loginCreateAccount), findsOneWidget);
+    expect(find.text(l10n.loginContinueAnonymous), findsOneWidget);
+  });
+
+  testWidgets('sin invitación pendiente no se muestra el aviso', (tester) async {
+    await tester.pumpWidget(appDePrueba(const LoginScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.loginPendingInvitation), findsNothing);
+  });
+
+  testWidgets(
+      'el diálogo de anónimo precarga el link cuando ya había una invitación '
+      'pendiente (Item 2)', (tester) async {
+    await tester.pumpWidget(
+      appDePrueba(const LoginScreen(), pendingInvitation: 'planify://invite/tok-pendiente'),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.loginContinueAnonymous));
+    await tester.pumpAndSettle();
+
+    final campoLink = tester.widget<TextField>(find.byType(TextField).at(2));
+    expect(campoLink.controller?.text, 'planify://invite/tok-pendiente');
+  });
+
   testWidgets('muestra un mensaje si las credenciales fallan', (tester) async {
     final auth = FakeAuthRepository(fallaLogin: true);
 

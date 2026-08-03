@@ -58,6 +58,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginAnonymousNameHint => 'e.g. Sofía';
 
   @override
+  String get loginPendingInvitation =>
+      'You\'ve been invited to an event. Sign in, create an account, or continue as a guest to join.';
+
+  @override
   String get navHome => 'Home';
 
   @override

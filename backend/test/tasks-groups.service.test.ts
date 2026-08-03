@@ -1,12 +1,15 @@
 import { ActivityLogService } from '../src/modules/activity-log/activity-log.service';
 import { ActivityType } from '../src/modules/activity-log/activity-log.types';
 import { GroupsService } from '../src/modules/groups/groups.service';
+import { InvitationsService } from '../src/modules/invitations/invitations.service';
 import { TasksService } from '../src/modules/tasks/tasks.service';
 import {
   FakeClock,
   FakeEventoRepository,
   FakeGastoRepository,
   FakeGrupoRepository,
+  FakeIdGenerator,
+  FakeInvitacionRepository,
   FakeLogActividadRepository,
   FakeParticipanteRepository,
   FakeTareaRepository,
@@ -121,6 +124,8 @@ function armarGroups() {
   const logs = new FakeLogActividadRepository();
   const clock = new FakeClock();
   const log = new ActivityLogService(logs, participantes, clock);
+  const invitaciones = new FakeInvitacionRepository();
+  const invitations = new InvitationsService(invitaciones, eventos, new FakeIdGenerator(), clock);
 
   return {
     service: new GroupsService(
@@ -132,11 +137,14 @@ function armarGroups() {
       log,
       clock,
       participantes,
+      invitations,
     ),
     grupos,
     eventos,
     usuarios,
     participantes,
+    invitaciones,
+    invitations,
     clock,
   };
 }
@@ -213,6 +221,50 @@ describe('GroupsService — gestión de miembros (Duda #12.2)', () => {
     const grupo = await grupos.create('G', [solo.id]);
 
     await expect(service.abandonar(grupo.id, solo.id)).rejects.toThrow(/único miembro/);
+  });
+});
+
+describe('GroupsService — unirse por invitación con cuenta real (Item 2)', () => {
+  it('un usuario registrado se une al grupo y queda participante del evento, no anónimo', async () => {
+    const { service, grupos, eventos, usuarios, participantes, invitations } = armarGroups();
+    const organizador = usuarios.agregar({ nombre: 'Marcos' });
+    const invitado = usuarios.agregar({ nombre: 'Sofía' });
+    const grupo = await grupos.create('Los Fibes', [organizador.id]);
+    const evento = eventos.agregar({ grupoId: grupo.id, estado: 'planificacion' });
+
+    const invitacion = await invitations.crear(evento.id);
+    const resultado = await service.unirsePorInvitacion(invitacion.tokenUnico, invitado.id);
+
+    expect(resultado).toEqual({ eventoId: evento.id, grupoId: grupo.id });
+    expect(await grupos.esMiembro(grupo.id, invitado.id)).toBe(true);
+
+    const participantesDelEvento = await participantes.listByEvento(evento.id);
+    const propio = participantesDelEvento.find((p) => p.usuarioId === invitado.id);
+    expect(propio).toBeDefined();
+    expect(propio?.esAnonimo).toBe(false);
+  });
+
+  it('reusar el link cuando ya es miembro del grupo no falla (idempotente)', async () => {
+    const { service, grupos, eventos, usuarios, invitations } = armarGroups();
+    const organizador = usuarios.agregar({ nombre: 'Marcos' });
+    const invitado = usuarios.agregar({ nombre: 'Sofía' });
+    const grupo = await grupos.create('Los Fibes', [organizador.id]);
+    const evento = eventos.agregar({ grupoId: grupo.id, estado: 'planificacion' });
+    const invitacion = await invitations.crear(evento.id);
+
+    await service.unirsePorInvitacion(invitacion.tokenUnico, invitado.id);
+    await expect(
+      service.unirsePorInvitacion(invitacion.tokenUnico, invitado.id),
+    ).resolves.toEqual({ eventoId: evento.id, grupoId: grupo.id });
+  });
+
+  it('un token inexistente rechaza la unión', async () => {
+    const { service, usuarios } = armarGroups();
+    const invitado = usuarios.agregar({ nombre: 'Sofía' });
+
+    await expect(
+      service.unirsePorInvitacion('token-que-no-existe', invitado.id),
+    ).rejects.toThrow(/no encontrada/);
   });
 });
 

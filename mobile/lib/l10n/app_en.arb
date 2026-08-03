@@ -16,6 +16,7 @@
   "loginAnonymousLinkLabel": "Invitation link",
   "loginAnonymousNameLabel": "Your name",
   "loginAnonymousNameHint": "e.g. Sofía",
+  "loginPendingInvitation": "You've been invited to an event. Sign in, create an account, or continue as a guest to join.",
   "navHome": "Home",
   "navGroups": "Groups",
   "navBalances": "Balances",

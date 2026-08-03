@@ -194,6 +194,12 @@ abstract class AppLocalizations {
   /// **'ej. Sofía'**
   String get loginAnonymousNameHint;
 
+  /// No description provided for @loginPendingInvitation.
+  ///
+  /// In es, this message translates to:
+  /// **'Te invitaron a un evento. Iniciá sesión, creá una cuenta o continuá como anónimo para unirte.'**
+  String get loginPendingInvitation;
+
   /// No description provided for @navHome.
   ///
   /// In es, this message translates to:

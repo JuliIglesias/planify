@@ -143,6 +143,7 @@ export function createContainer(prisma: PrismaClient): Container {
     activityLog,
     clock,
     participantes,
+    invitations,
   );
   const tasks = new TasksService(tareas, eventos, participantes, activityLog);
   const debts = new DebtsService(

@@ -11,6 +11,7 @@ import {
   UsuarioRepository,
 } from '../../domain/repositories';
 import { ActivityLogService } from '../activity-log/activity-log.service';
+import { InvitationsService } from '../invitations/invitations.service';
 
 /** Cuánto tiempo un evento se muestra como "NUEVO" en la pantalla Groups. */
 const VENTANA_EVENTO_NUEVO_HS = 48;
@@ -49,6 +50,7 @@ export class GroupsService {
     private readonly log: ActivityLogService,
     private readonly clock: Clock,
     private readonly participantes: ParticipanteRepository,
+    private readonly invitations: InvitationsService,
   ) {}
 
   async listarDe(usuarioId: string): Promise<GrupoConMiembros[]> {
@@ -149,6 +151,49 @@ export class GroupsService {
     // Duda #12.2: sumar un amigo al grupo le da visibilidad de todos sus
     // eventos. Se materializa como participante de cada evento aún activo, para
     // que aparezca al asignar gastos/tareas y pueda confirmar asistencia (H-01).
+    await this.materializarParticipantesActivos(grupoId, nuevoUsuarioId, nuevo.nombre);
+  }
+
+  /**
+   * Item 2 — un usuario registrado se une por su cuenta a través de un link de
+   * invitación (en vez de entrar como anónimo). Reutiliza la misma
+   * materialización de H-01: pasa a ser miembro del grupo y participante de
+   * sus eventos activos, con su cuenta real.
+   */
+  async unirsePorInvitacion(
+    tokenInvitacion: string,
+    usuarioId: string,
+  ): Promise<{ eventoId: string; grupoId: string }> {
+    const invitacion = await this.invitations.resolver(tokenInvitacion);
+
+    const evento = await this.eventos.findById(invitacion.eventoId);
+    if (!evento) throw new NotFoundError('Evento no encontrado');
+
+    const usuario = await this.usuarios.findById(usuarioId);
+    if (!usuario) throw new NotFoundError('Usuario no encontrado');
+
+    const yaEsMiembro = await this.grupos.esMiembro(evento.grupoId, usuarioId);
+    if (!yaEsMiembro) {
+      await this.grupos.agregarMiembro(evento.grupoId, usuarioId);
+      await this.materializarParticipantesActivos(evento.grupoId, usuarioId, usuario.nombre);
+    } else {
+      // Reutilizó un link de un grupo del que ya es miembro: igual asegura
+      // que quede participante de ESTE evento puntual (idempotente, H-01).
+      await this.participantes.createParaUsuario({
+        eventoId: evento.id,
+        usuarioId,
+        nombreDisplay: usuario.nombre,
+      });
+    }
+
+    return { eventoId: evento.id, grupoId: evento.grupoId };
+  }
+
+  private async materializarParticipantesActivos(
+    grupoId: string,
+    usuarioId: string,
+    nombreDisplay: string,
+  ): Promise<void> {
     const eventos = await this.eventos.listByGrupo(grupoId);
     const activos = eventos.filter(
       (e) => e.estado === 'planificacion' || e.estado === 'confirmado',
@@ -156,8 +201,8 @@ export class GroupsService {
     for (const evento of activos) {
       await this.participantes.createParaUsuario({
         eventoId: evento.id,
-        usuarioId: nuevoUsuarioId,
-        nombreDisplay: nuevo.nombre,
+        usuarioId,
+        nombreDisplay,
       });
     }
   }

@@ -48,6 +48,12 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<String> resolverInvitacion(String token) async => 'evt-1';
+
+  @override
+  Future<String> unirseConInvitacion(String token) async {
+    llamadas.add('unirseConInvitacion:$token');
+    return 'evt-1';
+  }
 }
 
 class FakeEventsRepository implements EventsRepository {

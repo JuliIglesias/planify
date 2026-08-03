@@ -245,3 +245,71 @@ es la raíz de la confusión reportada.
 pide link+nombre y crea la sesión (`FakeAuthRepository.llamadas` contiene
 `anonimo:evt-1:Sofía`), y no se puede confirmar sin nombre. Mobile 27→29,
 `flutter analyze` limpio.
+
+## Item 2 — El link de invitación ya no fuerza el modo anónimo
+
+**Causa raíz (mobile):** `LoginScreen` escuchaba los deep links en su propio
+`initState`. Como solo se monta cuando `SinSesion()`, abrir un link **con
+sesión ya iniciada no hacía absolutamente nada** (el listener ni existía). Y
+apenas resolvía el token, saltaba derecho a pedir nombre y crear una sesión
+anónima — nunca se veía el Login con sus 3 opciones (Ingresar/Crear
+cuenta/Anónimo), pese a que HU-01 las pide todas visibles.
+
+**Causa raíz (backend):** no existía ningún endpoint para que un usuario
+**registrado** se uniera a un evento/grupo por su cuenta a través de un link
+de invitación — solo estaba el camino anónimo (`POST
+/participants/anonymous`). "Iniciar sesión con cuenta existente y quedar
+unido con la cuenta real" no era implementable sin esto.
+
+**Fix (backend):**
+- `GroupsService.unirsePorInvitacion(token, usuarioId)` (nuevo): resuelve la
+  invitación vía `InvitationsService.resolver` (ahora inyectado en
+  `GroupsService`), y si el usuario no es miembro del grupo del evento, lo
+  suma y materializa como participante de sus eventos activos — reutiliza
+  exactamente la lógica de [H-01](#h-01-los-miembros-del-grupo-ahora-se-vuelven-participantes-del-evento-bloqueante)
+  (`agregarMiembro`), ahora extraída a `materializarParticipantesActivos`.
+  Si ya era miembro, es idempotente: solo asegura el participante de *ese*
+  evento puntual.
+- `POST /invitations/:token/join` (nuevo), detrás de `soloOrganizador` (=
+  cualquier usuario autenticado, no solo el organizador del evento).
+
+**Fix (mobile):**
+- El listener de deep links se mueve de `LoginScreen` a `_RootRouter`
+  (`main.dart`), que vive durante toda la vida de la app. El token capturado
+  se guarda en `pendingInvitationProvider` (nuevo) — no se actúa sobre él de
+  inmediato.
+- `_RootRouter` escucha ese provider y el estado de sesión: si ya hay
+  `SesionOrganizador` (dentro de la misma corrida de la app), aplica la
+  invitación sola vía `AuthRepository.unirseConInvitacion` (nuevo método →
+  `POST /invitations/:token/join`) y navega al evento — sin pedir nada.
+- `LoginScreen` vuelve a mostrarse siempre igual (sus 3 opciones), con un
+  aviso opcional si hay una invitación pendiente (`loginPendingInvitation`).
+  Si la persona elige Ingresar o Crear cuenta, la invitación se aplica sola
+  en cuanto la sesión pasa a `SesionOrganizador` (mismo mecanismo de arriba,
+  sin código adicional en el formulario). Si elige "Continuar como Anónimo",
+  el diálogo del Item 5 precarga el link ya capturado.
+- **Bug real corregido de paso:** `getInitialLink()` y `uriLinkStream` de
+  `app_links` pueden disparar los dos para el mismo link de arranque en frío
+  — es la causa más probable del "pide el nombre dos veces" reportado. Se
+  ignora el primer evento del stream si ya se procesó por `getInitialLink`.
+
+**Pendiente, fuera de alcance de este item (anotado, no corregido):**
+`SessionController.build()` solo restaura la sesión desde `TokenStorage`
+para el camino anónimo (`anonEventId` + `participantToken`); un organizador
+logueado **no** recupera sesión al reabrir la app después de matarla del
+todo (no hay endpoint de "quién soy" cacheado localmente). Mientras la app
+sigue corriendo, la sesión de organizador sí persiste en memoria y el
+criterio de aceptación de este item se cumple; el caso "app killeada + abrir
+un link" con un organizador ya logueado se degrada al login normal (no es
+una regresión: hoy ya no hay forma de restaurar esa sesión, con o sin link).
+
+**Validación:**
+- Backend: `tasks-groups.service.test.ts` — 3 tests nuevos
+  (`unirsePorInvitacion`: usuario nuevo queda miembro y participante real, no
+  anónimo; reusar el link siendo ya miembro es idempotente; token inexistente
+  rechaza). Backend 90→93.
+- Mobile: `main_test.dart` (nuevo) — con sesión de organizador ya iniciada,
+  una invitación pendiente se aplica sola y no aparece ningún diálogo.
+  `login_screen_test.dart` — 3 tests nuevos: el aviso aparece/no aparece según
+  haya invitación pendiente, y el diálogo de anónimo precarga el link. Mobile
+  29→33, `flutter analyze` limpio.

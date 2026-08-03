@@ -274,6 +274,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get eventConfigTitle => 'Configuración del evento';
+
+  @override
   String get eventDetailAvailability => 'Disponibilidad del grupo';
 
   @override

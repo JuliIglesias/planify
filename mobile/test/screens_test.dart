@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planify/core/models/models.dart';
+import 'package:planify/core/widgets/quick_action_button.dart';
 import 'package:planify/features/balances/balances_screen.dart';
 import 'package:planify/features/events/event_detail_screen.dart';
 import 'package:planify/features/groups/groups_screen.dart';
 import 'package:planify/features/home/home_screen.dart';
-import 'package:planify/core/widgets/weekly_availability_grid.dart';
 import 'package:planify/features/history/history_screen.dart';
 import 'package:planify/l10n/generated/app_localizations.dart';
 
@@ -318,8 +318,9 @@ void main() {
     });
   });
 
-  group('EventDetailScreen', () {
-    testWidgets('muestra las acciones rápidas y la asistencia', (tester) async {
+  group('EventDetailScreen (Item 4 — feed de actividad)', () {
+    testWidgets('muestra las acciones rápidas y el acceso a Configuración',
+        (tester) async {
       usarPantallaAlta(tester);
       await tester.pumpWidget(
         appDePrueba(const EventDetailScreen(eventoId: 'evt-1')),
@@ -327,60 +328,29 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Asado en lo de Marcos'), findsOneWidget);
-      expect(find.text(l10n.eventDetailGoing), findsOneWidget);
       expect(find.text(l10n.eventDetailAddExpense), findsOneWidget);
       expect(find.text(l10n.eventDetailAddTask), findsOneWidget);
       expect(find.text(l10n.eventDetailSettle), findsOneWidget);
+      // Asistencia y disponibilidad ya no viven acá — se accede por el
+      // ícono de engranaje a la pantalla de Configuración aparte.
+      expect(find.text(l10n.eventDetailGoing), findsNothing);
+      expect(find.text(l10n.eventDetailMyAvailability), findsNothing);
+      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
     });
 
-    testWidgets('confirmar asistencia llama al repositorio (HU-10)', (tester) async {
-      final events = FakeEventsRepository();
-
-      usarPantallaAlta(tester);
-      await tester.pumpWidget(
-        appDePrueba(const EventDetailScreen(eventoId: 'evt-1'), events: events),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text(l10n.eventDetailGoing));
-      await tester.pumpAndSettle();
-
-      expect(events.llamadas, contains('asistencia:true'));
-    });
-
-    testWidgets('guardar disponibilidad envía los bloques marcados (HU-07)',
+    testWidgets('el ícono de engranaje abre la pantalla de Configuración',
         (tester) async {
-      final availability = FakeAvailabilityRepository();
-
       usarPantallaAlta(tester);
       await tester.pumpWidget(
-        appDePrueba(
-          const EventDetailScreen(eventoId: 'evt-1'),
-          availability: availability,
-        ),
+        appDePrueba(const EventDetailScreen(eventoId: 'evt-1')),
       );
       await tester.pumpAndSettle();
 
-      // Item 3: la sección arranca colapsada, hay que abrirla primero.
-      await tester.tap(find.text(l10n.eventDetailMyAvailability));
+      await tester.tap(find.byIcon(Icons.settings_outlined));
       await tester.pumpAndSettle();
 
-      // La primera grilla es la editable ("Mi disponibilidad"); la segunda es
-      // el heatmap de solo lectura. Se busca la celda adentro de la primera
-      // para no tocar por accidente otro GestureDetector de la pantalla.
-      final celda = find
-          .descendant(
-            of: find.byType(WeeklyAvailabilityGrid).first,
-            matching: find.byType(GestureDetector),
-          )
-          .first;
-
-      await tester.tap(celda);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l10n.eventDetailSaveAvailability));
-      await tester.pumpAndSettle();
-
-      expect(availability.llamadas, contains('guardar:1'));
+      expect(find.text(l10n.eventConfigTitle), findsOneWidget);
+      expect(find.text(l10n.eventDetailAttendance), findsOneWidget);
     });
 
     testWidgets('tomar una tarea la asigna al participante (HU-21)', (tester) async {
@@ -426,7 +396,7 @@ void main() {
       expect(find.text(l10n.eventDetailCompleteTask), findsNothing);
     });
 
-    testWidgets('un evento cancelado deshabilita las acciones', (tester) async {
+    testWidgets('un evento cancelado deshabilita las acciones rápidas', (tester) async {
       final events = FakeEventsRepository(
         detalleEvento: FakeEventsRepository.detalleDeEjemplo(estado: 'cancelado'),
       );
@@ -439,10 +409,10 @@ void main() {
 
       expect(find.text(l10n.eventDetailCancelled.toUpperCase()), findsOneWidget);
 
-      // El botón de asistencia queda inerte.
-      await tester.tap(find.text(l10n.eventDetailGoing));
-      await tester.pumpAndSettle();
-      expect(events.llamadas, isEmpty);
+      final gasto = tester.widget<QuickActionButton>(
+        find.widgetWithText(QuickActionButton, l10n.eventDetailAddExpense),
+      );
+      expect(gasto.onPressed, isNull);
     });
 
     testWidgets('un anónimo no ve las acciones de organizador (H-04)', (tester) async {
@@ -462,7 +432,6 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.more_vert), findsNothing);
-      expect(find.text(l10n.eventDetailTapToConfirm), findsNothing);
     });
 
     testWidgets('el feed traduce los tipos de actividad (HU-24)', (tester) async {

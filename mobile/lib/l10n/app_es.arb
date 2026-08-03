@@ -121,6 +121,7 @@
       "count": { "type": "int" }
     }
   },
+  "eventConfigTitle": "Configuración del evento",
   "eventDetailAvailability": "Disponibilidad del grupo",
   "eventDetailMyAvailability": "Mi disponibilidad",
   "eventDetailSaveAvailability": "Guardar disponibilidad",

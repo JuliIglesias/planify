@@ -361,6 +361,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Item 3: la sección arranca colapsada, hay que abrirla primero.
+      await tester.tap(find.text(l10n.eventDetailMyAvailability));
+      await tester.pumpAndSettle();
+
       // La primera grilla es la editable ("Mi disponibilidad"); la segunda es
       // el heatmap de solo lectura. Se busca la celda adentro de la primera
       // para no tocar por accidente otro GestureDetector de la pantalla.

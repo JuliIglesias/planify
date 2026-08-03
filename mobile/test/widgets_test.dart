@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planify/core/widgets/avatar_stack.dart';
+import 'package:planify/core/widgets/collapsible_section.dart';
 import 'package:planify/core/widgets/event_card.dart';
 import 'package:planify/core/widgets/status_badge.dart';
 import 'package:planify/core/widgets/weekly_availability_grid.dart';
@@ -51,6 +52,44 @@ void main() {
       expect(find.text('Jueves 12 · Casa de Nacho'), findsOneWidget);
       expect(find.text('4 confirmados'), findsOneWidget);
       expect(find.text(r'$1.200'), findsOneWidget);
+    });
+  });
+
+  group('CollapsibleSection (Item 3)', () {
+    testWidgets('arranca cerrada por defecto y se abre al tocar el título',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrap(const CollapsibleSection(
+          titulo: 'Mi disponibilidad',
+          child: Text('contenido de la grilla'),
+        )),
+      );
+
+      expect(find.text('Mi disponibilidad'), findsOneWidget);
+      expect(find.text('contenido de la grilla'), findsNothing);
+
+      await tester.tap(find.text('Mi disponibilidad'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('contenido de la grilla'), findsOneWidget);
+
+      await tester.tap(find.text('Mi disponibilidad'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('contenido de la grilla'), findsNothing);
+    });
+
+    testWidgets('initiallyExpanded la muestra abierta desde el arranque',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrap(const CollapsibleSection(
+          titulo: 'Disponibilidad Semanal',
+          initiallyExpanded: true,
+          child: Text('contenido de la grilla'),
+        )),
+      );
+
+      expect(find.text('contenido de la grilla'), findsOneWidget);
     });
   });
 

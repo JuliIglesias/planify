@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/avatar_stack.dart';
+import '../../core/widgets/collapsible_section.dart';
 import '../../core/widgets/weekly_availability_grid.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../auth/session_controller.dart';
@@ -58,38 +59,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         const SizedBox(height: AppSpacing.lg),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.profileWeeklyAvailability,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+          child: CollapsibleSection(
+            titulo: l10n.profileWeeklyAvailability,
+            initiallyExpanded: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                WeeklyAvailabilityGrid(
+                  horaInicio: 0,
+                  horaFin: 24,
+                  seleccionados: seleccionados,
+                  onToggle: (slot) {
+                    final nuevos = Set<AvailabilitySlot>.from(seleccionados);
+                    if (!nuevos.remove(slot)) nuevos.add(slot);
+                    ref.read(profileAvailabilityProvider.notifier).guardar(nuevos);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  l10n.profileAvailabilityHint,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  WeeklyAvailabilityGrid(
-                    horaInicio: 8,
-                    horaFin: 24,
-                    seleccionados: seleccionados,
-                    onToggle: (slot) {
-                      final nuevos = Set<AvailabilitySlot>.from(seleccionados);
-                      if (!nuevos.remove(slot)) nuevos.add(slot);
-                      ref.read(profileAvailabilityProvider.notifier).guardar(nuevos);
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    l10n.profileAvailabilityHint,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

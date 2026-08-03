@@ -70,7 +70,11 @@ Widget appDePrueba(
         GlobalWidgetsLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      home: pantalla,
+      // Las pantallas raíz (Home/Groups/Balances/Profile) dependen de vivir
+      // dentro de un Scaffold+Material real (así las monta AppShell en
+      // producción); sin esto, widgets como ListTile fallan con "No Material
+      // widget found" al testearlas sueltas.
+      home: Scaffold(body: SafeArea(child: pantalla)),
     ),
   );
 }

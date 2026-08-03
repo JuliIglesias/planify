@@ -8,6 +8,7 @@ import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/collapsible_section.dart';
 import '../../core/widgets/event_card.dart';
 import '../../core/widgets/quick_action_button.dart';
 import '../../core/widgets/status_badge.dart';
@@ -343,79 +344,76 @@ class _Contenido extends ConsumerWidget {
         ),
 
         // ── Mi disponibilidad (HU-07) ─────────────────────────────────────
-        _Seccion(titulo: l10n.eventDetailMyAvailability),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              children: [
-                WeeklyAvailabilityGrid(
-                  horaInicio: 10,
-                  horaFin: 24,
-                  seleccionados: miDisponibilidad,
-                  onToggle: habilitado ? onToggleSlot : (_) {},
+        // Item 3: sección colapsable (cerrada por defecto, esta pantalla ya
+        // tiene mucho contenido) y grilla de 24hs completas (00-23h).
+        CollapsibleSection(
+          titulo: l10n.eventDetailMyAvailability,
+          child: Column(
+            children: [
+              WeeklyAvailabilityGrid(
+                horaInicio: 0,
+                horaFin: 24,
+                seleccionados: miDisponibilidad,
+                onToggle: habilitado ? onToggleSlot : (_) {},
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: habilitado
+                      ? () => onAccion(() async {
+                          await ref
+                              .read(availabilityRepositoryProvider)
+                              .guardar(
+                                eventoId: evento.id,
+                                slots: miDisponibilidad
+                                    .map((s) =>
+                                        (diaSemana: s.diaSemana, bloqueHora: s.bloqueHora))
+                                    .toList(),
+                              );
+                          ref.invalidate(myEventAvailabilityProvider(evento.id));
+                        })
+                      : null,
+                  child: Text(l10n.eventDetailSaveAvailability),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: habilitado
-                        ? () => onAccion(() async {
-                            await ref
-                                .read(availabilityRepositoryProvider)
-                                .guardar(
-                                  eventoId: evento.id,
-                                  slots: miDisponibilidad
-                                      .map((s) =>
-                                          (diaSemana: s.diaSemana, bloqueHora: s.bloqueHora))
-                                      .toList(),
-                                );
-                            ref.invalidate(myEventAvailabilityProvider(evento.id));
-                          })
-                        : null,
-                    child: Text(l10n.eventDetailSaveAvailability),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+        const SizedBox(height: AppSpacing.sm),
 
         // ── Heatmap del grupo (HU-08/HU-09) ───────────────────────────────
-        _Seccion(titulo: l10n.eventDetailAvailability),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: ref.watch(eventHeatmapProvider(evento.id)).when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (err, _) => Text('$err'),
-                  data: (slots) => Column(
-                    children: [
-                      WeeklyAvailabilityGrid(
-                        horaInicio: 10,
-                        horaFin: 24,
-                        totalParticipantes: evento.participantes.length,
-                        heatmap: {
-                          for (final s in slots)
-                            AvailabilitySlot(s.diaSemana, s.bloqueHora): s.disponibles,
-                        },
-                        // HU-09: tocar un bloque del heatmap confirma el horario.
-                        onSlotTap: habilitado && evento.soyOrganizador
-                            ? (slot) => _confirmarHorario(context, ref, slot)
-                            : null,
+        CollapsibleSection(
+          titulo: l10n.eventDetailAvailability,
+          child: ref.watch(eventHeatmapProvider(evento.id)).when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, _) => Text('$err'),
+                data: (slots) => Column(
+                  children: [
+                    WeeklyAvailabilityGrid(
+                      horaInicio: 0,
+                      horaFin: 24,
+                      totalParticipantes: evento.participantes.length,
+                      heatmap: {
+                        for (final s in slots)
+                          AvailabilitySlot(s.diaSemana, s.bloqueHora): s.disponibles,
+                      },
+                      // HU-09: tocar un bloque del heatmap confirma el horario.
+                      onSlotTap: habilitado && evento.soyOrganizador
+                          ? (slot) => _confirmarHorario(context, ref, slot)
+                          : null,
+                    ),
+                    if (evento.soyOrganizador) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        l10n.eventDetailTapToConfirm,
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: AppColors.textSecondary),
                       ),
-                      if (evento.soyOrganizador) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          l10n.eventDetailTapToConfirm,
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: AppColors.textSecondary),
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
-          ),
+              ),
         ),
 
         // ── Tareas (HU-20 a HU-23) ────────────────────────────────────────

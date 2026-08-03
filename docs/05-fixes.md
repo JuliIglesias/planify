@@ -589,3 +589,39 @@ nombre para diferenciar resultados con nombres parecidos.
   test hasta ahora) — el email aparece en gris debajo del resultado;
   enviar solicitud llama al repositorio; una solicitud pendiente se ve y se
   acepta en la misma pantalla. Mobile 45→48, `flutter analyze` limpio.
+
+## Item 6 — Agregar gente al evento: amigos guardados + copiar link
+
+**Hallazgo: el botón de copiar ya existía.** El diálogo de "Invitar"
+(`_invitar` en `event_detail_screen.dart`) ya tenía un `FilledButton.icon`
+de "Copiar enlace" que copia al portapapeles y muestra una confirmación —
+no había que agregarlo. Lo que sí faltaba de verdad era la otra vía: sumar
+un amigo ya guardado directo al evento, sin pasar por un link.
+
+**Confirmado con el usuario:** agregar un amigo directo al evento **no**
+pide aceptación — se suma de una, igual que ya hace `agregarMiembro` al
+sumar un amigo a un grupo (Fase 3, H-10).
+
+**Fix:**
+- El ícono de invitar ahora abre un selector con dos opciones: "Agregar
+  amigos guardados" (nuevo) y "Compartir link de invitación" (el diálogo de
+  siempre, sin cambios).
+- "Agregar amigos guardados" reutiliza el selector de amigos ya existente
+  (`elegirAmigos`, `friend_picker.dart` — el mismo que ya se usa al crear
+  un evento y al gestionar un grupo) y por cada elegido llama a
+  `GroupsService.agregarMiembro` (el endpoint `POST /groups/:id/members`
+  ya existía — **no hizo falta ningún endpoint nuevo**, solo el `grupoId`
+  del evento, que el backend ya devolvía en `/events/:id` pero mobile no
+  parseaba). Como agregar a alguien al grupo lo materializa como
+  participante de todos sus eventos activos (H-01), automáticamente queda
+  sumado a este evento y a cualquier otro evento activo que comparta grupo
+  — es el mismo comportamiento que ya tiene "Agregar amigo" en gestión de
+  grupo, ahora accesible también desde el evento.
+- `DetalleEvento.grupoId` (nuevo campo, plano — mismo patrón que
+  `EventoResumen.grupoId` del Item 1).
+
+**Validación:** `screens_test.dart` — el selector ofrece las dos opciones;
+elegir un amigo llama a `agregarMiembro` con el `grupoId` correcto y
+muestra la confirmación; "Compartir link" sigue mostrando el botón de
+copiar (regresión, documenta que ya existía). Mobile 48→51, `flutter
+analyze` limpio.

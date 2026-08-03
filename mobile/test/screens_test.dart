@@ -5,6 +5,7 @@ import 'package:planify/core/network/token_storage.dart';
 import 'package:planify/core/widgets/quick_action_button.dart';
 import 'package:planify/features/balances/balances_screen.dart';
 import 'package:planify/features/events/event_detail_screen.dart';
+import 'package:planify/features/friends/data/friends_repository.dart';
 import 'package:planify/features/groups/groups_screen.dart';
 import 'package:planify/features/home/home_screen.dart';
 import 'package:planify/features/history/history_screen.dart';
@@ -386,6 +387,66 @@ void main() {
       // al cambio de sesión) se cubre en main_test.dart.
       expect(await storageAnonimo.read(StorageKeys.participantToken), isNull);
       expect(await storageAnonimo.read(StorageKeys.anonEventId), isNull);
+    });
+
+    group('agregar gente al evento (Item 6)', () {
+      testWidgets('el ícono de invitar ofrece amigos guardados y compartir link',
+          (tester) async {
+        usarPantallaAlta(tester);
+        await tester.pumpWidget(appDePrueba(const EventDetailScreen(eventoId: 'evt-1')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.person_add_outlined).first);
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.eventDetailAddFriends), findsOneWidget);
+        expect(find.text(l10n.eventDetailShareLink), findsOneWidget);
+      });
+
+      testWidgets(
+          'elegir un amigo guardado lo agrega directo al grupo del evento, '
+          'sin pedirle aceptación', (tester) async {
+        final friends = FakeFriendsRepository(
+          amigos: const [Persona(id: 'u1', nombre: 'Bruno')],
+        );
+        final groups = FakeGroupsRepository();
+
+        usarPantallaAlta(tester);
+        await tester.pumpWidget(appDePrueba(
+          const EventDetailScreen(eventoId: 'evt-1'),
+          friends: friends,
+          groups: groups,
+        ));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.person_add_outlined).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.eventDetailAddFriends));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Bruno'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.friendsPickConfirm(1)));
+        await tester.pumpAndSettle();
+
+        // FakeEventsRepository.detalleDeEjemplo() usa grupoId 'g1'.
+        expect(groups.llamadas, contains('agregar:g1:u1'));
+        expect(find.text(l10n.eventDetailFriendsAdded(1)), findsOneWidget);
+      });
+
+      testWidgets('compartir link sigue teniendo el botón de copiar', (tester) async {
+        usarPantallaAlta(tester);
+        await tester.pumpWidget(appDePrueba(const EventDetailScreen(eventoId: 'evt-1')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.person_add_outlined).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.eventDetailShareLink));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.eventDetailInviteTitle), findsOneWidget);
+        expect(find.text(l10n.eventDetailCopyLink), findsOneWidget);
+      });
     });
 
     testWidgets('tomar una tarea la asigna al participante (HU-21)', (tester) async {

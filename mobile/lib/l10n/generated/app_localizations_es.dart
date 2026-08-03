@@ -485,6 +485,17 @@ class AppLocalizationsEs extends AppLocalizations {
       '¡Enlace de invitación copiado al portapapeles!';
 
   @override
+  String get eventDetailAddFriends => 'Agregar amigos guardados';
+
+  @override
+  String get eventDetailShareLink => 'Compartir link de invitación';
+
+  @override
+  String eventDetailFriendsAdded(int count) {
+    return '$count agregados al evento';
+  }
+
+  @override
   String get groupsManage => 'Administrar grupo';
 
   @override

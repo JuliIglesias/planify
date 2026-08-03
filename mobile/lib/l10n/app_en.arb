@@ -264,6 +264,16 @@
   "eventDetailInviteHint": "Share this invitation link with your friends so they can join the event:",
   "eventDetailCopyLink": "Copy link",
   "eventDetailLinkCopied": "Invitation link copied to clipboard!",
+  "eventDetailAddFriends": "Add saved friends",
+  "eventDetailShareLink": "Share invitation link",
+  "eventDetailFriendsAdded": "{count} added to the event",
+  "@eventDetailFriendsAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "groupsManage": "Manage group",
   "groupsRename": "Rename",
   "groupsAddMember": "Add friend",

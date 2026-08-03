@@ -264,6 +264,16 @@
   "eventDetailInviteHint": "Compartí este enlace de invitación con tus amigos para que se sumen al evento:",
   "eventDetailCopyLink": "Copiar enlace",
   "eventDetailLinkCopied": "¡Enlace de invitación copiado al portapapeles!",
+  "eventDetailAddFriends": "Agregar amigos guardados",
+  "eventDetailShareLink": "Compartir link de invitación",
+  "eventDetailFriendsAdded": "{count} agregados al evento",
+  "@eventDetailFriendsAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "groupsManage": "Administrar grupo",
   "groupsRename": "Cambiar nombre",
   "groupsAddMember": "Agregar amigo",

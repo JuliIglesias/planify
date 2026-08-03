@@ -81,6 +81,7 @@ class FakeEventsRepository implements EventsRepository {
   }) =>
       DetalleEvento(
         id: 'evt-1',
+        grupoId: 'g1',
         nombre: 'Asado en lo de Marcos',
         lugarTexto: 'Casa de Nacho',
         estado: estado,

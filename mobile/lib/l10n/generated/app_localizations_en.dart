@@ -484,6 +484,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventDetailLinkCopied => 'Invitation link copied to clipboard!';
 
   @override
+  String get eventDetailAddFriends => 'Add saved friends';
+
+  @override
+  String get eventDetailShareLink => 'Share invitation link';
+
+  @override
+  String eventDetailFriendsAdded(int count) {
+    return '$count added to the event';
+  }
+
+  @override
   String get groupsManage => 'Manage group';
 
   @override

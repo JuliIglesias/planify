@@ -80,6 +80,12 @@ describe('SCRUM-14 — amigos (HU-31)', () => {
     // Buscar por nombre encuentra a Bruno (excluye a Ana).
     const encontrados = await friends.buscar(ana.id, 'bru');
     expect(encontrados.map((p) => p.nombre)).toEqual(['Bruno']);
+    // Item 3 (Fase 4) — el email viaja para desambiguar nombres repetidos.
+    expect(encontrados[0].email).toBe('bruno@mail.com');
+
+    // También se puede buscar directo por email.
+    const porEmail = await friends.buscar(ana.id, 'bruno@mail');
+    expect(porEmail.map((p) => p.nombre)).toEqual(['Bruno']);
 
     await friends.enviarSolicitud(ana.id, bruno.id);
 

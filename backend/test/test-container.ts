@@ -80,7 +80,7 @@ export function createTestContainer(): TestContainer {
   const participantes = new FakeParticipanteRepository();
   const eventos = new FakeEventoRepository(participantes);
   const invitaciones = new FakeInvitacionRepository();
-  const disponibilidad = new FakeDisponibilidadRepository();
+  const disponibilidad = new FakeDisponibilidadRepository(participantes);
   const disponibilidadPerfil = new FakeProfileAvailabilityRepository();
   const ubicaciones = new FakeLocationRepository();
   const tareas = new FakeTareaRepository();

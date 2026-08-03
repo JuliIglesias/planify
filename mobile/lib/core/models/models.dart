@@ -31,6 +31,7 @@ class Participante {
 class DetalleEvento {
   const DetalleEvento({
     required this.id,
+    required this.grupoId,
     required this.nombre,
     required this.lugarTexto,
     required this.estado,
@@ -43,6 +44,10 @@ class DetalleEvento {
   });
 
   final String id;
+  /// Item 6 — es lo que permite agregar un amigo guardado directo al grupo
+  /// del evento (`GroupsService.agregarMiembro`) desde la pantalla del
+  /// evento, sin tener que ir a gestionar el grupo aparte.
+  final String grupoId;
   final String nombre;
   final String lugarTexto;
   final String estado;
@@ -63,6 +68,7 @@ class DetalleEvento {
 
   factory DetalleEvento.fromJson(Map<String, dynamic> json) => DetalleEvento(
         id: json['id'] as String? ?? '',
+        grupoId: json['grupoId'] as String? ?? '',
         nombre: json['nombre'] as String? ?? '',
         lugarTexto: json['lugarTexto'] as String? ?? '',
         estado: json['estado'] as String? ?? 'planificacion',

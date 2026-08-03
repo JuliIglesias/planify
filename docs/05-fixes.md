@@ -461,3 +461,167 @@ rápidas, "Mi disponibilidad", heatmap del grupo, tareas, log de actividad.
   al repositorio; guardar disponibilidad envía los bloques; un no-organizador
   no ve el hint de confirmar horario.
 - Mobile 38→41, `flutter analyze` limpio.
+
+---
+
+# Fase 4 — 6 mejoras más reportadas por el usuario
+
+> Mismo formato que la Fase 3: cada item con su propia branch/PR y su test.
+> Orden de implementación sugerido por el usuario: 4 → 1 → 3 → 6 → 2 → 5.
+
+## Item 4 — "No voy" no se veía guardado + no excluía del heatmap grupal
+
+**Investigación pedida antes del fix — no era el bug que se sospechaba.**
+Se revisó de punta a punta: mobile llama `responderAsistencia(confirma:
+false)` correctamente, el backend persiste `'rechazado'` bien (ya había un
+test en `events.service.test.ts` que lo cubre y seguía en verde), y no hay
+ningún cableado cruzado entre los botones "Voy"/"No voy". **La causa real:
+la UI nunca mostraba cuál era la respuesta actual** — los dos botones se
+veían siempre idénticos sin importar qué habías contestado, lo que daba la
+sensación de que "No voy" no quedaba guardado.
+
+Lo que sí era un gap real y sin implementar: el heatmap de disponibilidad
+del grupo **contaba a todos los participantes por igual**, sin importar su
+respuesta de asistencia — quien decía "No voy" igual sumaba en el mapa de
+calor si había cargado horarios antes de responder.
+
+**Fix (mobile) — mostrar el estado actual:**
+- `EventConfigScreen`: los botones de asistencia pasan de
+  `TextButton`/`FilledButton` fijos a `_BotonAsistencia`, que se resalta
+  (relleno + ✓) cuando es la respuesta guardada (`evento.miParticipanteId`
+  contra `evento.participantes`) y queda en outline cuando no.
+- Se probó primero con `SegmentedButton<bool>` (M3, selección visual
+  automática) pero sus segmentos internos no son tappeables de forma
+  confiable con `WidgetTester.tap` sobre el texto — se volvió a dos botones
+  independientes con estado manual, más simple y 100% testeable.
+
+**Fix (backend) — excluir del heatmap:**
+- `PrismaDisponibilidadRepository.heatmapForEvento`: el `groupBy` ahora
+  filtra `participante: { estadoAsistencia: { not: 'rechazado' } }` (join
+  contra `Participante`). Es un filtro en tiempo de consulta, no un estado
+  que se guarda aparte — por eso volver a "Voy" hace que sus horarios
+  cuenten de nuevo sin ningún paso extra.
+- `FakeDisponibilidadRepository` (test) ahora recibe una referencia a
+  `FakeParticipanteRepository` para poder replicar el mismo filtro en los
+  tests con fakes.
+
+**Validación:**
+- Backend: `availability.service.test.ts` (nuevo) — cuenta disponibilidad de
+  quien no respondió/confirmó; excluye a quien dijo "No voy"; un bloque
+  donde solo había disponibilidad de un "No voy" desaparece del heatmap;
+  volver a "Voy" reincorpora sus horarios. Backend 96→100.
+- Mobile: `event_config_screen_test.dart` — 2 tests nuevos: tocar "No voy"
+  llama al repositorio con `confirma:false`; el botón que refleja la
+  respuesta actual queda resaltado (ícono ✓) y el otro no. Mobile 41→43,
+  `flutter analyze` limpio.
+
+## Item 1 — Un anónimo ahora puede cerrar sesión para entrar a otro evento
+
+**Verificación pedida antes del fix.** El modelo confirmado por el usuario:
+el anónimo tiene un único evento asociado por sesión, identificado por el
+username que eligió al entrar (por link o por el botón "Continuar como
+Anónimo" — los dos ya convergen en el mismo diálogo desde la Fase 3). Para
+entrar a OTRO evento con otro username hay que cerrar sesión primero y
+volver a entrar desde el Login.
+
+**El gap real: un anónimo no tenía ninguna forma de cerrar sesión.**
+`cerrarSesion()` (en `SessionController`) ya existía y funcionaba, pero el
+único lugar que lo invocaba era el `ListTile` de "Cerrar sesión" en
+`ProfileScreen` — y `ProfileScreen` solo es alcanzable a través de
+`AppShell` (bottom nav), que `_RootRouter` solo muestra para
+`SesionOrganizador`. Una sesión anónima renderiza `EventDetailScreen`
+directo, sin bottom nav ni Perfil: no había ningún camino de vuelta al
+Login.
+
+**Fix:** ícono de "Salir" (`Icons.logout`) en el AppBar de
+`EventDetailScreen`, visible solo cuando `sessionControllerProvider` es
+`SesionAnonima`. Llama a `cerrarSesion()`; `_RootRouter` reacciona solo al
+cambio de sesión y muestra el Login (mismo mecanismo que ya usa para
+aplicar invitaciones pendientes, Fase 3 — no hizo falta lógica de
+navegación nueva).
+
+**Validación:**
+- `screens_test.dart` — el ícono aparece con sesión anónima y no con
+  organizador; tocarlo borra el token guardado.
+- `main_test.dart` — test end-to-end sobre `PlanifyApp`: con una sesión
+  anónima restaurada del dispositivo, tocar el ícono de salir devuelve a la
+  pantalla de Login.
+- Mobile 43→45, `flutter analyze` limpio.
+
+## Item 3 — Búsqueda de amigos: email para desambiguar (sin campo username)
+
+**Hallazgo importante, contradice la premisa del pedido.** El flujo
+"roto/circular" que describía el usuario (buscador en Perfil, mensaje de
+"agregalo desde el perfil", nada implementado del otro lado) **no existe en
+el código actual**. `FriendsScreen` ya tiene, en una sola pantalla: buscador
+(por nombre o email), botón "Agregar", sección de solicitudes pendientes
+con "Aceptar", y la lista de amigos — se llega ahí desde Perfil → "Mis
+amigos". Es exactamente lo que pedía el item. Es probable que el feedback
+sea de antes de SCRUM-14 (ver [H-16](04-auditoria.md), que agregó "Mis
+amigos" a Perfil porque antes no existía nada). No se tocó esa estructura.
+
+**Lo que sí se implementó — email para desambiguar, sin campo `username`.**
+Se confirmó con el usuario: no hace falta un `username` único (evita la
+migración + pantalla para definirlo que hubiera hecho falta). En cambio, la
+búsqueda (que ya buscaba por nombre o email) ahora también **devuelve el
+email** en cada resultado, y la pantalla lo muestra en gris debajo del
+nombre para diferenciar resultados con nombres parecidos.
+
+**Fix (backend):**
+- Nuevo tipo `PersonaBusqueda extends PersonaRef` (con `email`), **solo**
+  para `UsuarioRepository.search()` — no se tocó el `PersonaRef` genérico
+  que ya usan actor de actividad, asignado de tarea, deudor/acreedor, etc.,
+  para no filtrar el email a lugares donde no hace falta.
+- `PrismaUsuarioRepository.search`: agrega `email` al `select`.
+
+**Fix (mobile):**
+- `Persona.email` (nullable — solo viene en resultados de búsqueda, no en
+  la lista de amigos ni en solicitudes pendientes).
+- `FriendsScreen`: cada resultado de búsqueda muestra el email como
+  `subtitle` en gris (`AppColors.textSecondary`).
+
+**Validación:**
+- Backend: `scrum14.test.ts` — el resultado de búsqueda trae el email;
+  buscar directamente por fragmento de email también encuentra a la
+  persona. Backend 100 tests (se ampliaron aserciones de un test existente,
+  no se sumaron `it()` nuevos).
+- Mobile: `friends_screen_test.dart` (nuevo, la pantalla no tenía ningún
+  test hasta ahora) — el email aparece en gris debajo del resultado;
+  enviar solicitud llama al repositorio; una solicitud pendiente se ve y se
+  acepta en la misma pantalla. Mobile 45→48, `flutter analyze` limpio.
+
+## Item 6 — Agregar gente al evento: amigos guardados + copiar link
+
+**Hallazgo: el botón de copiar ya existía.** El diálogo de "Invitar"
+(`_invitar` en `event_detail_screen.dart`) ya tenía un `FilledButton.icon`
+de "Copiar enlace" que copia al portapapeles y muestra una confirmación —
+no había que agregarlo. Lo que sí faltaba de verdad era la otra vía: sumar
+un amigo ya guardado directo al evento, sin pasar por un link.
+
+**Confirmado con el usuario:** agregar un amigo directo al evento **no**
+pide aceptación — se suma de una, igual que ya hace `agregarMiembro` al
+sumar un amigo a un grupo (Fase 3, H-10).
+
+**Fix:**
+- El ícono de invitar ahora abre un selector con dos opciones: "Agregar
+  amigos guardados" (nuevo) y "Compartir link de invitación" (el diálogo de
+  siempre, sin cambios).
+- "Agregar amigos guardados" reutiliza el selector de amigos ya existente
+  (`elegirAmigos`, `friend_picker.dart` — el mismo que ya se usa al crear
+  un evento y al gestionar un grupo) y por cada elegido llama a
+  `GroupsService.agregarMiembro` (el endpoint `POST /groups/:id/members`
+  ya existía — **no hizo falta ningún endpoint nuevo**, solo el `grupoId`
+  del evento, que el backend ya devolvía en `/events/:id` pero mobile no
+  parseaba). Como agregar a alguien al grupo lo materializa como
+  participante de todos sus eventos activos (H-01), automáticamente queda
+  sumado a este evento y a cualquier otro evento activo que comparta grupo
+  — es el mismo comportamiento que ya tiene "Agregar amigo" en gestión de
+  grupo, ahora accesible también desde el evento.
+- `DetalleEvento.grupoId` (nuevo campo, plano — mismo patrón que
+  `EventoResumen.grupoId` del Item 1).
+
+**Validación:** `screens_test.dart` — el selector ofrece las dos opciones;
+elegir un amigo llama a `agregarMiembro` con el `grupoId` correcto y
+muestra la confirmación; "Compartir link" sigue mostrando el botón de
+copiar (regresión, documenta que ya existía). Mobile 48→51, `flutter
+analyze` limpio.

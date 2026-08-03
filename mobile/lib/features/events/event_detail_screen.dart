@@ -12,6 +12,9 @@ import '../../core/widgets/event_card.dart';
 import '../../core/widgets/quick_action_button.dart';
 import '../../core/widgets/status_badge.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../auth/session_controller.dart';
+import '../friends/friend_picker.dart';
+import '../groups/data/groups_repository.dart';
 import '../home/home_providers.dart';
 import 'data/events_repository.dart';
 import 'data/expenses_repository.dart';
@@ -60,12 +63,23 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final detalle = ref.watch(eventDetailProvider(widget.eventoId));
+    final esAnonimo = ref.watch(sessionControllerProvider).value is SesionAnonima;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         title: Text(detalle.value?.nombre ?? l10n.commonLoading),
         actions: [
+          // Item 1 — un anónimo no tiene bottom nav ni Perfil: sin esto no
+          // había forma de cerrar sesión para entrar a otro evento con un
+          // username distinto.
+          if (esAnonimo)
+            IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: l10n.profileLogout,
+              onPressed: () =>
+                  ref.read(sessionControllerProvider.notifier).cerrarSesion(),
+            ),
           IconButton(
             icon: const Icon(Icons.person_add_outlined),
             tooltip: l10n.eventDetailInviteTitle,
@@ -114,7 +128,68 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
   }
 
+  /// Item 6 — agregar gente al evento tiene dos vías: amigos ya guardados
+  /// (directo, sin link) o compartir el link de invitación.
   Future<void> _invitar() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final opcion = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.person_search_outlined),
+              title: Text(l10n.eventDetailAddFriends),
+              onTap: () => Navigator.pop(ctx, 'amigos'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.link),
+              title: Text(l10n.eventDetailShareLink),
+              onTap: () => Navigator.pop(ctx, 'link'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted || opcion == null) return;
+    if (opcion == 'amigos') {
+      await _agregarAmigosGuardados();
+    } else {
+      await _compartirLink();
+    }
+  }
+
+  /// Se agregan directo, sin pedirles aceptación: mismo criterio que ya usa
+  /// "Agregar amigo" en la gestión de grupo (`GroupsService.agregarMiembro`),
+  /// que es lo que se termina llamando acá — ya son amigos dentro de la app.
+  Future<void> _agregarAmigosGuardados() async {
+    final l10n = AppLocalizations.of(context)!;
+    final evento = ref.read(eventDetailProvider(widget.eventoId)).value;
+    if (evento == null) return;
+
+    final elegidos = await elegirAmigos(context, ref, multiple: true);
+    if (elegidos == null || elegidos.isEmpty || !mounted) return;
+
+    await _accion(() async {
+      for (final amigo in elegidos) {
+        await ref
+            .read(groupsRepositoryProvider)
+            .agregarMiembro(grupoId: evento.grupoId, usuarioId: amigo.id);
+      }
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.eventDetailFriendsAdded(elegidos.length))),
+      );
+    }
+  }
+
+  Future<void> _compartirLink() async {
     final l10n = AppLocalizations.of(context)!;
     try {
       final token = await ref.read(eventsRepositoryProvider).crearInvitacion(widget.eventoId);

@@ -47,6 +47,47 @@ void main() {
     expect(events.llamadas, contains('asistencia:true'));
   });
 
+  testWidgets('tocar "No voy" llama al repositorio con confirma:false (Item 4)',
+      (tester) async {
+    final events = FakeEventsRepository();
+
+    usarPantallaAlta(tester, alto: 4000);
+    await tester.pumpWidget(
+      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), events: events),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.eventDetailNotGoing));
+    await tester.pumpAndSettle();
+
+    expect(events.llamadas, contains('asistencia:false'));
+  });
+
+  testWidgets('el botón que refleja mi respuesta actual queda resaltado (Item 4)',
+      (tester) async {
+    final rechazado = FakeEventsRepository(
+      detalleEvento:
+          FakeEventsRepository.detalleDeEjemplo(miEstadoAsistencia: 'rechazado'),
+    );
+
+    usarPantallaAlta(tester, alto: 4000);
+    await tester.pumpWidget(
+      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), events: rechazado),
+    );
+    await tester.pumpAndSettle();
+
+    // "No voy" queda resaltado (con tilde, un solo botón la muestra); "Voy"
+    // queda apagado (outline, sin resaltar).
+    expect(find.byIcon(Icons.check), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.text(l10n.eventDetailGoing),
+        matching: find.byType(OutlinedButton),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('guardar disponibilidad envía los bloques marcados (HU-07)',
       (tester) async {
     final availability = FakeAvailabilityRepository();

@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { PersonaRef, Usuario } from '../../domain/entities';
+import { PersonaBusqueda, Usuario } from '../../domain/entities';
 import {
   ActualizarPerfilData,
   CrearUsuarioData,
@@ -48,7 +48,7 @@ export class PrismaUsuarioRepository implements UsuarioRepository {
     await this.prisma.usuario.update({ where: { id }, data: { passwordHash } });
   }
 
-  async search(query: string, exceptoUsuarioId: string): Promise<PersonaRef[]> {
+  async search(query: string, exceptoUsuarioId: string): Promise<PersonaBusqueda[]> {
     const rows = await this.prisma.usuario.findMany({
       where: {
         id: { not: exceptoUsuarioId },
@@ -57,10 +57,10 @@ export class PrismaUsuarioRepository implements UsuarioRepository {
           { email: { contains: query, mode: 'insensitive' } },
         ],
       },
-      select: { id: true, nombre: true },
+      select: { id: true, nombre: true, email: true },
       take: 20,
       orderBy: { nombre: 'asc' },
     });
-    return rows.map((u) => ({ id: u.id, nombre: u.nombre }));
+    return rows.map((u) => ({ id: u.id, nombre: u.nombre, email: u.email }));
   }
 }

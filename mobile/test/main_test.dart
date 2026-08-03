@@ -12,6 +12,7 @@ import 'package:planify/features/events/data/events_repository.dart';
 import 'package:planify/features/events/data/expenses_repository.dart';
 import 'package:planify/features/events/data/tasks_repository.dart';
 import 'package:planify/features/groups/data/groups_repository.dart';
+import 'package:planify/l10n/generated/app_localizations.dart';
 import 'package:planify/main.dart';
 
 import 'helpers/fake_repositories.dart';
@@ -22,8 +23,10 @@ import 'helpers/test_app.dart';
 /// vida de la app y aplica la invitación pendiente en cuanto hay sesión — el
 /// bug de Item 2 era que eso solo pasaba adentro de LoginScreen.
 void main() {
+  late AppLocalizations l10n;
+
   setUpAll(() async {
-    await prepararLocalizaciones();
+    l10n = await prepararLocalizaciones();
   });
 
   testWidgets(
@@ -66,5 +69,42 @@ void main() {
     expect(auth.llamadas, contains('unirseConInvitacion:tok-abc'));
     expect(container.read(pendingInvitationProvider), isNull);
     expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  testWidgets(
+      'un anónimo que cierra sesión desde el evento vuelve al Login (Item 1)',
+      (tester) async {
+    final tokenStorage = FakeTokenStorage({
+      StorageKeys.anonEventId: 'evt-1',
+      StorageKeys.participantToken: 'tok-anon',
+    });
+    final container = ProviderContainer(
+      overrides: [
+        tokenStorageProvider.overrideWithValue(tokenStorage),
+        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+        eventsRepositoryProvider.overrideWithValue(FakeEventsRepository()),
+        availabilityRepositoryProvider.overrideWithValue(FakeAvailabilityRepository()),
+        tasksRepositoryProvider.overrideWithValue(FakeTasksRepository()),
+        expensesRepositoryProvider.overrideWithValue(FakeExpensesRepository()),
+        activityLogRepositoryProvider.overrideWithValue(FakeActivityLogRepository()),
+        balancesRepositoryProvider.overrideWithValue(FakeBalancesRepository()),
+        groupsRepositoryProvider.overrideWithValue(FakeGroupsRepository()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const PlanifyApp()),
+    );
+    await tester.pumpAndSettle();
+
+    // Sesión anónima restaurada del dispositivo: entra directo al evento,
+    // sin Login ni bottom nav — por eso hacía falta el ícono de salir.
+    expect(find.byIcon(Icons.logout), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.logout));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.loginContinueAnonymous), findsOneWidget);
   });
 }

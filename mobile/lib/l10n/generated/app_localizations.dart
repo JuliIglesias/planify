@@ -956,6 +956,24 @@ abstract class AppLocalizations {
   /// **'¡Enlace de invitación copiado al portapapeles!'**
   String get eventDetailLinkCopied;
 
+  /// No description provided for @eventDetailAddFriends.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar amigos guardados'**
+  String get eventDetailAddFriends;
+
+  /// No description provided for @eventDetailShareLink.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartir link de invitación'**
+  String get eventDetailShareLink;
+
+  /// No description provided for @eventDetailFriendsAdded.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} agregados al evento'**
+  String eventDetailFriendsAdded(int count);
+
   /// No description provided for @groupsManage.
   ///
   /// In es, this message translates to:

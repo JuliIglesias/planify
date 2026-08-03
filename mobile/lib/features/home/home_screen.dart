@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
-import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/event_card.dart';
+import '../../core/widgets/evento_resumen_card.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../auth/session_controller.dart';
-import '../events/event_detail_screen.dart';
 import '../events/widgets/activity_presentation.dart';
 import 'home_providers.dart';
 
@@ -89,7 +87,7 @@ class HomeScreen extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     child: Column(
                       children: [
-                        for (final evento in lista) _EventoCard(evento: evento),
+                        for (final evento in lista) EventoResumenCard(evento: evento),
                       ],
                     ),
                   ),
@@ -138,33 +136,6 @@ class HomeScreen extends ConsumerWidget {
                       ),
               ),
         ],
-      ),
-    );
-  }
-}
-
-class _EventoCard extends StatelessWidget {
-  const _EventoCard({required this.evento});
-
-  final EventoResumen evento;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    final fecha = evento.fechaHoraInicio != null
-        ? DateFormat("EEEE d 'de' MMMM · HH:mm", 'es').format(evento.fechaHoraInicio!)
-        : l10n.commonToBeDefined;
-
-    return EventCard(
-      titulo: evento.nombre,
-      subtitulo: '$fecha · ${evento.lugarTexto}',
-      participantes: evento.participantes.map((p) => p.nombreDisplay).toList(),
-      chips: [l10n.groupsConfirmed(evento.confirmados)],
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => EventDetailScreen(eventoId: evento.id),
-        ),
       ),
     );
   }

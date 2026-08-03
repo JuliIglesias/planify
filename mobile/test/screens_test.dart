@@ -87,6 +87,7 @@ void main() {
         eventos: const [
           EventoResumen(
             id: 'e1',
+            grupoId: 'g1',
             nombre: 'Asado en lo de Marcos',
             lugarTexto: 'Casa de Nacho',
             estado: 'planificacion',
@@ -124,34 +125,92 @@ void main() {
     });
   });
 
-  group('GroupsScreen', () {
-    testWidgets('muestra el badge NUEVO y el punto de no leídos (Duda #2)',
-        (tester) async {
-      final groups = FakeGroupsRepository(
-        grupos: const [
-          GrupoResumen(
-            id: 'g1',
-            nombre: 'Los Fibes',
-            miembros: ['Marcos', 'Sofía'],
-            noLeidos: 3,
-            tieneEventoNuevo: true,
-            proximoEvento: ProximoEvento(
+  group('GroupsScreen (Item 1 — carrusel + eventos por grupo)', () {
+    final dosGrupos = FakeGroupsRepository(
+      grupos: const [
+        GrupoResumen(
+          id: 'g1',
+          nombre: 'Los Fibes',
+          miembros: ['Marcos', 'Sofía'],
+          noLeidos: 3,
+          tieneEventoNuevo: true,
+          eventos: [
+            EventoDeGrupo(
               id: 'e1',
               nombre: 'Asado',
               lugarTexto: 'Casa de Nacho',
               estado: 'planificacion',
               confirmados: 4,
             ),
-          ),
+          ],
+        ),
+        GrupoResumen(
+          id: 'g2',
+          nombre: 'Fútbol 5',
+          miembros: ['Lucas'],
+          eventos: [
+            EventoDeGrupo(
+              id: 'e2',
+              nombre: 'Picadito',
+              lugarTexto: 'Cancha del club',
+              estado: 'confirmado',
+              confirmados: 8,
+              tareasPendientes: 2,
+            ),
+          ],
+        ),
+      ],
+    );
+
+    testWidgets('arranca en el primer grupo y muestra sus eventos', (tester) async {
+      await tester.pumpWidget(appDePrueba(const GroupsScreen(), groups: dosGrupos));
+      await tester.pumpAndSettle();
+
+      // "Los Fibes" aparece dos veces: en el carrusel y como título del
+      // grupo activo.
+      expect(find.text('Los Fibes'), findsNWidgets(2));
+      expect(find.text(l10n.groupsNewEvent), findsOneWidget);
+      expect(find.text('Asado'), findsOneWidget);
+      expect(find.text(l10n.groupsConfirmed(4)), findsOneWidget);
+      // El evento del otro grupo no se ve todavía.
+      expect(find.text('Picadito'), findsNothing);
+    });
+
+    testWidgets(
+        'tocar otro grupo en el carrusel cambia los eventos, y volver al '
+        'primero los conserva intactos (criterio de aceptación del Item 1)',
+        (tester) async {
+      await tester.pumpWidget(appDePrueba(const GroupsScreen(), groups: dosGrupos));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Fútbol 5'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Picadito'), findsOneWidget);
+      expect(find.text(l10n.groupsPendingTasks(2)), findsOneWidget);
+      // El evento de "Los Fibes" ya no se muestra (está filtrado, no perdido).
+      expect(find.text('Asado'), findsNothing);
+
+      await tester.tap(find.text('Los Fibes').first);
+      await tester.pumpAndSettle();
+
+      // Sigue completo, no se perdió ni se re-pisó con el otro grupo.
+      expect(find.text('Asado'), findsOneWidget);
+      expect(find.text(l10n.groupsConfirmed(4)), findsOneWidget);
+      expect(find.text('Picadito'), findsNothing);
+    });
+
+    testWidgets('un grupo sin eventos activos muestra el estado vacío', (tester) async {
+      final soloUno = FakeGroupsRepository(
+        grupos: const [
+          GrupoResumen(id: 'g1', nombre: 'Sin planes', miembros: ['Ana']),
         ],
       );
 
-      await tester.pumpWidget(appDePrueba(const GroupsScreen(), groups: groups));
+      await tester.pumpWidget(appDePrueba(const GroupsScreen(), groups: soloUno));
       await tester.pumpAndSettle();
 
-      expect(find.text('Los Fibes'), findsOneWidget);
-      expect(find.text(l10n.groupsNewEvent), findsOneWidget);
-      expect(find.text(l10n.groupsConfirmed(4)), findsOneWidget);
+      expect(find.text(l10n.groupsNoUpcoming), findsOneWidget);
     });
 
     testWidgets('muestra el estado vacío sin grupos', (tester) async {

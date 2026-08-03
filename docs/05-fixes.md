@@ -12,7 +12,7 @@
 | Backend Jest | 70 | 84 ✅ |
 | Backend `tsc` | ✅ | ✅ |
 | Backend `eslint .` (ampliado) | 2 err | 0 ✅ |
-| Mobile `flutter test` | 26 | 27 ✅ |
+| Mobile `flutter test` | 26 | 29 ✅ |
 | Mobile `flutter analyze` | 2 info | 0 ✅ |
 
 ---
@@ -201,3 +201,176 @@ Backend 87→**90** tests; mobile analyze sin issues, 27 tests. Nueva migración
 **Validación:** `extras.test.ts` (disponibilidad de perfil con validación de
 rangos y reemplazo; coincidencias que cuentan por bloque; ubicaciones con
 ownership). Mobile: analyze limpio, 27 tests.
+
+---
+
+# Fase 3 — 5 issues de UX/funcionalidad reportados por el usuario
+
+> Cada item tiene su propia branch/PR. Se implementan en orden 5 → 2 → 1 → 3 → 4
+> porque el 2 reutiliza el paso de username del 5, y el 4 reestructura la
+> pantalla de evento apoyándose en el 1 (carrusel de grupos) y el 3 (grillas
+> colapsables).
+
+## Item 5 — "Continuar como Anónimo" ahora pide un username en un solo paso
+
+**Causa raíz:** el botón "Continuar como Anónimo" (`login_screen.dart`) abría
+un diálogo pidiendo el **link de invitación** (`_pedirTokenManual`) y, recién
+después de resolverlo, un **segundo diálogo separado** pedía el nombre
+(`_unirseConToken`) — dos pasos secuenciales con títulos distintos ("Unirse
+por invitación" y luego "Invitar al evento"), lo cual coincide con el hallazgo
+[H-08](04-auditoria.md#h-08) (el botón se desvía del mockup/HU-01). El dato de
+`nombreDisplay` en sí **ya era obligatorio** antes de crear la sesión anónima
+(el fix de [H-01](#h-01-los-miembros-del-grupo-ahora-se-vuelven-participantes-del-evento-bloqueante)/[H-02](#h-02-lista-de-participantes-fresca-al-asignar-un-gasto-bloqueante)
+sigue vigente y no se tocó), pero la experiencia de "dos diálogos seguidos"
+es la raíz de la confusión reportada.
+
+**Fix:**
+- `_continuarComoAnonimo` (antes `_pedirTokenManual`) muestra **un único
+  diálogo** con dos campos — link de invitación y nombre — y solo cierra
+  cuando ambos están completos. Resuelve la invitación y crea la sesión
+  anónima sin ningún paso intermedio adicional.
+- `_unirseConToken` (usado por el deep link, ver Item 2) se simplificó para
+  pedir solo el nombre, ya que el token viaja en la URI.
+- **Bug real encontrado al testear:** los `TextEditingController` de ambos
+  diálogos se disponían sincrónicamente apenas el `await showDialog` volvía,
+  pero el diálogo todavía estaba animando su cierre y el `TextField` seguía
+  usando el controller en ese frame → `TextEditingController was used after
+  being disposed`. Estaba latente en el código original (nadie lo había
+  testeado end-to-end). Se corrige difiriendo el `dispose()` a
+  `WidgetsBinding.instance.addPostFrameCallback`.
+- Nuevas claves i18n ES/EN: `loginAnonymousLinkLabel`, `loginAnonymousNameLabel`,
+  `loginAnonymousNameHint`.
+
+**Validación:** `login_screen_test.dart` — 2 tests nuevos: el diálogo único
+pide link+nombre y crea la sesión (`FakeAuthRepository.llamadas` contiene
+`anonimo:evt-1:Sofía`), y no se puede confirmar sin nombre. Mobile 27→29,
+`flutter analyze` limpio.
+
+## Item 2 — El link de invitación ya no fuerza el modo anónimo
+
+**Causa raíz (mobile):** `LoginScreen` escuchaba los deep links en su propio
+`initState`. Como solo se monta cuando `SinSesion()`, abrir un link **con
+sesión ya iniciada no hacía absolutamente nada** (el listener ni existía). Y
+apenas resolvía el token, saltaba derecho a pedir nombre y crear una sesión
+anónima — nunca se veía el Login con sus 3 opciones (Ingresar/Crear
+cuenta/Anónimo), pese a que HU-01 las pide todas visibles.
+
+**Causa raíz (backend):** no existía ningún endpoint para que un usuario
+**registrado** se uniera a un evento/grupo por su cuenta a través de un link
+de invitación — solo estaba el camino anónimo (`POST
+/participants/anonymous`). "Iniciar sesión con cuenta existente y quedar
+unido con la cuenta real" no era implementable sin esto.
+
+**Fix (backend):**
+- `GroupsService.unirsePorInvitacion(token, usuarioId)` (nuevo): resuelve la
+  invitación vía `InvitationsService.resolver` (ahora inyectado en
+  `GroupsService`), y si el usuario no es miembro del grupo del evento, lo
+  suma y materializa como participante de sus eventos activos — reutiliza
+  exactamente la lógica de [H-01](#h-01-los-miembros-del-grupo-ahora-se-vuelven-participantes-del-evento-bloqueante)
+  (`agregarMiembro`), ahora extraída a `materializarParticipantesActivos`.
+  Si ya era miembro, es idempotente: solo asegura el participante de *ese*
+  evento puntual.
+- `POST /invitations/:token/join` (nuevo), detrás de `soloOrganizador` (=
+  cualquier usuario autenticado, no solo el organizador del evento).
+
+**Fix (mobile):**
+- El listener de deep links se mueve de `LoginScreen` a `_RootRouter`
+  (`main.dart`), que vive durante toda la vida de la app. El token capturado
+  se guarda en `pendingInvitationProvider` (nuevo) — no se actúa sobre él de
+  inmediato.
+- `_RootRouter` escucha ese provider y el estado de sesión: si ya hay
+  `SesionOrganizador` (dentro de la misma corrida de la app), aplica la
+  invitación sola vía `AuthRepository.unirseConInvitacion` (nuevo método →
+  `POST /invitations/:token/join`) y navega al evento — sin pedir nada.
+- `LoginScreen` vuelve a mostrarse siempre igual (sus 3 opciones), con un
+  aviso opcional si hay una invitación pendiente (`loginPendingInvitation`).
+  Si la persona elige Ingresar o Crear cuenta, la invitación se aplica sola
+  en cuanto la sesión pasa a `SesionOrganizador` (mismo mecanismo de arriba,
+  sin código adicional en el formulario). Si elige "Continuar como Anónimo",
+  el diálogo del Item 5 precarga el link ya capturado.
+- **Bug real corregido de paso:** `getInitialLink()` y `uriLinkStream` de
+  `app_links` pueden disparar los dos para el mismo link de arranque en frío
+  — es la causa más probable del "pide el nombre dos veces" reportado. Se
+  ignora el primer evento del stream si ya se procesó por `getInitialLink`.
+
+**Pendiente, fuera de alcance de este item (anotado, no corregido):**
+`SessionController.build()` solo restaura la sesión desde `TokenStorage`
+para el camino anónimo (`anonEventId` + `participantToken`); un organizador
+logueado **no** recupera sesión al reabrir la app después de matarla del
+todo (no hay endpoint de "quién soy" cacheado localmente). Mientras la app
+sigue corriendo, la sesión de organizador sí persiste en memoria y el
+criterio de aceptación de este item se cumple; el caso "app killeada + abrir
+un link" con un organizador ya logueado se degrada al login normal (no es
+una regresión: hoy ya no hay forma de restaurar esa sesión, con o sin link).
+
+**Validación:**
+- Backend: `tasks-groups.service.test.ts` — 3 tests nuevos
+  (`unirsePorInvitacion`: usuario nuevo queda miembro y participante real, no
+  anónimo; reusar el link siendo ya miembro es idempotente; token inexistente
+  rechaza). Backend 90→93.
+- Mobile: `main_test.dart` (nuevo) — con sesión de organizador ya iniciada,
+  una invitación pendiente se aplica sola y no aparece ningún diálogo.
+  `login_screen_test.dart` — 3 tests nuevos: el aviso aparece/no aparece según
+  haya invitación pendiente, y el diálogo de anónimo precarga el link. Mobile
+  29→33, `flutter analyze` limpio.
+
+## Item 1 — Carrusel de grupos + eventos que ya no se pisan entre sí
+
+**Investigación pedida por el usuario antes del fix:** el enunciado suponía
+que había un bug de estado (una variable global de "eventos visibles" que se
+sobreescribía al cambiar de grupo). **No era eso.** `GroupsScreen` no tenía
+carrusel de ningún tipo, y cada card de grupo mostraba **un único** evento
+(`GrupoResumen.proximoEvento`, nullable, singular) — nunca existió una lista
+de "eventos visibles por grupo" que se pudiera pisar. Es una feature a
+construir, no un bug de caché.
+
+**Alcance real (hallazgo durante la implementación):** para armar el
+carrusel + drill-down hacía falta que el backend expusiera **todos** los
+eventos activos de un grupo, no solo el próximo. Sí hacía falta tocar el
+backend (como se había anticipado), pero **no** un endpoint nuevo: alcanzó
+con ampliar la respuesta que ya existía.
+
+**Fix (backend):**
+- `ResumenGrupo.proximoEvento` (un evento o `null`) → `ResumenGrupo.eventos`
+  (lista de **todos** los eventos activos del grupo, cada uno con
+  confirmados/tareas pendientes/gastos — mismo shape que antes, ahora por
+  cada evento en vez de solo el próximo). `GroupsService.resumenPara` pide
+  los contadores en batch para todos los eventos activos de todos los grupos
+  (sigue evitando el N+1).
+- `noLeidos`/`tieneEventoNuevo` no cambian: se siguen calculando sobre TODOS
+  los eventos del grupo (activos e históricos), como ya establecía la
+  Duda #2 — no solo los que ahora se listan.
+
+**Fix (mobile):**
+- `GroupsScreen` ahora arma un **carrusel horizontal de avatares de grupo**
+  arriba (iniciales del nombre, punto de no leídos, badge NUEVO si
+  corresponde) y, debajo, las cards de los eventos del grupo **seleccionado**
+  (`grupoSeleccionadoProvider`, un `Notifier<String?>`).
+- **Por qué cambiar de grupo no pisa nada:** `groupsOverviewProvider` trae
+  TODOS los grupos con sus eventos en un solo fetch (ya cacheado por
+  Riverpod). Seleccionar otro grupo no dispara ningún request nuevo — solo
+  cambia qué parte de esos mismos datos, ya en memoria, se renderiza. No hay
+  estado por-grupo que sobrescribir porque no hay una sola variable
+  compartida: cada `GrupoResumen.eventos` vive en su propio lugar dentro de
+  la lista.
+- Se extrajo `EventoResumenCard` (antes `_EventoCard`, privada de Home) a
+  `core/widgets/` para no duplicarla. Groups usa su propia card
+  (`_EventoDeGrupoCard`) porque necesita los chips de tareas
+  pendientes/gastos que `EventoResumen` (el de Home) no trae —
+  `EventoDeGrupo` sí, porque sale de `ResumenGrupo.eventos`.
+- Bug menor corregido de paso: `EventoResumen.grupoNombre` se parseaba de
+  `json['grupo']['nombre']` (anidado) pero el backend siempre mandó
+  `grupoNombre` plano — el campo daba `null` siempre. Ahora se agrega
+  `EventoResumen.grupoId` (plano, nuevo) y se corrige el parseo de
+  `grupoNombre`.
+
+**Validación:**
+- Backend: `tasks-groups.service.test.ts` — 3 tests nuevos (`eventos` trae
+  todos los activos de un grupo, no solo el próximo; excluye
+  finalizados/cancelados; los eventos de un grupo no se mezclan con los de
+  otro). Backend 93→96.
+- Mobile: `screens_test.dart` — reescrita la suite de `GroupsScreen`: arranca
+  en el primer grupo con sus eventos, **tocar otro grupo cambia los eventos y
+  volver al primero los conserva intactos** (el criterio de aceptación
+  literal del item), y un grupo sin eventos activos muestra el estado vacío.
+  Mobile 33→35, `flutter analyze` limpio.

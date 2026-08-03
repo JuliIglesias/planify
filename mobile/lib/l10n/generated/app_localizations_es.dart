@@ -49,6 +49,19 @@ class AppLocalizationsEs extends AppLocalizations {
       'Para entrar como anónimo necesitás un link de invitación a un evento.';
 
   @override
+  String get loginAnonymousLinkLabel => 'Link de invitación';
+
+  @override
+  String get loginAnonymousNameLabel => 'Tu nombre';
+
+  @override
+  String get loginAnonymousNameHint => 'ej. Sofía';
+
+  @override
+  String get loginPendingInvitation =>
+      'Te invitaron a un evento. Iniciá sesión, creá una cuenta o continuá como anónimo para unirte.';
+
+  @override
   String get navHome => 'Inicio';
 
   @override

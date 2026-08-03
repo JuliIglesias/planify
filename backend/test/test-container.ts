@@ -121,6 +121,7 @@ export function createTestContainer(): TestContainer {
     activityLog,
     clock,
     participantes,
+    invitations,
   );
   const tasks = new TasksService(tareas, eventos, participantes, activityLog);
   const debts = new DebtsService(deudas, gastos, participantes, eventos, activityLog, clock);

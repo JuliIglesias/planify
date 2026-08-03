@@ -39,6 +39,11 @@ abstract interface class AuthRepository {
 
   /// HU-02 — resuelve un link de invitación al id del evento.
   Future<String> resolverInvitacion(String token);
+
+  /// Item 2 — un usuario ya autenticado (organizador/registrado) se une por
+  /// su cuenta real a través de un link de invitación, sin pasar por el
+  /// camino anónimo. Devuelve el id del evento al que se unió.
+  Future<String> unirseConInvitacion(String token);
 }
 
 class AuthRepositoryHttp implements AuthRepository {
@@ -94,6 +99,12 @@ class AuthRepositoryHttp implements AuthRepository {
   @override
   Future<String> resolverInvitacion(String token) => ejecutar(() async {
         final res = await _dio.get<Map<String, dynamic>>('/invitations/$token');
+        return res.data!['eventoId'] as String;
+      });
+
+  @override
+  Future<String> unirseConInvitacion(String token) => ejecutar(() async {
+        final res = await _dio.post<Map<String, dynamic>>('/invitations/$token/join');
         return res.data!['eventoId'] as String;
       });
 }

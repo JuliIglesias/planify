@@ -84,6 +84,7 @@ class DetalleEvento {
 class EventoResumen {
   const EventoResumen({
     required this.id,
+    required this.grupoId,
     required this.nombre,
     required this.lugarTexto,
     required this.estado,
@@ -94,6 +95,10 @@ class EventoResumen {
   });
 
   final String id;
+  /// Id del grupo al que pertenece — Item 1: es lo que permite filtrar los
+  /// eventos de un grupo específico sin depender del nombre (que puede
+  /// repetirse entre grupos).
+  final String grupoId;
   final String nombre;
   final String lugarTexto;
   final String estado;
@@ -104,13 +109,14 @@ class EventoResumen {
 
   factory EventoResumen.fromJson(Map<String, dynamic> json) => EventoResumen(
         id: json['id'] as String,
+        grupoId: json['grupoId'] as String? ?? '',
         nombre: json['nombre'] as String? ?? '',
         lugarTexto: json['lugarTexto'] as String? ?? '',
         estado: json['estado'] as String? ?? 'planificacion',
         fechaHoraInicio: json['fechaHoraInicio'] != null
             ? DateTime.tryParse(json['fechaHoraInicio'] as String)
             : null,
-        grupoNombre: (json['grupo'] as Map<String, dynamic>?)?['nombre'] as String?,
+        grupoNombre: json['grupoNombre'] as String?,
         confirmados: json['confirmados'] as int? ?? 0,
         participantes: ((json['participantes'] as List<dynamic>?) ?? [])
             .map((p) => Participante.fromJson(p as Map<String, dynamic>))
@@ -125,7 +131,7 @@ class GrupoResumen {
     required this.miembros,
     this.noLeidos = 0,
     this.tieneEventoNuevo = false,
-    this.proximoEvento,
+    this.eventos = const [],
   });
 
   final String id;
@@ -133,7 +139,11 @@ class GrupoResumen {
   final List<String> miembros;
   final int noLeidos;
   final bool tieneEventoNuevo;
-  final ProximoEvento? proximoEvento;
+  /// Item 1 — todos los eventos activos de ESTE grupo (no solo el próximo),
+  /// para el carrusel de Groups: cada grupo trae su propia lista, ya
+  /// resuelta en el mismo fetch que trae `groupsOverviewProvider`, así que
+  /// cambiar de grupo seleccionado no pisa ni vuelve a pedir nada.
+  final List<EventoDeGrupo> eventos;
 
   factory GrupoResumen.fromJson(Map<String, dynamic> json) => GrupoResumen(
         id: json['id'] as String,
@@ -143,14 +153,14 @@ class GrupoResumen {
             .toList(),
         noLeidos: json['noLeidos'] as int? ?? 0,
         tieneEventoNuevo: json['tieneEventoNuevo'] as bool? ?? false,
-        proximoEvento: json['proximoEvento'] != null
-            ? ProximoEvento.fromJson(json['proximoEvento'] as Map<String, dynamic>)
-            : null,
+        eventos: ((json['eventos'] as List<dynamic>?) ?? [])
+            .map((e) => EventoDeGrupo.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 }
 
-class ProximoEvento {
-  const ProximoEvento({
+class EventoDeGrupo {
+  const EventoDeGrupo({
     required this.id,
     required this.nombre,
     required this.lugarTexto,
@@ -170,7 +180,7 @@ class ProximoEvento {
   final int tareasPendientes;
   final int gastos;
 
-  factory ProximoEvento.fromJson(Map<String, dynamic> json) => ProximoEvento(
+  factory EventoDeGrupo.fromJson(Map<String, dynamic> json) => EventoDeGrupo(
         id: json['id'] as String,
         nombre: json['nombre'] as String? ?? '',
         lugarTexto: json['lugarTexto'] as String? ?? '',

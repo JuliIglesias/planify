@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:planify/core/network/token_storage.dart';
 import 'package:planify/core/theme/app_theme.dart';
 import 'package:planify/features/auth/data/auth_repository.dart';
+import 'package:planify/features/auth/pending_invitation_provider.dart';
 import 'package:planify/features/balances/data/balances_repository.dart';
 import 'package:planify/features/events/data/activity_log_repository.dart';
 import 'package:planify/features/events/data/availability_repository.dart';
@@ -17,6 +18,14 @@ import 'package:planify/l10n/generated/app_localizations.dart';
 
 import 'fake_repositories.dart';
 import 'fake_token_storage.dart';
+
+class _PendingInvitationSemilla extends PendingInvitation {
+  _PendingInvitationSemilla(this._semilla);
+  final String? _semilla;
+
+  @override
+  String? build() => _semilla;
+}
 
 /// Envuelve una pantalla con todo lo que necesita para renderizar en un test,
 /// sustituyendo cada repositorio por su versión falsa.
@@ -33,6 +42,7 @@ Widget appDePrueba(
   ActivityLogRepository? activityLog,
   BalancesRepository? balances,
   GroupsRepository? groups,
+  String? pendingInvitation,
 }) {
   return ProviderScope(
     overrides: [
@@ -47,6 +57,9 @@ Widget appDePrueba(
           .overrideWithValue(activityLog ?? FakeActivityLogRepository()),
       balancesRepositoryProvider.overrideWithValue(balances ?? FakeBalancesRepository()),
       groupsRepositoryProvider.overrideWithValue(groups ?? FakeGroupsRepository()),
+      if (pendingInvitation != null)
+        pendingInvitationProvider
+            .overrideWith(() => _PendingInvitationSemilla(pendingInvitation)),
     ],
     child: MaterialApp(
       theme: AppTheme.light,

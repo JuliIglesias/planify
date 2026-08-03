@@ -7,12 +7,15 @@ import { ActivityLogService } from '../src/modules/activity-log/activity-log.ser
 import { EventsService } from '../src/modules/events/events.service';
 import { EventsQueryService } from '../src/modules/events/events.queries';
 import { GroupsService } from '../src/modules/groups/groups.service';
+import { InvitationsService } from '../src/modules/invitations/invitations.service';
 import {
   FakeClock,
   FakeDeudaRepository,
   FakeEventoRepository,
   FakeGastoRepository,
   FakeGrupoRepository,
+  FakeIdGenerator,
+  FakeInvitacionRepository,
   FakeLogActividadRepository,
   FakeParticipanteRepository,
   FakeTareaRepository,
@@ -28,11 +31,14 @@ function armar() {
   const gastos = new FakeGastoRepository();
   const deudas = new FakeDeudaRepository(participantes);
   const logs = new FakeLogActividadRepository();
+  const invitaciones = new FakeInvitacionRepository();
   const clock = new FakeClock();
+  const ids = new FakeIdGenerator();
   const log = new ActivityLogService(logs, participantes, clock);
 
   const events = new EventsService(eventos, grupos, participantes, usuarios, log);
   const eventsQuery = new EventsQueryService(eventos, participantes, deudas, tareas, gastos, clock);
+  const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
   const groups = new GroupsService(
     grupos,
     eventos,
@@ -42,9 +48,20 @@ function armar() {
     log,
     clock,
     participantes,
+    invitations,
   );
 
-  return { events, eventsQuery, groups, usuarios, participantes, eventos, grupos, clock };
+  return {
+    events,
+    eventsQuery,
+    groups,
+    invitations,
+    usuarios,
+    participantes,
+    eventos,
+    grupos,
+    clock,
+  };
 }
 
 describe('H-01 — los miembros del grupo se vuelven participantes del evento', () => {

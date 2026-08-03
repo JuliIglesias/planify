@@ -208,6 +208,19 @@ export function createRoutes(c: Container): Router {
     }),
   );
 
+  // Item 2 — un usuario registrado (logueado) se une por su cuenta, en vez de
+  // entrar como anónimo. Requiere estar autenticado; el token de invitación
+  // solo dice a qué evento/grupo se une.
+  router.post(
+    '/invitations/:token/join',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(
+        await c.groups.unirsePorInvitacion(String(req.params.token), exigirUsuario(req)),
+      );
+    }),
+  );
+
   // ── SCRUM-8 · Eventos y grupos ──────────────────────────────────────────
   // Las rutas literales van antes de '/:id' para que no las capture el comodín.
   router.get(

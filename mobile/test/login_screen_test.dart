@@ -54,6 +54,94 @@ void main() {
     expect(auth.llamadas, contains('login:organizador@planify.test'));
   });
 
+  testWidgets(
+      'continuar como anónimo pide link + nombre en un solo paso y crea la sesión (Item 5)',
+      (tester) async {
+    final auth = FakeAuthRepository();
+
+    await tester.pumpWidget(appDePrueba(const LoginScreen(), auth: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.loginContinueAnonymous));
+    await tester.pumpAndSettle();
+
+    // Un solo diálogo, no dos pasos separados (evita el doble prompt).
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text(l10n.loginAnonymousLinkLabel), findsOneWidget);
+    expect(find.text(l10n.loginAnonymousNameLabel), findsOneWidget);
+
+    final campos = find.byType(TextField);
+    await tester.enterText(campos.at(2), 'planify://invite/f210607e');
+    await tester.enterText(campos.at(3), 'Sofía');
+
+    await tester.tap(find.text(l10n.commonConfirm));
+    await tester.pumpAndSettle();
+
+    // El nombre viaja junto con el token: el anónimo queda registrado como
+    // Participante real desde el primer paso (H-01/H-02 siguen valiendo).
+    expect(auth.llamadas, contains('anonimo:evt-1:Sofía'));
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  testWidgets('el confirmar del diálogo de anónimo queda deshabilitado sin nombre (Item 5)',
+      (tester) async {
+    final auth = FakeAuthRepository();
+
+    await tester.pumpWidget(appDePrueba(const LoginScreen(), auth: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.loginContinueAnonymous));
+    await tester.pumpAndSettle();
+
+    final campos = find.byType(TextField);
+    await tester.enterText(campos.at(2), 'planify://invite/f210607e');
+    // No se completa el nombre.
+
+    await tester.tap(find.text(l10n.commonConfirm));
+    await tester.pumpAndSettle();
+
+    // El diálogo sigue abierto: no se puede unir como anónimo sin nombre.
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(auth.llamadas, isEmpty);
+  });
+
+  testWidgets(
+      'con una invitación pendiente, el Login muestra el aviso pero sigue '
+      'ofreciendo las 3 vías (Item 2)', (tester) async {
+    await tester.pumpWidget(
+      appDePrueba(const LoginScreen(), pendingInvitation: 'tok-pendiente'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.loginPendingInvitation), findsOneWidget);
+    // Ninguna de las 3 vías queda bloqueada por la invitación pendiente.
+    expect(find.text(l10n.loginSubmit), findsOneWidget);
+    expect(find.text(l10n.loginCreateAccount), findsOneWidget);
+    expect(find.text(l10n.loginContinueAnonymous), findsOneWidget);
+  });
+
+  testWidgets('sin invitación pendiente no se muestra el aviso', (tester) async {
+    await tester.pumpWidget(appDePrueba(const LoginScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.loginPendingInvitation), findsNothing);
+  });
+
+  testWidgets(
+      'el diálogo de anónimo precarga el link cuando ya había una invitación '
+      'pendiente (Item 2)', (tester) async {
+    await tester.pumpWidget(
+      appDePrueba(const LoginScreen(), pendingInvitation: 'planify://invite/tok-pendiente'),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.loginContinueAnonymous));
+    await tester.pumpAndSettle();
+
+    final campoLink = tester.widget<TextField>(find.byType(TextField).at(2));
+    expect(campoLink.controller?.text, 'planify://invite/tok-pendiente');
+  });
+
   testWidgets('muestra un mensaje si las credenciales fallan', (tester) async {
     final auth = FakeAuthRepository(fallaLogin: true);
 

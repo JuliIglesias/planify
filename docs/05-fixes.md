@@ -547,3 +547,45 @@ navegación nueva).
   anónima restaurada del dispositivo, tocar el ícono de salir devuelve a la
   pantalla de Login.
 - Mobile 43→45, `flutter analyze` limpio.
+
+## Item 3 — Búsqueda de amigos: email para desambiguar (sin campo username)
+
+**Hallazgo importante, contradice la premisa del pedido.** El flujo
+"roto/circular" que describía el usuario (buscador en Perfil, mensaje de
+"agregalo desde el perfil", nada implementado del otro lado) **no existe en
+el código actual**. `FriendsScreen` ya tiene, en una sola pantalla: buscador
+(por nombre o email), botón "Agregar", sección de solicitudes pendientes
+con "Aceptar", y la lista de amigos — se llega ahí desde Perfil → "Mis
+amigos". Es exactamente lo que pedía el item. Es probable que el feedback
+sea de antes de SCRUM-14 (ver [H-16](04-auditoria.md), que agregó "Mis
+amigos" a Perfil porque antes no existía nada). No se tocó esa estructura.
+
+**Lo que sí se implementó — email para desambiguar, sin campo `username`.**
+Se confirmó con el usuario: no hace falta un `username` único (evita la
+migración + pantalla para definirlo que hubiera hecho falta). En cambio, la
+búsqueda (que ya buscaba por nombre o email) ahora también **devuelve el
+email** en cada resultado, y la pantalla lo muestra en gris debajo del
+nombre para diferenciar resultados con nombres parecidos.
+
+**Fix (backend):**
+- Nuevo tipo `PersonaBusqueda extends PersonaRef` (con `email`), **solo**
+  para `UsuarioRepository.search()` — no se tocó el `PersonaRef` genérico
+  que ya usan actor de actividad, asignado de tarea, deudor/acreedor, etc.,
+  para no filtrar el email a lugares donde no hace falta.
+- `PrismaUsuarioRepository.search`: agrega `email` al `select`.
+
+**Fix (mobile):**
+- `Persona.email` (nullable — solo viene en resultados de búsqueda, no en
+  la lista de amigos ni en solicitudes pendientes).
+- `FriendsScreen`: cada resultado de búsqueda muestra el email como
+  `subtitle` en gris (`AppColors.textSecondary`).
+
+**Validación:**
+- Backend: `scrum14.test.ts` — el resultado de búsqueda trae el email;
+  buscar directamente por fragmento de email también encuentra a la
+  persona. Backend 100 tests (se ampliaron aserciones de un test existente,
+  no se sumaron `it()` nuevos).
+- Mobile: `friends_screen_test.dart` (nuevo, la pantalla no tenía ningún
+  test hasta ahora) — el email aparece en gris debajo del resultado;
+  enviar solicitud llama al repositorio; una solicitud pendiente se ve y se
+  acepta en la misma pantalla. Mobile 45→48, `flutter analyze` limpio.

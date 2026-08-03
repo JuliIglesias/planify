@@ -102,7 +102,7 @@ export class FakeUsuarioRepository implements R.UsuarioRepository {
     u.passwordHash = passwordHash;
   }
 
-  async search(query: string, exceptoUsuarioId: string): Promise<D.PersonaRef[]> {
+  async search(query: string, exceptoUsuarioId: string): Promise<D.PersonaBusqueda[]> {
     const q = query.toLowerCase();
     return this.usuarios
       .filter(
@@ -110,7 +110,7 @@ export class FakeUsuarioRepository implements R.UsuarioRepository {
           u.id !== exceptoUsuarioId &&
           (u.nombre.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)),
       )
-      .map((u) => ({ id: u.id, nombre: u.nombre }));
+      .map((u) => ({ id: u.id, nombre: u.nombre, email: u.email }));
   }
 
   agregar(parcial: Partial<D.Usuario> = {}): D.Usuario {

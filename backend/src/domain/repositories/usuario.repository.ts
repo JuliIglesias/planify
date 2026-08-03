@@ -1,4 +1,4 @@
-import { PersonaRef, Usuario } from '../entities';
+import { PersonaBusqueda, Usuario } from '../entities';
 
 export interface CrearUsuarioData {
   nombre: string;
@@ -27,5 +27,5 @@ export interface UsuarioRepository {
   updatePassword(id: string, passwordHash: string): Promise<void>;
 
   /** HU-31 — buscar personas para agregar como amigas (por nombre o email). */
-  search(query: string, exceptoUsuarioId: string): Promise<PersonaRef[]>;
+  search(query: string, exceptoUsuarioId: string): Promise<PersonaBusqueda[]>;
 }

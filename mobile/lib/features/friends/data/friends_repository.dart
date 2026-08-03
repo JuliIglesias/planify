@@ -6,12 +6,19 @@ import '../../../core/network/api_client.dart';
 
 /// Una persona (amiga o resultado de búsqueda). id = usuarioId.
 class Persona {
-  const Persona({required this.id, required this.nombre});
+  const Persona({required this.id, required this.nombre, this.email});
   final String id;
   final String nombre;
+  /// Item 3 (Fase 4) — solo viaja en los resultados de búsqueda (no en la
+  /// lista de amigos ni en solicitudes pendientes). Como el nombre no es
+  /// único, la pantalla de Amigos lo muestra en gris para desambiguar.
+  final String? email;
 
-  factory Persona.fromJson(Map<String, dynamic> json) =>
-      Persona(id: json['id'] as String, nombre: json['nombre'] as String? ?? '');
+  factory Persona.fromJson(Map<String, dynamic> json) => Persona(
+        id: json['id'] as String,
+        nombre: json['nombre'] as String? ?? '',
+        email: json['email'] as String?,
+      );
 }
 
 /// Una solicitud de amistad pendiente recibida.

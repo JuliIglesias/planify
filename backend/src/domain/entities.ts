@@ -141,3 +141,13 @@ export interface PersonaRef {
   id: string;
   nombre: string;
 }
+
+/**
+ * Item 3 (Fase 4) — resultado de buscar gente para agregar de amiga. Lleva
+ * el email además del nombre porque el nombre no es único: la pantalla de
+ * Amigos lo muestra en gris debajo para desambiguar entre resultados
+ * parecidos, sin necesidad de un campo "username" separado.
+ */
+export interface PersonaBusqueda extends PersonaRef {
+  email: string;
+}

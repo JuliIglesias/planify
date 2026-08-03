@@ -85,6 +85,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
             ListTile(
               leading: const Icon(Icons.person_outline),
               title: Text(p.nombre),
+              // Item 3 — el nombre no es único; el email en gris desambigua
+              // entre resultados parecidos sin necesitar un username.
+              subtitle: p.email != null
+                  ? Text(p.email!, style: const TextStyle(color: AppColors.textSecondary))
+                  : null,
               trailing: TextButton(
                 onPressed: () => _accion(
                   () => ref.read(friendsRepositoryProvider).enviarSolicitud(p.id),

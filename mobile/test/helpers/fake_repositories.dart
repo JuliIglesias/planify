@@ -6,6 +6,7 @@ import 'package:planify/features/events/data/availability_repository.dart';
 import 'package:planify/features/events/data/events_repository.dart';
 import 'package:planify/features/events/data/expenses_repository.dart';
 import 'package:planify/features/events/data/tasks_repository.dart';
+import 'package:planify/features/friends/data/friends_repository.dart';
 import 'package:planify/features/groups/data/groups_repository.dart';
 
 /// Repositorios falsos para los tests de pantalla.
@@ -322,4 +323,39 @@ class FakeGroupsRepository implements GroupsRepository {
 
   @override
   Future<void> abandonar(String grupoId) async => llamadas.add('abandonar:$grupoId');
+}
+
+class FakeFriendsRepository implements FriendsRepository {
+  FakeFriendsRepository({
+    this.resultadosBusqueda = const [],
+    this.amigos = const [],
+    this.solicitudes = const [],
+  });
+
+  List<Persona> resultadosBusqueda;
+  List<Persona> amigos;
+  List<SolicitudAmistad> solicitudes;
+  final List<String> llamadas = [];
+
+  @override
+  Future<List<Persona>> buscar(String query) async {
+    llamadas.add('buscar:$query');
+    return resultadosBusqueda;
+  }
+
+  @override
+  Future<List<Persona>> listar() async => amigos;
+
+  @override
+  Future<List<SolicitudAmistad>> solicitudesPendientes() async => solicitudes;
+
+  @override
+  Future<void> enviarSolicitud(String usuarioId) async {
+    llamadas.add('enviarSolicitud:$usuarioId');
+  }
+
+  @override
+  Future<void> aceptar(String amistadId) async {
+    llamadas.add('aceptar:$amistadId');
+  }
 }

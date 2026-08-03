@@ -1,5 +1,5 @@
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../common/errors';
-import { PersonaRef } from '../../domain/entities';
+import { PersonaBusqueda, PersonaRef } from '../../domain/entities';
 import {
   AmistadRepository,
   SolicitudAmistad,
@@ -18,7 +18,7 @@ export class FriendsService {
   ) {}
 
   /** HU-31 — buscar personas para agregar (por nombre o email). */
-  async buscar(usuarioId: string, query: string): Promise<PersonaRef[]> {
+  async buscar(usuarioId: string, query: string): Promise<PersonaBusqueda[]> {
     const limpio = query?.trim();
     if (!limpio || limpio.length < 2) return [];
     return this.usuarios.search(limpio, usuarioId);

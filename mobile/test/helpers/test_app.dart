@@ -13,6 +13,7 @@ import 'package:planify/features/events/data/availability_repository.dart';
 import 'package:planify/features/events/data/events_repository.dart';
 import 'package:planify/features/events/data/expenses_repository.dart';
 import 'package:planify/features/events/data/tasks_repository.dart';
+import 'package:planify/features/friends/data/friends_repository.dart';
 import 'package:planify/features/groups/data/groups_repository.dart';
 import 'package:planify/l10n/generated/app_localizations.dart';
 
@@ -42,6 +43,7 @@ Widget appDePrueba(
   ActivityLogRepository? activityLog,
   BalancesRepository? balances,
   GroupsRepository? groups,
+  FriendsRepository? friends,
   String? pendingInvitation,
   FakeTokenStorage? tokenStorage,
 }) {
@@ -58,6 +60,7 @@ Widget appDePrueba(
           .overrideWithValue(activityLog ?? FakeActivityLogRepository()),
       balancesRepositoryProvider.overrideWithValue(balances ?? FakeBalancesRepository()),
       groupsRepositoryProvider.overrideWithValue(groups ?? FakeGroupsRepository()),
+      friendsRepositoryProvider.overrideWithValue(friends ?? FakeFriendsRepository()),
       if (pendingInvitation != null)
         pendingInvitationProvider
             .overrideWith(() => _PendingInvitationSemilla(pendingInvitation)),

@@ -12,6 +12,7 @@ import '../../core/widgets/event_card.dart';
 import '../../core/widgets/quick_action_button.dart';
 import '../../core/widgets/status_badge.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../auth/session_controller.dart';
 import '../home/home_providers.dart';
 import 'data/events_repository.dart';
 import 'data/expenses_repository.dart';
@@ -60,12 +61,23 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final detalle = ref.watch(eventDetailProvider(widget.eventoId));
+    final esAnonimo = ref.watch(sessionControllerProvider).value is SesionAnonima;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         title: Text(detalle.value?.nombre ?? l10n.commonLoading),
         actions: [
+          // Item 1 — un anónimo no tiene bottom nav ni Perfil: sin esto no
+          // había forma de cerrar sesión para entrar a otro evento con un
+          // username distinto.
+          if (esAnonimo)
+            IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: l10n.profileLogout,
+              onPressed: () =>
+                  ref.read(sessionControllerProvider.notifier).cerrarSesion(),
+            ),
           IconButton(
             icon: const Icon(Icons.person_add_outlined),
             tooltip: l10n.eventDetailInviteTitle,

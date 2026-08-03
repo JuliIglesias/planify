@@ -514,3 +514,36 @@ calor si había cargado horarios antes de responder.
   llama al repositorio con `confirma:false`; el botón que refleja la
   respuesta actual queda resaltado (ícono ✓) y el otro no. Mobile 41→43,
   `flutter analyze` limpio.
+
+## Item 1 — Un anónimo ahora puede cerrar sesión para entrar a otro evento
+
+**Verificación pedida antes del fix.** El modelo confirmado por el usuario:
+el anónimo tiene un único evento asociado por sesión, identificado por el
+username que eligió al entrar (por link o por el botón "Continuar como
+Anónimo" — los dos ya convergen en el mismo diálogo desde la Fase 3). Para
+entrar a OTRO evento con otro username hay que cerrar sesión primero y
+volver a entrar desde el Login.
+
+**El gap real: un anónimo no tenía ninguna forma de cerrar sesión.**
+`cerrarSesion()` (en `SessionController`) ya existía y funcionaba, pero el
+único lugar que lo invocaba era el `ListTile` de "Cerrar sesión" en
+`ProfileScreen` — y `ProfileScreen` solo es alcanzable a través de
+`AppShell` (bottom nav), que `_RootRouter` solo muestra para
+`SesionOrganizador`. Una sesión anónima renderiza `EventDetailScreen`
+directo, sin bottom nav ni Perfil: no había ningún camino de vuelta al
+Login.
+
+**Fix:** ícono de "Salir" (`Icons.logout`) en el AppBar de
+`EventDetailScreen`, visible solo cuando `sessionControllerProvider` es
+`SesionAnonima`. Llama a `cerrarSesion()`; `_RootRouter` reacciona solo al
+cambio de sesión y muestra el Login (mismo mecanismo que ya usa para
+aplicar invitaciones pendientes, Fase 3 — no hizo falta lógica de
+navegación nueva).
+
+**Validación:**
+- `screens_test.dart` — el ícono aparece con sesión anónima y no con
+  organizador; tocarlo borra el token guardado.
+- `main_test.dart` — test end-to-end sobre `PlanifyApp`: con una sesión
+  anónima restaurada del dispositivo, tocar el ícono de salir devuelve a la
+  pantalla de Login.
+- Mobile 43→45, `flutter analyze` limpio.

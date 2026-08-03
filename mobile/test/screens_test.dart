@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planify/core/models/models.dart';
+import 'package:planify/core/network/token_storage.dart';
 import 'package:planify/core/widgets/quick_action_button.dart';
 import 'package:planify/features/balances/balances_screen.dart';
 import 'package:planify/features/events/event_detail_screen.dart';
@@ -10,6 +11,7 @@ import 'package:planify/features/history/history_screen.dart';
 import 'package:planify/l10n/generated/app_localizations.dart';
 
 import 'helpers/fake_repositories.dart';
+import 'helpers/fake_token_storage.dart';
 import 'helpers/test_app.dart';
 
 late AppLocalizations l10n;
@@ -351,6 +353,39 @@ void main() {
 
       expect(find.text(l10n.eventConfigTitle), findsOneWidget);
       expect(find.text(l10n.eventDetailAttendance), findsOneWidget);
+    });
+
+    testWidgets(
+        'una sesión anónima ve el ícono de salir; una de organizador no (Item 1)',
+        (tester) async {
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(appDePrueba(const EventDetailScreen(eventoId: 'evt-1')));
+      await tester.pumpAndSettle();
+
+      // Sin sesión anónima activa (SinSesion en el helper por defecto): no
+      // hay ícono de salir.
+      expect(find.byIcon(Icons.logout), findsNothing);
+
+      final storageAnonimo = FakeTokenStorage({
+        StorageKeys.anonEventId: 'evt-1',
+        StorageKeys.participantToken: 'tok-anon',
+      });
+      await tester.pumpWidget(
+        appDePrueba(const EventDetailScreen(eventoId: 'evt-1'), tokenStorage: storageAnonimo),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.logout), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.logout));
+      await tester.pumpAndSettle();
+
+      // Cerrar sesión borra el token guardado — sin bottom nav ni Perfil,
+      // la sesión anónima no tenía ninguna otra forma de llegar acá antes
+      // de este ícono. La vuelta efectiva al Login (_RootRouter reacciona
+      // al cambio de sesión) se cubre en main_test.dart.
+      expect(await storageAnonimo.read(StorageKeys.participantToken), isNull);
+      expect(await storageAnonimo.read(StorageKeys.anonEventId), isNull);
     });
 
     testWidgets('tomar una tarea la asigna al participante (HU-21)', (tester) async {

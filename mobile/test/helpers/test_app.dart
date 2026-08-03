@@ -43,10 +43,11 @@ Widget appDePrueba(
   BalancesRepository? balances,
   GroupsRepository? groups,
   String? pendingInvitation,
+  FakeTokenStorage? tokenStorage,
 }) {
   return ProviderScope(
     overrides: [
-      tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
+      tokenStorageProvider.overrideWithValue(tokenStorage ?? FakeTokenStorage()),
       authRepositoryProvider.overrideWithValue(auth ?? FakeAuthRepository()),
       eventsRepositoryProvider.overrideWithValue(events ?? FakeEventsRepository()),
       availabilityRepositoryProvider

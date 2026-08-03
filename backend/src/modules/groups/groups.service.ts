@@ -16,6 +16,17 @@ import { InvitationsService } from '../invitations/invitations.service';
 /** Cuánto tiempo un evento se muestra como "NUEVO" en la pantalla Groups. */
 const VENTANA_EVENTO_NUEVO_HS = 48;
 
+export interface EventoDeGrupo {
+  id: string;
+  nombre: string;
+  lugarTexto: string;
+  estado: string;
+  fechaHoraInicio: Date | null;
+  confirmados: number;
+  tareasPendientes: number;
+  gastos: number;
+}
+
 export interface ResumenGrupo {
   id: string;
   nombre: string;
@@ -23,16 +34,12 @@ export interface ResumenGrupo {
   miembros: { id: string; nombre: string }[];
   noLeidos: number;
   tieneEventoNuevo: boolean;
-  proximoEvento: {
-    id: string;
-    nombre: string;
-    lugarTexto: string;
-    estado: string;
-    fechaHoraInicio: Date | null;
-    confirmados: number;
-    tareasPendientes: number;
-    gastos: number;
-  } | null;
+  /**
+   * Item 1 — TODOS los eventos activos del grupo (antes solo se exponía el
+   * más próximo bajo `proximoEvento`). El carrusel de Groups necesita la
+   * lista completa para el drill-down por grupo.
+   */
+  eventos: EventoDeGrupo[];
 }
 
 /**
@@ -68,16 +75,15 @@ export class GroupsService {
     const eventosPorGrupo = await Promise.all(
       grupos.map((g) => this.eventos.listByGrupo(g.id)),
     );
+    const activosPorGrupo = eventosPorGrupo.map((eventos) => this.activosDe(eventos));
 
-    // Los contadores se piden una sola vez para todos los eventos, en vez de
-    // una consulta por grupo (evita el N+1).
-    const idsProximos = eventosPorGrupo
-      .map((eventos) => this.proximoDe(eventos)?.id)
-      .filter((id): id is string => Boolean(id));
+    // Los contadores se piden una sola vez para todos los eventos activos de
+    // todos los grupos, en vez de una consulta por evento (evita el N+1).
+    const idsActivos = activosPorGrupo.flatMap((eventos) => eventos.map((e) => e.id));
 
     const [tareasPendientes, gastosPorEvento] = await Promise.all([
-      this.tareas.contarPendientesPorEvento(idsProximos),
-      this.gastos.contarPorEvento(idsProximos),
+      this.tareas.contarPendientesPorEvento(idsActivos),
+      this.gastos.contarPorEvento(idsActivos),
     ]);
 
     const confirmadosPorEvento = new Map(proximos.map((e) => [e.id, e.confirmados]));
@@ -87,7 +93,7 @@ export class GroupsService {
 
     return grupos.map((grupo, i) => {
       const eventos = eventosPorGrupo[i];
-      const proximo = this.proximoDe(eventos);
+      const activos = activosPorGrupo[i];
 
       return {
         id: grupo.id,
@@ -97,27 +103,23 @@ export class GroupsService {
         // El contador del grupo es la suma de todos sus eventos (Duda #2).
         noLeidos: eventos.reduce((acc, e) => acc + (noLeidosPorEvento[e.id] ?? 0), 0),
         tieneEventoNuevo: eventos.some((e) => e.createdAt > corte),
-        proximoEvento: proximo
-          ? {
-              id: proximo.id,
-              nombre: proximo.nombre,
-              lugarTexto: proximo.lugarTexto,
-              estado: proximo.estado,
-              fechaHoraInicio: proximo.fechaHoraInicio,
-              confirmados: confirmadosPorEvento.get(proximo.id) ?? 0,
-              tareasPendientes: tareasPendientes[proximo.id] ?? 0,
-              gastos: gastosPorEvento[proximo.id] ?? 0,
-            }
-          : null,
+        eventos: activos.map((evento) => ({
+          id: evento.id,
+          nombre: evento.nombre,
+          lugarTexto: evento.lugarTexto,
+          estado: evento.estado,
+          fechaHoraInicio: evento.fechaHoraInicio,
+          confirmados: confirmadosPorEvento.get(evento.id) ?? 0,
+          tareasPendientes: tareasPendientes[evento.id] ?? 0,
+          gastos: gastosPorEvento[evento.id] ?? 0,
+        })),
       };
     });
   }
 
-  /** El evento activo más próximo del grupo: es el que se ve en la card. */
-  private proximoDe(eventos: Evento[]): Evento | null {
-    return (
-      eventos.find((e) => e.estado === 'planificacion' || e.estado === 'confirmado') ?? null
-    );
+  /** Eventos del grupo todavía activos (no finalizados ni cancelados). */
+  private activosDe(eventos: Evento[]): Evento[] {
+    return eventos.filter((e) => e.estado === 'planificacion' || e.estado === 'confirmado');
   }
 
   /** HU-34 — renombrar el grupo. Cualquier miembro puede. */

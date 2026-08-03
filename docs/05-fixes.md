@@ -313,3 +313,64 @@ una regresión: hoy ya no hay forma de restaurar esa sesión, con o sin link).
   `login_screen_test.dart` — 3 tests nuevos: el aviso aparece/no aparece según
   haya invitación pendiente, y el diálogo de anónimo precarga el link. Mobile
   29→33, `flutter analyze` limpio.
+
+## Item 1 — Carrusel de grupos + eventos que ya no se pisan entre sí
+
+**Investigación pedida por el usuario antes del fix:** el enunciado suponía
+que había un bug de estado (una variable global de "eventos visibles" que se
+sobreescribía al cambiar de grupo). **No era eso.** `GroupsScreen` no tenía
+carrusel de ningún tipo, y cada card de grupo mostraba **un único** evento
+(`GrupoResumen.proximoEvento`, nullable, singular) — nunca existió una lista
+de "eventos visibles por grupo" que se pudiera pisar. Es una feature a
+construir, no un bug de caché.
+
+**Alcance real (hallazgo durante la implementación):** para armar el
+carrusel + drill-down hacía falta que el backend expusiera **todos** los
+eventos activos de un grupo, no solo el próximo. Sí hacía falta tocar el
+backend (como se había anticipado), pero **no** un endpoint nuevo: alcanzó
+con ampliar la respuesta que ya existía.
+
+**Fix (backend):**
+- `ResumenGrupo.proximoEvento` (un evento o `null`) → `ResumenGrupo.eventos`
+  (lista de **todos** los eventos activos del grupo, cada uno con
+  confirmados/tareas pendientes/gastos — mismo shape que antes, ahora por
+  cada evento en vez de solo el próximo). `GroupsService.resumenPara` pide
+  los contadores en batch para todos los eventos activos de todos los grupos
+  (sigue evitando el N+1).
+- `noLeidos`/`tieneEventoNuevo` no cambian: se siguen calculando sobre TODOS
+  los eventos del grupo (activos e históricos), como ya establecía la
+  Duda #2 — no solo los que ahora se listan.
+
+**Fix (mobile):**
+- `GroupsScreen` ahora arma un **carrusel horizontal de avatares de grupo**
+  arriba (iniciales del nombre, punto de no leídos, badge NUEVO si
+  corresponde) y, debajo, las cards de los eventos del grupo **seleccionado**
+  (`grupoSeleccionadoProvider`, un `Notifier<String?>`).
+- **Por qué cambiar de grupo no pisa nada:** `groupsOverviewProvider` trae
+  TODOS los grupos con sus eventos en un solo fetch (ya cacheado por
+  Riverpod). Seleccionar otro grupo no dispara ningún request nuevo — solo
+  cambia qué parte de esos mismos datos, ya en memoria, se renderiza. No hay
+  estado por-grupo que sobrescribir porque no hay una sola variable
+  compartida: cada `GrupoResumen.eventos` vive en su propio lugar dentro de
+  la lista.
+- Se extrajo `EventoResumenCard` (antes `_EventoCard`, privada de Home) a
+  `core/widgets/` para no duplicarla. Groups usa su propia card
+  (`_EventoDeGrupoCard`) porque necesita los chips de tareas
+  pendientes/gastos que `EventoResumen` (el de Home) no trae —
+  `EventoDeGrupo` sí, porque sale de `ResumenGrupo.eventos`.
+- Bug menor corregido de paso: `EventoResumen.grupoNombre` se parseaba de
+  `json['grupo']['nombre']` (anidado) pero el backend siempre mandó
+  `grupoNombre` plano — el campo daba `null` siempre. Ahora se agrega
+  `EventoResumen.grupoId` (plano, nuevo) y se corrige el parseo de
+  `grupoNombre`.
+
+**Validación:**
+- Backend: `tasks-groups.service.test.ts` — 3 tests nuevos (`eventos` trae
+  todos los activos de un grupo, no solo el próximo; excluye
+  finalizados/cancelados; los eventos de un grupo no se mezclan con los de
+  otro). Backend 93→96.
+- Mobile: `screens_test.dart` — reescrita la suite de `GroupsScreen`: arranca
+  en el primer grupo con sus eventos, **tocar otro grupo cambia los eventos y
+  volver al primero los conserva intactos** (el criterio de aceptación
+  literal del item), y un grupo sin eventos activos muestra el estado vacío.
+  Mobile 33→35, `flutter analyze` limpio.

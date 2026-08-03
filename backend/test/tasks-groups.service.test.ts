@@ -292,3 +292,54 @@ describe('GroupsService — badge "NUEVO" (Duda #2)', () => {
     expect(resumen[0].tieneEventoNuevo).toBe(false);
   });
 });
+
+describe('GroupsService — eventos del grupo en el resumen (Item 1)', () => {
+  it('devuelve TODOS los eventos activos del grupo, no solo el próximo', async () => {
+    const { service, grupos, eventos, usuarios } = armarGroups();
+    const usuario = usuarios.agregar();
+    const grupo = await grupos.create('Los Fibes', [usuario.id]);
+    const asado = eventos.agregar({
+      grupoId: grupo.id,
+      nombre: 'Asado',
+      estado: 'planificacion',
+    });
+    const futbol = eventos.agregar({
+      grupoId: grupo.id,
+      nombre: 'Fútbol 5',
+      estado: 'confirmado',
+    });
+
+    const resumen = await service.resumenPara(usuario.id);
+
+    const ids = resumen[0].eventos.map((e) => e.id).sort();
+    expect(ids).toEqual([asado.id, futbol.id].sort());
+  });
+
+  it('no incluye eventos finalizados o cancelados', async () => {
+    const { service, grupos, eventos, usuarios } = armarGroups();
+    const usuario = usuarios.agregar();
+    const grupo = await grupos.create('Los Fibes', [usuario.id]);
+    eventos.agregar({ grupoId: grupo.id, nombre: 'Activo', estado: 'planificacion' });
+    eventos.agregar({ grupoId: grupo.id, nombre: 'Viejo', estado: 'finalizado' });
+    eventos.agregar({ grupoId: grupo.id, nombre: 'Cancelado', estado: 'cancelado' });
+
+    const resumen = await service.resumenPara(usuario.id);
+
+    expect(resumen[0].eventos.map((e) => e.nombre)).toEqual(['Activo']);
+  });
+
+  it('los eventos de un grupo distinto no se mezclan con los de otro', async () => {
+    const { service, grupos, eventos, usuarios } = armarGroups();
+    const usuario = usuarios.agregar();
+    const grupoUno = await grupos.create('Los Fibes', [usuario.id]);
+    const grupoDos = await grupos.create('La Facu', [usuario.id]);
+    eventos.agregar({ grupoId: grupoUno.id, nombre: 'Asado', estado: 'planificacion' });
+    eventos.agregar({ grupoId: grupoDos.id, nombre: 'Parcial', estado: 'planificacion' });
+
+    const resumen = await service.resumenPara(usuario.id);
+
+    const porGrupo = new Map(resumen.map((r) => [r.id, r.eventos.map((e) => e.nombre)]));
+    expect(porGrupo.get(grupoUno.id)).toEqual(['Asado']);
+    expect(porGrupo.get(grupoDos.id)).toEqual(['Parcial']);
+  });
+});

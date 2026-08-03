@@ -199,6 +199,9 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
                                 AvailabilitySlot(s.diaSemana, s.bloqueHora):
                                     s.disponibles,
                             },
+                            // Item 5 — el horario ya fijado se distingue del
+                            // resto del heatmap (color + estrella).
+                            slotFijado: _slotFijado(evento),
                             // HU-09: tocar un bloque confirma el horario.
                             onSlotTap: habilitado && evento.soyOrganizador
                                 ? (slot) => _confirmarHorario(slot)
@@ -233,6 +236,16 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
       }
     }
     return null;
+  }
+
+  /// Item 5 — el slot del heatmap que corresponde al horario ya fijado
+  /// (inverso de `_confirmarHorario`: de la fecha real al día de la
+  /// semana + hora que usa la grilla). `null` si el organizador todavía no
+  /// confirmó ningún horario.
+  AvailabilitySlot? _slotFijado(DetalleEvento evento) {
+    final fecha = evento.fechaHoraInicio;
+    if (evento.estado != 'confirmado' || fecha == null) return null;
+    return AvailabilitySlot(fecha.weekday - 1, fecha.hour);
   }
 
   Future<void> _confirmarHorario(AvailabilitySlot slot) async {

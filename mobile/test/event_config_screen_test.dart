@@ -132,4 +132,33 @@ void main() {
 
     expect(find.text(l10n.eventDetailTapToConfirm), findsNothing);
   });
+
+  testWidgets('el horario ya fijado se marca con una estrella en el heatmap (Item 5)',
+      (tester) async {
+    final confirmado = FakeEventsRepository(
+      detalleEvento: FakeEventsRepository.detalleDeEjemplo(
+        estado: 'confirmado',
+        // Lunes (weekday=1) 20:00 → AvailabilitySlot(0, 20).
+        fechaHoraInicio: DateTime(2026, 8, 3, 20),
+      ),
+    );
+
+    usarPantallaAlta(tester, alto: 4000);
+    await tester.pumpWidget(
+      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), events: confirmado),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.star), findsOneWidget);
+  });
+
+  testWidgets('sin horario confirmado no aparece ninguna estrella', (tester) async {
+    usarPantallaAlta(tester, alto: 4000);
+    await tester.pumpWidget(
+      appDePrueba(const EventConfigScreen(eventoId: 'evt-1')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.star), findsNothing);
+  });
 }

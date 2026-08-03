@@ -78,6 +78,8 @@ class FakeEventsRepository implements EventsRepository {
     bool? soyOrganizador,
     // Item 4 — para testear qué respondió "yo" en asistencia.
     String miEstadoAsistencia = 'confirmado',
+    // Item 5 — para testear el horario ya fijado por el organizador.
+    DateTime? fechaHoraInicio,
   }) =>
       DetalleEvento(
         id: 'evt-1',
@@ -85,6 +87,7 @@ class FakeEventsRepository implements EventsRepository {
         nombre: 'Asado en lo de Marcos',
         lugarTexto: 'Casa de Nacho',
         estado: estado,
+        fechaHoraInicio: fechaHoraInicio,
         miParticipanteId: 'part-1',
         soyOrganizador: soyOrganizador ?? conOrganizador,
         participantes: [

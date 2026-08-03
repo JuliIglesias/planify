@@ -675,3 +675,32 @@ evento):
   (Home muestra "(×3)" sin monto y sin perder la actividad distinta;
   el log del evento nombra a las dos contrapartes). Mobile 51→60,
   `flutter analyze` limpio.
+
+## Item 5 — El horario fijado por el organizador se distingue en el heatmap
+
+**Color reutilizado del design system, sin agregar uno nuevo.**
+`AppColors.warning` (#F5A623, ámbar) ya existía en
+[03-design-system.md](03-design-system.md) — es el mismo que usa el badge
+"PENDIENTE". Se reutiliza tal cual para el bloque fijado, en vez de
+introducir un color nuevo que rompiera la paleta ya definida.
+
+**Fix:**
+- `WeeklyAvailabilityGrid` (`core/widgets/`) recibe un nuevo parámetro
+  opcional `slotFijado: AvailabilitySlot?`. Esa celda puntual se pinta con
+  `AppColors.warning` y muestra un ícono de estrella (`Icons.star`) centrado
+  en vez del conteo de disponibles — se nota que es EL horario, no solo un
+  bloque con buena disponibilidad.
+- `EventConfigScreen._slotFijado`: traduce `evento.fechaHoraInicio` (una
+  fecha real) al `AvailabilitySlot` (día de la semana + hora) que usa la
+  grilla — es el cálculo inverso del que ya hacía `_confirmarHorario` para
+  ir de slot a fecha. Solo se muestra si `evento.estado == 'confirmado'`
+  y hay fecha (un evento en planificación no tiene horario fijado todavía).
+
+**Validación:**
+- `widgets_test.dart` — 2 tests nuevos: con `slotFijado` se ve la estrella y
+  no el conteo; sin `slotFijado` no aparece ninguna estrella.
+- `event_config_screen_test.dart` — 2 tests nuevos: un evento `confirmado`
+  con `fechaHoraInicio` muestra la estrella en el heatmap; uno sin
+  confirmar no muestra ninguna. Se agregó `fechaHoraInicio` como parámetro
+  de `FakeEventsRepository.detalleDeEjemplo` para poder armar el caso.
+- Mobile 60→64, `flutter analyze` limpio.

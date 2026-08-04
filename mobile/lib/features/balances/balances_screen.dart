@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/money_format.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/event_card.dart';
 import '../../core/widgets/status_badge.dart';
@@ -72,7 +73,7 @@ class BalancesScreen extends ConsumerWidget {
                               ),
                         ),
                         Text(
-                          '${netoPositivo ? '+' : ''}\$${b.balanceNeto}',
+                          '${netoPositivo ? '+' : ''}\$${MoneyFormat.format(b.balanceNeto)}',
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: netoPositivo ? AppColors.success : AppColors.danger,
@@ -148,7 +149,7 @@ class BalancesScreen extends ConsumerWidget {
                           for (final saldo in saldosFiltrados)
                             BalanceRow(
                               nombre: saldo.nombre,
-                              monto: '\$${saldo.monto}',
+                              monto: '\$${MoneyFormat.format(saldo.monto)}',
                               estado: switch (saldo.estado) {
                                 'pagar' => SaldoEstado.pagar,
                                 'pendiente' => SaldoEstado.pendiente,
@@ -194,7 +195,7 @@ class _MiniResumen extends StatelessWidget {
           children: [
             Text(label, style: Theme.of(context).textTheme.labelSmall),
             Text(
-              '\$$monto',
+              '\$${MoneyFormat.format(monto)}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: color,

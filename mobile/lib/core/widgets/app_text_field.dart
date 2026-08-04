@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../utils/money_format.dart';
+
 /// Variantes de comportamiento del [AppTextField].
 ///
 /// - [text]     → primera letra del campo en mayúscula automáticamente.
@@ -156,6 +158,7 @@ class _AppTextFieldState extends State<AppTextField> {
 
     // Los formatters del caller se combinan con los propios de la variante.
     final List<TextInputFormatter> formatters = [
+      if (isMoney) EuroMoneyInputFormatter(),
       ...?widget.inputFormatters,
     ];
 

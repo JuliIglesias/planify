@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/money_format.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/avatar_stack.dart';
 import '../../core/widgets/status_badge.dart';
@@ -170,7 +171,7 @@ class _Contenido extends StatelessWidget {
                 ),
               ),
               Text(
-                '\$${detalle.monto}',
+                '\$${MoneyFormat.format(detalle.monto)}',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: color,
@@ -194,8 +195,8 @@ class _Contenido extends StatelessWidget {
                       Flexible(
                         child: Text(
                           l10n.balancesCompensationHint(
-                            detalle.totalQueDebo,
-                            detalle.totalQueMeDebe,
+                            MoneyFormat.format(detalle.totalQueDebo),
+                            MoneyFormat.format(detalle.totalQueMeDebe),
                           ),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
@@ -255,7 +256,7 @@ class _Contenido extends StatelessWidget {
                           deuda.yoDebo ? l10n.balancesYouOwe : l10n.balancesOweYou,
                         ),
                         trailing: Text(
-                          '\$${deuda.monto}',
+                          '\$${MoneyFormat.format(deuda.monto)}',
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: deuda.yoDebo ? AppColors.danger : AppColors.success,

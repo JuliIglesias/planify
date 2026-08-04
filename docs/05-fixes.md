@@ -745,3 +745,18 @@ introducir un color nuevo que rompiera la paleta ya definida.
 
 **Validación:**
 - `flutter analyze` limpio y consistencia visual garantizada por el componente centralizado.
+
+## Item 2 — Formato de Dinero Europeo (UI/UX)
+
+**Causa raíz:** los inputs de dinero (`monto`) guardaban y mostraban el formato decimal inglés (ej: `5666.99`), pero los usuarios esperan el formato europeo (miles con punto, decimal con coma `5.666,99`) que es más natural en la región. Además, el backend transacciona montos en string para evitar problemas de precisión flotante.
+
+**Fix:**
+- Se creó la clase utilitaria `MoneyFormat` (`core/utils/money_format.dart`) que encapsula la instanciación de `NumberFormat.currency(locale: 'es_ES')`.
+- Se expusieron dos métodos estáticos: `format(String)` que devuelve el string legible (ej. `5.666,99`) y `parse(String)` que sabe interpretar el input del usuario ignorando los puntos y cambiando coma por punto para generar el double de cómputo.
+- Se implementó `EuroMoneyInputFormatter` y se conectó automáticamente a la variante `money` del widget `AppTextField`.
+- Se reemplazó el formato manual de los montos mostrados en `balances_screen.dart`, `person_detail_sheet.dart` y `event_detail_screen.dart` por llamadas a `MoneyFormat.format()`.
+- Se ajustó el getter de `_total` y `_aporteDe` en `expense_dialog.dart` para parsear los valores formateados sin generar errores, y se le aplicó el format en `_repartirEntrePagadores()`.
+
+**Validación:**
+- `flutter test` pasa (los tests no se rompieron).
+- `flutter analyze` limpio, 0 issues.

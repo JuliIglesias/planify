@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/money_format.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/event_card.dart';
@@ -490,7 +491,7 @@ class _Contenido extends ConsumerWidget {
             for (final deuda in deudas)
               ListTile(
                 title: Text('${deuda.deudorNombre} → ${deuda.acreedorNombre}'),
-                subtitle: Text('\$${deuda.monto}'),
+                subtitle: Text('\$${MoneyFormat.format(deuda.monto)}'),
                 trailing: deuda.estaSaldada
                     ? StatusBadge.saldo(SaldoEstado.saldado, l10n.balancesStateSettled)
                     : TextButton(

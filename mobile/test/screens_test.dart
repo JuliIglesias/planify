@@ -43,7 +43,7 @@ void main() {
       await tester.pumpWidget(appDePrueba(const BalancesScreen(), balances: balances));
       await tester.pumpAndSettle();
 
-      expect(find.text(r'+$2250.00'), findsOneWidget);
+      expect(find.text(r'+$2.250,00'), findsOneWidget);
       expect(find.text('Sofía'), findsOneWidget);
       expect(find.text(l10n.balancesOweYou), findsOneWidget);
     });
@@ -68,7 +68,7 @@ void main() {
       await tester.pumpWidget(appDePrueba(const BalancesScreen(), balances: balances));
       await tester.pumpAndSettle();
 
-      expect(find.text(r'$-500.00'), findsOneWidget);
+      expect(find.text(r'$-500,00'), findsOneWidget);
     });
   });
 
@@ -120,11 +120,11 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.text(r'$1250.00'), findsOneWidget);
-      expect(find.text(r'$320.00'), findsOneWidget);
+      expect(find.text(r'$1.250,00'), findsOneWidget);
+      expect(find.text(r'$320,00'), findsOneWidget);
       expect(find.text('Asado en lo de Marcos'), findsWidgets);
       expect(find.text(l10n.activityDebtSettled('Mati')), findsOneWidget);
-      expect(find.text(r'+$450.00'), findsOneWidget);
+      expect(find.text(r'+$450,00'), findsOneWidget);
     });
 
     testWidgets(
@@ -294,10 +294,10 @@ void main() {
       expect(find.text('Asado'), findsOneWidget);
       expect(find.text('Cine'), findsOneWidget);
       // Los montos aparecen tanto en el desglose como en el resumen de atrás.
-      expect(find.text(r'$500.00'), findsWidgets);
-      expect(find.text(r'$300.00'), findsWidgets);
+      expect(find.text(r'$500,00'), findsWidgets);
+      expect(find.text(r'$300,00'), findsWidgets);
       // Y el neto compensado.
-      expect(find.text(r'$200.00'), findsWidgets);
+      expect(find.text(r'$200,00'), findsWidgets);
     });
 
     testWidgets('saldar todo cierra las deudas de todos los eventos', (tester) async {
@@ -355,7 +355,7 @@ void main() {
 
       expect(find.text('Asado en lo de Marcos'), findsOneWidget);
       expect(find.text(l10n.balancesStatePay.toUpperCase()), findsOneWidget);
-      expect(find.text(r'$1200.00'), findsOneWidget);
+      expect(find.text(r'$1.200,00'), findsOneWidget);
       expect(find.text(l10n.historyToPay), findsOneWidget);
     });
   });

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/money_format.dart';
 import '../../../core/widgets/app_dialog.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -86,13 +87,13 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
     super.dispose();
   }
 
-  double get _total => double.tryParse(_montoController.text.trim().replaceAll(',', '.')) ?? 0;
+  double get _total => MoneyFormat.parse(_montoController.text);
 
   /// Con un solo pagador, su aporte es el total (no hace falta que lo tipee).
   bool get _unSoloPagador => _acreedores.length == 1;
 
   double _aporteDe(String id) =>
-      double.tryParse(_montoPorAcreedor[id]!.text.trim().replaceAll(',', '.')) ?? 0;
+      MoneyFormat.parse(_montoPorAcreedor[id]!.text);
 
   double get _sumaAportes {
     if (_unSoloPagador) return _total;
@@ -109,8 +110,10 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
     final resto = centavos - base * n;
     var i = 0;
     for (final id in _acreedores) {
-      final c = base + (i < resto ? 1 : 0);
-      _montoPorAcreedor[id]!.text = (c / 100).toStringAsFixed(2);
+      final montoBase = base / 100;
+      final montoExtra = i < resto ? 0.01 : 0.0;
+      _montoPorAcreedor[id]!.text =
+          MoneyFormat.format((montoBase + montoExtra).toStringAsFixed(2));
       i++;
     }
     setState(() {});

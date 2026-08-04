@@ -80,11 +80,13 @@ class FakeEventsRepository implements EventsRepository {
     String miEstadoAsistencia = 'confirmado',
     // Item 5 — para testear el horario ya fijado por el organizador.
     DateTime? fechaHoraInicio,
+    // Item 2 — para testear que un nombre largo se muestra completo.
+    String nombre = 'Asado en lo de Marcos',
   }) =>
       DetalleEvento(
         id: 'evt-1',
         grupoId: 'g1',
-        nombre: 'Asado en lo de Marcos',
+        nombre: nombre,
         lugarTexto: 'Casa de Nacho',
         estado: estado,
         fechaHoraInicio: fechaHoraInicio,

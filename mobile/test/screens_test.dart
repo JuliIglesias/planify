@@ -396,6 +396,44 @@ void main() {
     });
 
     testWidgets(
+        'un nombre largo se muestra completo, permitiendo hasta 2 líneas (Item 2)',
+        (tester) async {
+      final nombreLargo = FakeEventsRepository(
+        detalleEvento: FakeEventsRepository.detalleDeEjemplo(
+          nombre:
+              'Asado de fin de año con toda la familia y los amigos del trabajo en lo de Nacho',
+        ),
+      );
+
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(
+        appDePrueba(const EventDetailScreen(eventoId: 'evt-1'), events: nombreLargo),
+      );
+      await tester.pumpAndSettle();
+
+      final nombreWidget = tester.widget<Text>(find.text(
+        'Asado de fin de año con toda la familia y los amigos del trabajo en lo de Nacho',
+      ));
+      // No trunca a una sola línea: admite 2 antes de recortar (y no es
+      // el título del AppBar, que sí trunca a 1 sola línea sin esto).
+      expect(nombreWidget.maxLines, 2);
+      expect(nombreWidget.overflow, TextOverflow.ellipsis);
+    });
+
+    testWidgets('lugar y fecha se ven con ícono, como datos prominentes (Item 2)',
+        (tester) async {
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(
+        appDePrueba(const EventDetailScreen(eventoId: 'evt-1')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.place_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
+      expect(find.text('Casa de Nacho'), findsOneWidget);
+    });
+
+    testWidgets(
         'una sesión anónima ve el ícono de salir; una de organizador no (Item 1)',
         (tester) async {
       usarPantallaAlta(tester);

@@ -68,7 +68,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.surface,
-        title: Text(detalle.value?.nombre ?? l10n.commonLoading),
+        // Item 2 — el nombre se movió al body (ver `_Contenido`): el AppBar
+        // lo forzaba a una sola línea con "...", perdiendo nombres largos.
         actions: [
           // Item 1 — un anónimo no tiene bottom nav ni Perfil: sin esto no
           // había forma de cerrar sesión para entrar a otro evento con un
@@ -296,6 +297,7 @@ class _Contenido extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
 
     final fecha = evento.fechaHoraInicio != null
         ? DateFormat("EEEE d 'de' MMMM · HH:mm", 'es').format(evento.fechaHoraInicio!)
@@ -313,15 +315,37 @@ class _Contenido extends ConsumerWidget {
       child: ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
+        // ── Nombre, lugar y fecha (Item 2) ──────────────────────────────
+        // El nombre nunca se corta (hasta 2 líneas); lugar y fecha son de
+        // los datos más importantes de la pantalla, así que llevan la
+        // misma jerarquía que el nombre de cualquier card (bodyLarge,
+        // color primario) en vez de quedar como texto secundario perdido.
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: Text('$fecha · ${evento.lugarTexto}')),
-            if (evento.estaCancelado)
-              StatusBadge(label: l10n.eventDetailCancelled, color: AppColors.danger)
-            else if (evento.estaFinalizado)
+            Expanded(
+              child: Text(
+                evento.nombre,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (evento.estaCancelado) ...[
+              const SizedBox(width: AppSpacing.sm),
+              StatusBadge(label: l10n.eventDetailCancelled, color: AppColors.danger),
+            ] else if (evento.estaFinalizado) ...[
+              const SizedBox(width: AppSpacing.sm),
               StatusBadge.saldo(SaldoEstado.saldado, l10n.balancesStateSettled),
+            ],
           ],
         ),
+        const SizedBox(height: AppSpacing.sm),
+        _InfoRow(icon: Icons.place_outlined, texto: evento.lugarTexto),
+        const SizedBox(height: AppSpacing.xs),
+        _InfoRow(icon: Icons.calendar_today_outlined, texto: fecha),
 
         const SizedBox(height: AppSpacing.md),
 
@@ -590,6 +614,35 @@ class _Seccion extends StatelessWidget {
         style:
             Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
       ),
+    );
+  }
+}
+
+/// Item 2 — lugar y fecha con ícono, en su propia línea y con jerarquía de
+/// texto primario (antes iban concatenados en una sola oración chica y
+/// gris, como si fueran secundarios).
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.icon, required this.texto});
+
+  final IconData icon;
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: AppColors.primary),
+        const SizedBox(width: AppSpacing.xs),
+        Expanded(
+          child: Text(
+            texto,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+          ),
+        ),
+      ],
     );
   }
 }

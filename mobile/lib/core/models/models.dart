@@ -38,6 +38,7 @@ class DetalleEvento {
     required this.participantes,
     required this.tareas,
     this.fechaHoraInicio,
+    this.fechaHoraFin,
     this.gastos = 0,
     this.miParticipanteId,
     this.soyOrganizador = false,
@@ -54,6 +55,9 @@ class DetalleEvento {
   final List<Participante> participantes;
   final List<Tarea> tareas;
   final DateTime? fechaHoraInicio;
+  /// Item 5 — fin del rango horario confirmado (`null` si el evento todavía
+  /// no tiene horario, o si viene de datos previos a este cambio).
+  final DateTime? fechaHoraFin;
   final int gastos;
 
   /// Id del participante que representa a quien mira (el "yo" de la pantalla).
@@ -74,6 +78,9 @@ class DetalleEvento {
         estado: json['estado'] as String? ?? 'planificacion',
         fechaHoraInicio: json['fechaHoraInicio'] != null
             ? DateTime.tryParse(json['fechaHoraInicio'] as String)
+            : null,
+        fechaHoraFin: json['fechaHoraFin'] != null
+            ? DateTime.tryParse(json['fechaHoraFin'] as String)
             : null,
         gastos: json['gastos'] as int? ?? 0,
         miParticipanteId: json['miParticipanteId'] as String?,

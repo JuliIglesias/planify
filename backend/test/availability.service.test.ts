@@ -29,7 +29,7 @@ function armar() {
   const events = new EventsService(eventos, grupos, participantes, usuarios, log);
   const availability = new AvailabilityService(disponibilidad, eventos, events, log);
 
-  return { availability, events, eventos, participantes, disponibilidad, clock };
+  return { availability, events, eventos, participantes, disponibilidad, clock, usuarios, grupos };
 }
 
 describe('AvailabilityService — heatmap excluye a quien dijo "No voy" (Item 4)', () => {
@@ -97,5 +97,121 @@ describe('AvailabilityService — heatmap excluye a quien dijo "No voy" (Item 4)
     expect(await availability.heatmap(evento.id)).toEqual([
       { diaSemana: 1, bloqueHora: 9, disponibles: 1 },
     ]);
+  });
+});
+
+describe('AvailabilityService — horario como rango, no como slot único (Item 5)', () => {
+  it('confirmarHorario guarda inicio Y fin, y pasa el evento a confirmado', async () => {
+    const { availability, events, usuarios, grupos } = armar();
+    const usuario = usuarios.agregar();
+    const grupo = await grupos.create('G', [usuario.id]);
+    const { evento } = await events.crear(usuario.id, {
+      nombre: 'Asado',
+      lugarTexto: 'Casa',
+      grupoId: grupo.id,
+    });
+
+    const confirmado = await availability.confirmarHorario(
+      usuario.id,
+      evento.id,
+      new Date('2026-08-14T19:00:00Z'),
+      new Date('2026-08-14T23:00:00Z'),
+    );
+
+    expect(confirmado.estado).toBe('confirmado');
+    expect(confirmado.fechaHoraInicio).toEqual(new Date('2026-08-14T19:00:00Z'));
+    expect(confirmado.fechaHoraFin).toEqual(new Date('2026-08-14T23:00:00Z'));
+  });
+
+  it('rechaza un fechaHoraFin anterior o igual a fechaHoraInicio', async () => {
+    const { availability, events, usuarios, grupos } = armar();
+    const usuario = usuarios.agregar();
+    const grupo = await grupos.create('G', [usuario.id]);
+    const { evento } = await events.crear(usuario.id, {
+      nombre: 'Asado',
+      lugarTexto: 'Casa',
+      grupoId: grupo.id,
+    });
+
+    await expect(
+      availability.confirmarHorario(
+        usuario.id,
+        evento.id,
+        new Date('2026-08-14T23:00:00Z'),
+        new Date('2026-08-14T19:00:00Z'),
+      ),
+    ).rejects.toThrow(/fechaHoraFin/);
+
+    await expect(
+      availability.confirmarHorario(
+        usuario.id,
+        evento.id,
+        new Date('2026-08-14T19:00:00Z'),
+        new Date('2026-08-14T19:00:00Z'),
+      ),
+    ).rejects.toThrow(/fechaHoraFin/);
+  });
+
+  it('disponiblesEnRango cuenta solo a quien está libre en TODOS los bloques del rango', async () => {
+    const { availability, eventos, participantes, disponibilidad } = armar();
+    const evento = eventos.agregar();
+    // Libre 19,20,21,22 (todo "19 a 23hs").
+    const libreTodo = participantes.agregar({ eventoId: evento.id, estadoAsistencia: 'confirmado' });
+    // Libre solo 19 y 20: no cubre el rango completo.
+    const libreParcial = participantes.agregar({ eventoId: evento.id, estadoAsistencia: 'confirmado' });
+
+    for (const hora of [19, 20, 21, 22]) {
+      disponibilidad.slots.push({
+        eventoId: evento.id,
+        participanteId: libreTodo.id,
+        diaSemana: 4,
+        bloqueHora: hora,
+      });
+    }
+    for (const hora of [19, 20]) {
+      disponibilidad.slots.push({
+        eventoId: evento.id,
+        participanteId: libreParcial.id,
+        diaSemana: 4,
+        bloqueHora: hora,
+      });
+    }
+
+    const resultado = await availability.disponiblesEnRango(evento.id, 4, 19, 23);
+
+    expect(resultado).toEqual({ disponibles: 1, total: 2 });
+  });
+
+  it('disponiblesEnRango excluye a quien dijo "No voy", igual que el heatmap', async () => {
+    const { availability, eventos, participantes, disponibilidad } = armar();
+    const evento = eventos.agregar();
+    const noVa = participantes.agregar({ eventoId: evento.id, estadoAsistencia: 'rechazado' });
+    for (const hora of [19, 20]) {
+      disponibilidad.slots.push({
+        eventoId: evento.id,
+        participanteId: noVa.id,
+        diaSemana: 1,
+        bloqueHora: hora,
+      });
+    }
+
+    const resultado = await availability.disponiblesEnRango(evento.id, 1, 19, 21);
+
+    expect(resultado).toEqual({ disponibles: 0, total: 0 });
+  });
+
+  it('rechaza un rango horario inválido (fin <= inicio, o fuera de 0..24)', async () => {
+    const { availability, eventos } = armar();
+    const evento = eventos.agregar();
+
+    await expect(availability.disponiblesEnRango(evento.id, 0, 20, 19)).rejects.toThrow(
+      /rango horario/,
+    );
+    await expect(availability.disponiblesEnRango(evento.id, 0, -1, 5)).rejects.toThrow(
+      /rango horario/,
+    );
+    await expect(availability.disponiblesEnRango(evento.id, 0, 20, 25)).rejects.toThrow(
+      /rango horario/,
+    );
   });
 });

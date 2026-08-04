@@ -29,6 +29,7 @@ export function toEvento(row: {
   lugarTexto: string;
   estado: string;
   fechaHoraInicio: Date | null;
+  fechaHoraFin: Date | null;
   creadoPor: string;
   createdAt: Date;
 }): D.Evento {

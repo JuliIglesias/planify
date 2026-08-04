@@ -448,6 +448,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tap a block on the map to confirm the time';
 
   @override
+  String get eventDetailPickEndTime => 'Until what time?';
+
+  @override
+  String eventDetailStartTimeLabel(String hora) {
+    return 'The event starts at $hora';
+  }
+
+  @override
+  String eventDetailAvailableForRange(int disponibles, int total) {
+    return '$disponibles of $total are free for this whole range';
+  }
+
+  @override
   String get eventDetailWhoPaid => 'Who paid?';
 
   @override

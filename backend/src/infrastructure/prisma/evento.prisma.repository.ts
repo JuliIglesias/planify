@@ -78,10 +78,10 @@ export class PrismaEventoRepository implements EventoRepository {
     return toEvento(row);
   }
 
-  async confirmarHorario(id: string, fechaHoraInicio: Date): Promise<Evento> {
+  async confirmarHorario(id: string, fechaHoraInicio: Date, fechaHoraFin: Date): Promise<Evento> {
     const row = await this.prisma.evento.update({
       where: { id },
-      data: { estado: 'confirmado', fechaHoraInicio },
+      data: { estado: 'confirmado', fechaHoraInicio, fechaHoraFin },
     });
     return toEvento(row);
   }
@@ -137,6 +137,7 @@ export class PrismaEventoRepository implements EventoRepository {
     lugarTexto: string;
     estado: string;
     fechaHoraInicio: Date | null;
+    fechaHoraFin: Date | null;
     creadoPor: string;
     createdAt: Date;
     grupo: { nombre: string };

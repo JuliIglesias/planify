@@ -184,14 +184,22 @@ describe('H-09 — Próximos/Historial se parten por fecha, no solo por estado',
       lugarTexto: 'X',
       nuevoGrupoNombre: 'G1',
     });
-    await eventos.confirmarHorario(pasado.id, new Date('2026-07-01T20:00:00Z'));
+    await eventos.confirmarHorario(
+      pasado.id,
+      new Date('2026-07-01T20:00:00Z'),
+      new Date('2026-07-01T22:00:00Z'),
+    );
 
     const { evento: futuro } = await events.crear(orga.id, {
       nombre: 'Asado de agosto',
       lugarTexto: 'Y',
       nuevoGrupoNombre: 'G2',
     });
-    await eventos.confirmarHorario(futuro.id, new Date('2026-08-15T20:00:00Z'));
+    await eventos.confirmarHorario(
+      futuro.id,
+      new Date('2026-08-15T20:00:00Z'),
+      new Date('2026-08-15T22:00:00Z'),
+    );
 
     // Y uno todavía en planificación (sin fecha): siempre próximo.
     await events.crear(orga.id, {

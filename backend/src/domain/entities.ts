@@ -47,6 +47,8 @@ export interface Evento {
   lugarTexto: string;
   estado: EventoEstado;
   fechaHoraInicio: Date | null;
+  /** Item 5 — fin del rango horario confirmado (ver docs/adrs/0002-rango-horario-evento.md). */
+  fechaHoraFin: Date | null;
   creadoPor: string;
   createdAt: Date;
 }

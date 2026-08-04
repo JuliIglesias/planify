@@ -198,11 +198,14 @@ describe('Flujo completo del MVP', () => {
       .set('Authorization', auth);
     expect(heatmap.body).toContainEqual({ diaSemana: 4, bloqueHora: 21, disponibles: 1 });
 
-    // 6. El organizador confirma el horario (HU-09)
+    // 6. El organizador confirma el horario, como rango (HU-09, Item 5)
     const confirmado = await request(app)
       .patch(`/events/${eventoId}/confirm`)
       .set('Authorization', auth)
-      .send({ fechaHoraInicio: '2026-08-14T21:00:00.000Z' });
+      .send({
+        fechaHoraInicio: '2026-08-14T21:00:00.000Z',
+        fechaHoraFin: '2026-08-14T23:00:00.000Z',
+      });
 
     expect(confirmado.status).toBe(200);
     expect(confirmado.body.estado).toBe('confirmado');

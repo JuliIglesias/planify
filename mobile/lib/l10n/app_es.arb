@@ -257,6 +257,20 @@
   "eventDetailNoDebts": "No hay deudas en este evento",
   "eventDetailAssignTo": "Asignar a alguien",
   "eventDetailTapToConfirm": "Tocá un bloque del mapa para confirmar el horario",
+  "eventDetailPickEndTime": "¿Hasta qué hora?",
+  "eventDetailStartTimeLabel": "El evento empieza a las {hora}",
+  "@eventDetailStartTimeLabel": {
+    "placeholders": {
+      "hora": { "type": "String" }
+    }
+  },
+  "eventDetailAvailableForRange": "{disponibles} de {total} están libres en todo este rango",
+  "@eventDetailAvailableForRange": {
+    "placeholders": {
+      "disponibles": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
   "eventDetailWhoPaid": "¿Quién pagó?",
   "eventDetailDivideBetween": "¿Entre quiénes se divide?",
   "eventDetailSelectAtLeastOne": "Debe seleccionar al menos una persona",

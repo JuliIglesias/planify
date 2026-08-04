@@ -705,6 +705,73 @@ introducir un color nuevo que rompiera la paleta ya definida.
   de `FakeEventsRepository.detalleDeEjemplo` para poder armar el caso.
 - Mobile 60→64, `flutter analyze` limpio.
 
+---
+
+# Fase 5 — 5 mejoras de producto (rango de fechas, rango horario, visual, amigos)
+
+> Cada item con su propia branch/PR y su test. Orden de implementación
+> (por dependencias, confirmado con el usuario): 1 (rango de fechas) → 5
+> (rango horario, depende del 1) → 2 (visual, independiente) → 3 (visual,
+> independiente) → 4 (perfil de amigo, depende de que 1 y 5 ya existan para
+> que la disponibilidad comparada tenga sentido).
+>
+> Cada item vive en su propia branch, arrancada desde `main` de forma
+> independiente (mismo patrón de fases anteriores) — así que el Item 5
+> puede fusionarse antes o después del Item 1 sin bloquearse entre sí; el
+> único acople real (documentado en el ADR de cada uno) es conceptual, no
+> de código compartido en la misma rama.
+
+## Item 5 — Horario del evento como RANGO, no como slot único
+
+**Modelo de datos, ver [ADR 0002](adrs/0002-rango-horario-evento.md).**
+`Evento` gana `fechaHoraFin` (nullable — los eventos confirmados antes de
+este cambio se leen como si tuvieran un rango de una hora, sin backfill).
+Migración `20260804093000_evento_horario_rango`.
+
+**Confirmado con el usuario antes de implementar:** "disponible para el
+evento" = libre en TODO el rango horario, no en un bloque suelto. No se
+construye un motor de recomendación automática de horario — en cambio, el
+organizador ve en vivo cuánta gente está libre para el rango completo
+mientras elige la hora de fin, y decide con esa información.
+
+**Fix (backend):**
+- `AvailabilityService.confirmarHorario` ahora pide `fechaHoraInicio` Y
+  `fechaHoraFin` (HU-09), valida `fechaHoraFin > fechaHoraInicio`.
+  `EventoRepository.confirmarHorario` guarda ambos.
+- `DisponibilidadRepository.disponiblesEnRango(eventoId, diaSemana,
+  bloqueHoraInicio, bloqueHoraFin)` (nuevo): cuenta participantes libres en
+  **todos** los bloques del rango (intersección, no solo el primero),
+  mismo criterio de exclusión que el heatmap normal (Item 4 — "No voy" no
+  cuenta). Expuesto en `GET
+  /events/:id/availability/range?diaSemana=&horaInicio=&horaFin=`.
+- No se validó el horario confirmado contra el rango de fechas del evento
+  (Item 1) — decisión explicada en el ADR, para no acoplar dos features
+  que se piden y se implementan por separado.
+
+**Fix (mobile):**
+- `WeeklyAvailabilityGrid.slotFijado` (un slot) → `slotsFijados` (un
+  `Set<AvailabilitySlot>`): pinta con estrella **cada** bloque del rango
+  confirmado, no solo el de inicio.
+- `EventConfigScreen`: tocar un bloque del heatmap ya no confirma directo
+  — abre un diálogo "¿Hasta qué hora?" con un dropdown de horas de fin y,
+  en vivo, cuánta gente está libre para el rango elegido
+  (`disponiblesEnRango`, vía `FutureBuilder` que se recalcula al cambiar la
+  hora de fin). Confirmar llama a `confirmarHorario` con ambas fechas.
+
+**Validación:**
+- Backend: `availability.service.test.ts` — nuevo describe "horario como
+  rango": guarda inicio Y fin; rechaza fin ≤ inicio; `disponiblesEnRango`
+  cuenta solo a quien está libre en TODOS los bloques (caso con alguien
+  libre parcial, que no debe contar); excluye "No voy"; rechaza un rango
+  horario inválido. Se actualizó el test de integración existente
+  (`api.test.ts`, `/events/:id/confirm`) para mandar `fechaHoraFin`.
+  Backend 100→105, `tsc --noEmit` y `eslint .` limpios.
+- Mobile: `widgets_test.dart` — el rango fijado pinta estrella en cada uno
+  de sus bloques, no solo el primero. `event_config_screen_test.dart` — 4
+  tests nuevos: un rango de 4 horas marca 4 estrellas; tocar el heatmap
+  abre el selector con la disponibilidad en vivo; confirmar llama al
+  repositorio con inicio y fin; cancelar no confirma nada. Mobile 65→69,
+  `flutter analyze` limpio.
 # Fase 5 — Username único para logueados y anónimos
 
 ## Username único: reemplaza a "nombre" en toda la app, con auto-sufijo para anónimos

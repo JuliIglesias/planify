@@ -1,9 +1,9 @@
-import { Amistad, PersonaRef } from '../entities';
+import { Amistad, PersonaBusqueda } from '../entities';
 
 /** Una solicitud de amistad pendiente, con quién la envió. */
 export interface SolicitudAmistad {
   amistadId: string;
-  de: PersonaRef;
+  de: PersonaBusqueda;
 }
 
 export interface AmistadRepository {
@@ -18,8 +18,12 @@ export interface AmistadRepository {
   /** Aceptar una solicitud (pasa a `aceptada`). */
   aceptar(id: string): Promise<Amistad>;
 
-  /** Amigos ya aceptados de un usuario (en cualquiera de los dos sentidos). */
-  listAmigos(usuarioId: string): Promise<PersonaRef[]>;
+  /**
+   * Amigos ya aceptados de un usuario (en cualquiera de los dos sentidos).
+   * Item 3 — lleva el email para que cualquier lista de amigos pueda
+   * mostrarlo junto al username, no solo los resultados de búsqueda.
+   */
+  listAmigos(usuarioId: string): Promise<PersonaBusqueda[]>;
 
   /** Solicitudes pendientes que recibió el usuario. */
   listSolicitudesRecibidas(usuarioId: string): Promise<SolicitudAmistad[]>;

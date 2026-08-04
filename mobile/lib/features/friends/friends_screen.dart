@@ -85,10 +85,16 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
             ),
           for (final p in _resultados)
             ListTile(
+              // Item 3 — toda la fila envía la solicitud, no solo el botón;
+              // el botón se queda como indicador visual de la acción.
+              onTap: () => _accion(
+                () => ref.read(friendsRepositoryProvider).enviarSolicitud(p.id),
+                l10n.friendsRequestSent,
+              ),
               leading: const Icon(Icons.person_outline),
               title: Text(p.username),
-              // Item 3 — el email en gris ayuda a confirmar que es la
-              // persona correcta antes de mandar la solicitud.
+              // El email en gris ayuda a confirmar que es la persona
+              // correcta, como una sola unidad visual con el username.
               subtitle: p.email != null
                   ? Text(p.email!, style: const TextStyle(color: AppColors.textSecondary))
                   : null,
@@ -118,8 +124,17 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                           style: Theme.of(context).textTheme.titleMedium),
                       for (final s in lista)
                         ListTile(
+                          // Item 3 — toda la fila acepta, no solo el botón.
+                          onTap: () => _accion(
+                            () => ref.read(friendsRepositoryProvider).aceptar(s.amistadId),
+                            l10n.friendsAccept,
+                          ),
                           leading: const Icon(Icons.person_add_alt),
                           title: Text(s.de.username),
+                          subtitle: s.de.email != null
+                              ? Text(s.de.email!,
+                                  style: const TextStyle(color: AppColors.textSecondary))
+                              : null,
                           trailing: FilledButton(
                             onPressed: () => _accion(
                               () => ref.read(friendsRepositoryProvider).aceptar(s.amistadId),
@@ -157,6 +172,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                         ListTile(
                           leading: const Icon(Icons.person, color: AppColors.primary),
                           title: Text(p.username),
+                          // Item 3 — email en gris debajo del username, como
+                          // una sola unidad visual.
+                          subtitle: p.email != null
+                              ? Text(p.email!,
+                                  style: const TextStyle(color: AppColors.textSecondary))
+                              : null,
                         ),
                     ],
                   ),

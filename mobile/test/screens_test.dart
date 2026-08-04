@@ -482,9 +482,10 @@ void main() {
 
       testWidgets(
           'elegir un amigo guardado lo agrega directo al grupo del evento, '
-          'sin pedirle aceptación', (tester) async {
+          'sin pedirle aceptación; el selector muestra su email (Item 3)',
+          (tester) async {
         final friends = FakeFriendsRepository(
-          amigos: const [Persona(id: 'u1', username: 'Bruno')],
+          amigos: const [Persona(id: 'u1', username: 'Bruno', email: 'bruno@mail.com')],
         );
         final groups = FakeGroupsRepository();
 
@@ -501,6 +502,10 @@ void main() {
         await tester.tap(find.text(l10n.eventDetailAddFriends));
         await tester.pumpAndSettle();
 
+        // Item 3 — el selector (CheckboxListTile) también muestra el email.
+        expect(find.text('bruno@mail.com'), findsOneWidget);
+
+        // Toca el nombre (no el checkbox puntual): toda la fila selecciona.
         await tester.tap(find.text('Bruno'));
         await tester.pumpAndSettle();
         await tester.tap(find.text(l10n.friendsPickConfirm(1)));

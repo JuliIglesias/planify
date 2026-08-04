@@ -437,6 +437,44 @@ void main() {
       expect(find.text(r'$1.200,00'), findsOneWidget);
       expect(find.text(l10n.historyToPay), findsOneWidget);
     });
+
+    testWidgets(
+        'Item 3 (Tanda 6) — una línea de tiempo (un tramo por mes) agrupa '
+        'los eventos, con encabezados más grandes', (tester) async {
+      usarPantallaAlta(tester);
+      final events = FakeEventsRepository(
+        historialEventos: [
+          EventoHistorial(
+            id: 'e1',
+            nombre: 'Asado en mayo',
+            estadoSaldo: 'pagar',
+            monto: '1200.00',
+            participantes: const ['Marcos'],
+            fechaHoraInicio: DateTime(2026, 5, 12),
+          ),
+          EventoHistorial(
+            id: 'e2',
+            nombre: 'Cena en junio',
+            estadoSaldo: 'saldado',
+            monto: '800.00',
+            participantes: const ['Sofía'],
+            fechaHoraInicio: DateTime(2026, 6, 3),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(appDePrueba(const HistoryScreen(), events: events));
+      await tester.pumpAndSettle();
+
+      // Un tramo de línea de tiempo (IntrinsicHeight) por mes distinto.
+      expect(find.byType(IntrinsicHeight), findsNWidgets(2));
+
+      // El encabezado de mes ya no es labelSmall (11sp, poco jerárquico):
+      // ahora tiene el mismo peso que los encabezados de sección de Home.
+      final encabezado = tester.widget<Text>(find.text('MAYO 2026'));
+      expect(encabezado.style?.fontSize, greaterThan(11));
+      expect(encabezado.style?.fontWeight, FontWeight.bold);
+    });
   });
 
   group('EventDetailScreen (Item 4 — feed de actividad)', () {

@@ -1,5 +1,38 @@
 # Tanda 6 - Rediseño de navegación y limpieza de features
 
+## Item 3: Historial de eventos — línea de tiempo y bug de avatares
+
+**Causa del recorte de avatares:** `AvatarStack` medía su `SizedBox` exactamente
+`radius * 2` — el diámetro puro del `CircleAvatar`, sin dejar lugar al borde
+blanco de 2px que dibuja cada avatar por encima (`Border.all` en `_Avatar`).
+Como `Stack` recorta por default (`Clip.hardEdge`), el borde de arriba y de
+abajo de cada avatar quedaba cortado.
+
+- **`core/widgets/avatar_stack.dart`:** el `SizedBox` ahora mide
+  `radius * 2 + borde * 2` (alto y ancho), y el `Stack` pasa a
+  `clipBehavior: Clip.none` — no hay nada que este stack decorativo necesite
+  ocultar, así que sacar el recorte de raíz es más robusto que ajustar solo
+  el número.
+- **`history_screen.dart` — línea de tiempo:** nuevo widget interno
+  `_TimelineRail` — un punto (`AppColors.primary`) a la altura del
+  encabezado de cada mes, con una barra vertical (`AppColors.border`) que
+  ocupa exactamente la altura de las cards de ESE mes vía `IntrinsicHeight`.
+  Como los tramos van uno debajo del otro sin espacio entre sí, la barra se
+  ve continua a lo largo de toda la lista, agrupando visualmente por mes tal
+  como pide la referencia.
+- **Jerarquía tipográfica:** el encabezado de mes usaba `labelSmall` (11sp,
+  por docs/guidelines) — demasiado chico para ser el título de cada grupo,
+  sobre todo ahora que ancla la línea de tiempo. Pasa a `titleMedium` bold
+  en `AppColors.primary`, la misma jerarquía que ya usan los encabezados de
+  sección de Home ("Próximos eventos", "Actividad reciente"). El resto de la
+  vista (título/subtítulo de cada card) es `EventCard`, compartido con Home
+  y Groups, así que no se tocó para no afectar esas pantallas fuera de
+  alcance de este item.
+- **Tests:** `widgets_test.dart` — el contenedor de `AvatarStack` ahora mide
+  más que `radius * 2` y su `Stack` no recorta. `screens_test.dart` — un
+  `IntrinsicHeight` (tramo de línea de tiempo) por mes distinto, y el
+  encabezado de mes con tamaño/peso mayores a los de antes.
+
 ## Item 1: Navbar — estilos, textos siempre visibles y bug de layout
 
 **Causa raíz del corte (confirmada antes de tocar CSS):** no era un ancho

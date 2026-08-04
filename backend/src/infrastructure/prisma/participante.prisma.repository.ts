@@ -49,7 +49,7 @@ export class PrismaParticipanteRepository implements ParticipanteRepository {
     const row = await this.prisma.participante.create({
       data: {
         eventoId: data.eventoId,
-        nombreDisplay: data.nombreDisplay,
+        username: data.username,
         esAnonimo: true,
         tokenSesion: data.tokenSesion,
       },
@@ -68,12 +68,19 @@ export class PrismaParticipanteRepository implements ParticipanteRepository {
       data: {
         eventoId: data.eventoId,
         usuarioId: data.usuarioId,
-        nombreDisplay: data.nombreDisplay,
+        username: data.username,
         esAnonimo: false,
         esOrganizador: false,
       },
     });
     return toParticipante(row);
+  }
+
+  async existsUsernameAnonimo(username: string): Promise<boolean> {
+    const count = await this.prisma.participante.count({
+      where: { esAnonimo: true, username: { equals: username, mode: 'insensitive' } },
+    });
+    return count > 0;
   }
 
   async updateAsistencia(id: string, estado: AsistenciaEstado): Promise<Participante> {

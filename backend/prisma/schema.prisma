@@ -42,7 +42,7 @@ enum AmistadEstado {
 
 model Usuario {
   id              String   @id @default(uuid())
-  nombre          String
+  username        String   @unique
   email           String   @unique
   passwordHash    String   @map("password_hash")
   avatarUrl       String?  @map("avatar_url")
@@ -113,7 +113,12 @@ model Participante {
   id               String            @id @default(uuid())
   eventoId         String            @map("evento_id")
   usuarioId        String?           @map("usuario_id") // null si es anónimo
-  nombreDisplay    String            @map("nombre_display")
+  // Sin @@unique a nivel tabla a propósito: un usuario registrado participa
+  // de varios eventos y repite legítimamente su username en cada fila. La
+  // unicidad real (entre anónimos, y contra Usuario.username) se valida en
+  // ParticipantsService antes de insertar — Postgres no soporta un índice
+  // único parcial (solo para es_anonimo=true) declarado en este schema.
+  username         String
   esAnonimo        Boolean           @default(false) @map("es_anonimo")
   esOrganizador    Boolean           @default(false) @map("es_organizador")
   tokenSesion      String?           @unique @map("token_sesion") // solo si es_anonimo

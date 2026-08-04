@@ -24,7 +24,7 @@ export interface DetalleEvento extends Omit<EventoConResumen, 'participantes'> {
    */
   participantes: {
     id: string;
-    nombreDisplay: string;
+    username: string;
     estadoAsistencia: string;
     esOrganizador: boolean;
     esAnonimo: boolean;
@@ -124,7 +124,7 @@ export class EventsQueryService {
       grupoNombre: '',
       participantes: participantes.map((p) => ({
         id: p.id,
-        nombreDisplay: p.nombreDisplay,
+        username: p.username,
         estadoAsistencia: p.estadoAsistencia,
         esOrganizador: p.esOrganizador,
         esAnonimo: p.esAnonimo,

@@ -6,17 +6,18 @@ import '../../../core/network/api_client.dart';
 
 /// Una persona (amiga o resultado de búsqueda). id = usuarioId.
 class Persona {
-  const Persona({required this.id, required this.nombre, this.email});
+  const Persona({required this.id, required this.username, this.email});
   final String id;
-  final String nombre;
+  final String username;
   /// Item 3 (Fase 4) — solo viaja en los resultados de búsqueda (no en la
-  /// lista de amigos ni en solicitudes pendientes). Como el nombre no es
-  /// único, la pantalla de Amigos lo muestra en gris para desambiguar.
+  /// lista de amigos ni en solicitudes pendientes). El username ahora sí es
+  /// único (ver docs/05-fixes.md), pero el email se deja igual para no
+  /// perder la desambiguación visual ya existente en la pantalla de Amigos.
   final String? email;
 
   factory Persona.fromJson(Map<String, dynamic> json) => Persona(
         id: json['id'] as String,
-        nombre: json['nombre'] as String? ?? '',
+        username: json['username'] as String? ?? '',
         email: json['email'] as String?,
       );
 }

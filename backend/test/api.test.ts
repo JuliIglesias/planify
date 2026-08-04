@@ -31,7 +31,7 @@ describe('POST /auth/login (HU-41)', () => {
     repos.usuarios.agregar({
       email: 'organizador@planify.test',
       passwordHash: 'hash(planify-mvp-2026)',
-      nombre: 'Organizador Planify',
+      username: 'organizador_planify',
     });
 
     const res = await request(app)
@@ -40,7 +40,7 @@ describe('POST /auth/login (HU-41)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.token).toBeDefined();
-    expect(res.body.usuario.nombre).toBe('Organizador Planify');
+    expect(res.body.usuario.username).toBe('organizador_planify');
   });
 
   it('rechaza credenciales incorrectas sin revelar cuál falló', async () => {
@@ -86,7 +86,7 @@ describe('Guards de autenticación', () => {
 describe('POST /events (HU-06)', () => {
   it('crea el evento con su organizador', async () => {
     const { app, repos } = armarApi();
-    const usuario = repos.usuarios.agregar({ nombre: 'Julieta' });
+    const usuario = repos.usuarios.agregar({ username: 'Julieta' });
     const grupo = await repos.grupos.create('Los Fibes', [usuario.id]);
 
     const res = await request(app)
@@ -119,7 +119,7 @@ describe('POST /participants/anonymous (HU-01)', () => {
 
     const res = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId: evento.id, nombreDisplay: 'Sofía' });
+      .send({ eventoId: evento.id, username: 'Sofía' });
 
     expect(res.status).toBe(201);
     expect(res.body.tokenSesion).toBeDefined();
@@ -132,7 +132,7 @@ describe('POST /participants/anonymous (HU-01)', () => {
 
     const res = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId: evento.id, nombreDisplay: 'Sofía' });
+      .send({ eventoId: evento.id, username: 'Sofía' });
 
     expect(res.status).toBe(400);
   });
@@ -141,7 +141,7 @@ describe('POST /participants/anonymous (HU-01)', () => {
     const { app } = armarApi();
     const res = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId: 'no-existe', nombreDisplay: 'Sofía' });
+      .send({ eventoId: 'no-existe', username: 'Sofía' });
 
     expect(res.status).toBe(404);
   });
@@ -150,7 +150,7 @@ describe('POST /participants/anonymous (HU-01)', () => {
 describe('Flujo completo del MVP', () => {
   it('crear evento → unirse por link → cargar disponibilidad → confirmar horario', async () => {
     const { app, repos } = armarApi();
-    const organizador = repos.usuarios.agregar({ nombre: 'Julieta' });
+    const organizador = repos.usuarios.agregar({ username: 'Julieta' });
     const grupo = await repos.grupos.create('Los Fibes', [organizador.id]);
     const auth = tokenDe(organizador.id);
 
@@ -174,7 +174,7 @@ describe('Flujo completo del MVP', () => {
 
     const anonimo = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId, nombreDisplay: 'Sofía' });
+      .send({ eventoId, username: 'Sofía' });
     const tokenAnonimo = anonimo.body.tokenSesion;
 
     // 4. El anónimo carga su disponibilidad (HU-07)
@@ -214,7 +214,7 @@ describe('Flujo completo del MVP', () => {
 
   it('cargar gastos genera las deudas y saldarlas finaliza el evento', async () => {
     const { app, repos } = armarApi();
-    const organizador = repos.usuarios.agregar({ nombre: 'Marcos' });
+    const organizador = repos.usuarios.agregar({ username: 'Marcos' });
     const grupo = await repos.grupos.create('Los Fibes', [organizador.id]);
     const auth = tokenDe(organizador.id);
 
@@ -228,7 +228,7 @@ describe('Flujo completo del MVP', () => {
     // Se suma un anónimo para tener a alguien entre quien dividir.
     const anonimo = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId, nombreDisplay: 'Sofía' });
+      .send({ eventoId, username: 'Sofía' });
 
     // Marcos paga $4500 de carne y se divide entre los dos (HU-13/HU-14).
     const gasto = await request(app)
@@ -270,7 +270,7 @@ describe('Flujo completo del MVP', () => {
 
   it('permite elegir deudores específicos al crear un gasto (dividirEntre)', async () => {
     const { app, repos } = armarApi();
-    const organizador = repos.usuarios.agregar({ nombre: 'Marcos' });
+    const organizador = repos.usuarios.agregar({ username: 'Marcos' });
     const grupo = await repos.grupos.create('Los Fibes', [organizador.id]);
     const auth = tokenDe(organizador.id);
 
@@ -283,15 +283,15 @@ describe('Flujo completo del MVP', () => {
 
     const anonimo1 = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId, nombreDisplay: 'Sofía' });
+      .send({ eventoId, username: 'Sofía' });
     const anonimo2 = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId, nombreDisplay: 'Pedro' });
+      .send({ eventoId, username: 'Pedro' });
     expect(anonimo1.status).toBe(201);
     expect(anonimo2.status).toBe(201);
 
     // Marcos compra algo por $3000 solo para él y Sofía (excluye a Pedro)
-    const pSofía = repos.participantes.participantes.find((p) => p.nombreDisplay === 'Sofía')!;
+    const pSofía = repos.participantes.participantes.find((p) => p.username === 'Sofía')!;
     const gasto = await request(app)
       .post(`/events/${eventoId}/expenses`)
       .set('Authorization', auth)
@@ -316,7 +316,7 @@ describe('Flujo completo del MVP', () => {
 describe('SCRUM-15 · notificaciones (HU-35)', () => {
   it('registra el device y notifica a los otros participantes ante una actividad', async () => {
     const { app, repos } = armarApi();
-    const organizador = repos.usuarios.agregar({ nombre: 'Marcos' });
+    const organizador = repos.usuarios.agregar({ username: 'Marcos' });
     const grupo = await repos.grupos.create('Los Fibes', [organizador.id]);
     const auth = tokenDe(organizador.id);
 
@@ -337,7 +337,7 @@ describe('SCRUM-15 · notificaciones (HU-35)', () => {
     // organizador (otro participante con device) recibe el push.
     const anonimo = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId, nombreDisplay: 'Sofía' });
+      .send({ eventoId, username: 'Sofía' });
     await request(app)
       .patch(`/events/${eventoId}/attendance`)
       .set('X-Participant-Token', anonimo.body.tokenSesion)
@@ -359,8 +359,8 @@ describe('SCRUM-15 · notificaciones (HU-35)', () => {
 describe('SCRUM-17 · IA generar evento (HU-42/43/44b)', () => {
   it('devuelve un borrador con nombre, lugar, tareas y amigos matcheados', async () => {
     const { app, repos } = armarApi();
-    const organizador = repos.usuarios.agregar({ nombre: 'Marcos' });
-    const sofia = repos.usuarios.agregar({ nombre: 'Sofía' });
+    const organizador = repos.usuarios.agregar({ username: 'Marcos' });
+    const sofia = repos.usuarios.agregar({ username: 'Sofía' });
     // Marcos y Sofía son amigos (aceptada).
     repos.amistades.amistades.push({
       id: 'ami-1',
@@ -380,13 +380,13 @@ describe('SCRUM-17 · IA generar evento (HU-42/43/44b)', () => {
     expect(res.body.lugar.toLowerCase()).toContain('juli');
     expect(res.body.tareasSugeridas.length).toBeGreaterThan(0);
     // Sofía matchea con un amigo; Pedro no.
-    expect(res.body.amigosSugeridos.map((a: { nombre: string }) => a.nombre)).toContain('Sofía');
+    expect(res.body.amigosSugeridos.map((a: { username: string }) => a.username)).toContain('Sofía');
     expect(res.body.nombresSinMatch).toContain('Pedro');
   });
 
   it('exige una descripción', async () => {
     const { app, repos } = armarApi();
-    const organizador = repos.usuarios.agregar({ nombre: 'Marcos' });
+    const organizador = repos.usuarios.agregar({ username: 'Marcos' });
     const res = await request(app)
       .post('/events/generate-from-text')
       .set('Authorization', tokenDe(organizador.id))

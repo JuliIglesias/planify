@@ -123,13 +123,13 @@ export function createContainer(prisma: PrismaClient): Container {
     ? new GeminiEventGenerator(process.env.GEMINI_API_KEY, heuristico)
     : heuristico;
 
-  const auth = new AuthService(usuarios, hasher, tokens);
+  const auth = new AuthService(usuarios, participantes, hasher, tokens);
   const friends = new FriendsService(amistades, usuarios);
   const users = new UsersService(usuarios);
   const aiEvents = new AiEventsService(eventGenerator, amistades);
   const profileAvailability = new ProfileAvailabilityService(disponibilidadPerfil, amistades);
   const locations = new LocationsService(ubicaciones);
-  const participants = new ParticipantsService(participantes, eventos, ids, activityLog);
+  const participants = new ParticipantsService(participantes, usuarios, eventos, ids, activityLog);
   const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
   const events = new EventsService(eventos, grupos, participantes, usuarios, activityLog);
   const eventsQuery = new EventsQueryService(eventos, participantes, deudas, tareas, gastos, clock);

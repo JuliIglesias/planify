@@ -39,8 +39,8 @@ export class AiEventsService {
     for (const mencionado of generado.nombresMencionados) {
       const m = mencionado.toLowerCase();
       const match = amigos.find((a) => {
-        const nombre = a.nombre.toLowerCase();
-        return nombre.includes(m) || m.includes(nombre.split(/\s+/)[0]);
+        const username = a.username.toLowerCase();
+        return username.includes(m) || m.includes(username.split(/\s+/)[0]);
       });
       if (match) {
         if (!amigosSugeridos.some((x) => x.id === match.id)) amigosSugeridos.push(match);

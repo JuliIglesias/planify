@@ -67,9 +67,9 @@ function armar() {
 describe('H-01 — los miembros del grupo se vuelven participantes del evento', () => {
   it('al crear un evento reutilizando un grupo, todos sus miembros participan', async () => {
     const { events, usuarios, grupos, participantes } = armar();
-    const orga = usuarios.agregar({ nombre: 'Marcos' });
-    const sofia = usuarios.agregar({ nombre: 'Sofía' });
-    const pedro = usuarios.agregar({ nombre: 'Pedro' });
+    const orga = usuarios.agregar({ username: 'Marcos' });
+    const sofia = usuarios.agregar({ username: 'Sofía' });
+    const pedro = usuarios.agregar({ username: 'Pedro' });
     const grupo = await grupos.create('Los Fibes', [orga.id, sofia.id, pedro.id]);
 
     const { evento } = await events.crear(orga.id, {
@@ -79,11 +79,11 @@ describe('H-01 — los miembros del grupo se vuelven participantes del evento', 
     });
 
     const enEvento = await participantes.listByEvento(evento.id);
-    const nombres = enEvento.map((p) => p.nombreDisplay).sort();
+    const nombres = enEvento.map((p) => p.username).sort();
     // Antes del fix, acá solo estaba 'Marcos' (el organizador).
     expect(nombres).toEqual(['Marcos', 'Pedro', 'Sofía']);
     // Los no-organizadores arrancan sin confirmar.
-    const sofiaPart = enEvento.find((p) => p.nombreDisplay === 'Sofía')!;
+    const sofiaPart = enEvento.find((p) => p.username === 'Sofía')!;
     expect(sofiaPart.esOrganizador).toBe(false);
     expect(sofiaPart.usuarioId).toBe(sofia.id);
     expect(sofiaPart.estadoAsistencia).toBe('sin_confirmar');
@@ -91,8 +91,8 @@ describe('H-01 — los miembros del grupo se vuelven participantes del evento', 
 
   it('al crear con miembros sueltos (HU-04), esos miembros también participan', async () => {
     const { events, usuarios, participantes } = armar();
-    const orga = usuarios.agregar({ nombre: 'Ana' });
-    const luis = usuarios.agregar({ nombre: 'Luis' });
+    const orga = usuarios.agregar({ username: 'Ana' });
+    const luis = usuarios.agregar({ username: 'Luis' });
 
     const { evento } = await events.crear(orga.id, {
       nombre: 'Cine',
@@ -102,15 +102,15 @@ describe('H-01 — los miembros del grupo se vuelven participantes del evento', 
     });
 
     const nombres = (await participantes.listByEvento(evento.id))
-      .map((p) => p.nombreDisplay)
+      .map((p) => p.username)
       .sort();
     expect(nombres).toEqual(['Ana', 'Luis']);
   });
 
   it('sumar un amigo al grupo lo vuelve participante de los eventos activos (Duda #12.2)', async () => {
     const { events, groups, usuarios, participantes, grupos } = armar();
-    const orga = usuarios.agregar({ nombre: 'Ana' });
-    const nuevo = usuarios.agregar({ nombre: 'Bruno' });
+    const orga = usuarios.agregar({ username: 'Ana' });
+    const nuevo = usuarios.agregar({ username: 'Bruno' });
 
     const { evento } = await events.crear(orga.id, {
       nombre: 'Juntada',
@@ -119,7 +119,7 @@ describe('H-01 — los miembros del grupo se vuelven participantes del evento', 
     });
 
     // Antes de agregarlo, Bruno no participa.
-    expect((await participantes.listByEvento(evento.id)).map((p) => p.nombreDisplay)).toEqual([
+    expect((await participantes.listByEvento(evento.id)).map((p) => p.username)).toEqual([
       'Ana',
     ]);
 
@@ -127,18 +127,18 @@ describe('H-01 — los miembros del grupo se vuelven participantes del evento', 
     await groups.agregarMiembro(grupoId, orga.id, nuevo.id);
 
     const nombres = (await participantes.listByEvento(evento.id))
-      .map((p) => p.nombreDisplay)
+      .map((p) => p.username)
       .sort();
     expect(nombres).toEqual(['Ana', 'Bruno']);
   });
 
   it('no duplica participantes si el amigo ya participaba (idempotente)', async () => {
     const { groups, usuarios, participantes, eventos, grupos } = armar();
-    const orga = usuarios.agregar({ nombre: 'Ana' });
-    const bruno = usuarios.agregar({ nombre: 'Bruno' });
+    const orga = usuarios.agregar({ username: 'Ana' });
+    const bruno = usuarios.agregar({ username: 'Bruno' });
     const grupo = await grupos.create('G', [orga.id]);
     const evento = eventos.agregar({ grupoId: grupo.id, estado: 'confirmado' });
-    participantes.agregar({ eventoId: evento.id, usuarioId: bruno.id, nombreDisplay: 'Bruno' });
+    participantes.agregar({ eventoId: evento.id, usuarioId: bruno.id, username: 'Bruno' });
 
     await groups.agregarMiembro(grupo.id, orga.id, bruno.id);
 
@@ -152,7 +152,7 @@ describe('H-01 — los miembros del grupo se vuelven participantes del evento', 
 describe('H-04 — soyOrganizador se decide por quién mira, no por la lista', () => {
   it('el organizador ve soyOrganizador=true; un anónimo del mismo evento, false', async () => {
     const { events, eventsQuery, usuarios, participantes } = armar();
-    const orga = usuarios.agregar({ nombre: 'Marcos' });
+    const orga = usuarios.agregar({ username: 'Marcos' });
     const { evento, organizador } = await events.crear(orga.id, {
       nombre: 'Asado',
       lugarTexto: 'Casa',
@@ -161,7 +161,7 @@ describe('H-04 — soyOrganizador se decide por quién mira, no por la lista', (
     const anonimo = participantes.agregar({
       eventoId: evento.id,
       esAnonimo: true,
-      nombreDisplay: 'Sofía',
+      username: 'Sofía',
     });
 
     const vistaOrga = await eventsQuery.detalle(evento.id, organizador.id);
@@ -177,7 +177,7 @@ describe('H-04 — soyOrganizador se decide por quién mira, no por la lista', (
 describe('H-09 — Próximos/Historial se parten por fecha, no solo por estado', () => {
   it('un confirmado con fecha pasada va a Historial; con fecha futura, a Próximos', async () => {
     const { events, eventsQuery, usuarios, eventos } = armar();
-    const orga = usuarios.agregar({ nombre: 'Ana' }); // el clock del fake = 2026-07-28
+    const orga = usuarios.agregar({ username: 'Ana' }); // el clock del fake = 2026-07-28
 
     const { evento: pasado } = await events.crear(orga.id, {
       nombre: 'Asado de julio',

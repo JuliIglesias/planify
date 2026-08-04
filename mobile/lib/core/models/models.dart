@@ -5,21 +5,21 @@ library;
 class Participante {
   const Participante({
     required this.id,
-    required this.nombreDisplay,
+    required this.username,
     this.estadoAsistencia = 'sin_confirmar',
     this.esOrganizador = false,
     this.esAnonimo = false,
   });
 
   final String id;
-  final String nombreDisplay;
+  final String username;
   final String estadoAsistencia;
   final bool esOrganizador;
   final bool esAnonimo;
 
   factory Participante.fromJson(Map<String, dynamic> json) => Participante(
         id: json['id'] as String,
-        nombreDisplay: json['nombreDisplay'] as String? ?? '',
+        username: json['username'] as String? ?? '',
         estadoAsistencia: json['estadoAsistencia'] as String? ?? 'sin_confirmar',
         esOrganizador: json['esOrganizador'] as bool? ?? false,
         esAnonimo: json['esAnonimo'] as bool? ?? false,
@@ -162,7 +162,7 @@ class GrupoResumen {
         id: json['id'] as String,
         nombre: json['nombre'] as String? ?? '',
         miembros: ((json['miembros'] as List<dynamic>?) ?? [])
-            .map((m) => (m as Map<String, dynamic>)['nombre'] as String? ?? '')
+            .map((m) => (m as Map<String, dynamic>)['username'] as String? ?? '')
             .toList(),
         noLeidos: json['noLeidos'] as int? ?? 0,
         tieneEventoNuevo: json['tieneEventoNuevo'] as bool? ?? false,
@@ -240,7 +240,7 @@ class EventoHistorial {
             ? DateTime.tryParse(json['createdAt'] as String)
             : null,
         participantes: ((json['participantes'] as List<dynamic>?) ?? [])
-            .map((p) => (p as Map<String, dynamic>)['nombreDisplay'] as String? ?? '')
+            .map((p) => (p as Map<String, dynamic>)['username'] as String? ?? '')
             .toList(),
       );
 }
@@ -278,19 +278,19 @@ class Balance {
 class SaldoPorPersona {
   const SaldoPorPersona({
     required this.id,
-    required this.nombre,
+    required this.username,
     required this.monto,
     required this.estado,
   });
 
   final String id;
-  final String nombre;
+  final String username;
   final String monto;
   final String estado;
 
   factory SaldoPorPersona.fromJson(Map<String, dynamic> json) => SaldoPorPersona(
         id: json['id'] as String,
-        nombre: json['nombre'] as String? ?? '',
+        username: json['username'] as String? ?? '',
         monto: json['monto'] as String? ?? '0.00',
         estado: json['estado'] as String? ?? 'saldado',
       );
@@ -301,18 +301,18 @@ class DeudaEvento {
   const DeudaEvento({
     required this.id,
     required this.deudorId,
-    required this.deudorNombre,
+    required this.deudorUsername,
     required this.acreedorId,
-    required this.acreedorNombre,
+    required this.acreedorUsername,
     required this.monto,
     required this.estado,
   });
 
   final String id;
   final String deudorId;
-  final String deudorNombre;
+  final String deudorUsername;
   final String acreedorId;
-  final String acreedorNombre;
+  final String acreedorUsername;
   final String monto;
   final String estado;
 
@@ -324,9 +324,9 @@ class DeudaEvento {
     return DeudaEvento(
       id: json['id'] as String,
       deudorId: json['deudorParticipanteId'] as String? ?? '',
-      deudorNombre: deudor?['nombre'] as String? ?? '',
+      deudorUsername: deudor?['username'] as String? ?? '',
       acreedorId: json['acreedorParticipanteId'] as String? ?? '',
-      acreedorNombre: acreedor?['nombre'] as String? ?? '',
+      acreedorUsername: acreedor?['username'] as String? ?? '',
       monto: json['monto'] as String? ?? '0.00',
       estado: json['estado'] as String? ?? 'pendiente',
     );
@@ -365,7 +365,7 @@ class DeudaDeEvento {
 class DetalleConPersona {
   const DetalleConPersona({
     required this.personaId,
-    required this.nombre,
+    required this.username,
     required this.monto,
     required this.estado,
     required this.totalQueDebo,
@@ -374,7 +374,7 @@ class DetalleConPersona {
   });
 
   final String personaId;
-  final String nombre;
+  final String username;
 
   /// Neto ya compensado, siempre positivo. El signo lo da [estado].
   final String monto;
@@ -391,7 +391,7 @@ class DetalleConPersona {
 
   factory DetalleConPersona.fromJson(Map<String, dynamic> json) => DetalleConPersona(
         personaId: json['personaId'] as String? ?? '',
-        nombre: json['nombre'] as String? ?? '',
+        username: json['username'] as String? ?? '',
         monto: json['monto'] as String? ?? '0.00',
         estado: json['estado'] as String? ?? 'saldado',
         totalQueDebo: json['totalQueDebo'] as String? ?? '0.00',
@@ -406,7 +406,7 @@ class ActividadLog {
   const ActividadLog({
     required this.id,
     required this.tipo,
-    required this.actorNombre,
+    required this.actorUsername,
     required this.createdAt,
     this.eventoId,
     this.eventoNombre,
@@ -415,7 +415,7 @@ class ActividadLog {
 
   final String id;
   final String tipo;
-  final String actorNombre;
+  final String actorUsername;
   final DateTime createdAt;
 
   /// Solo vienen en el feed de Home, donde hace falta saber de qué evento es.
@@ -428,8 +428,8 @@ class ActividadLog {
     return ActividadLog(
       id: json['id'] as String,
       tipo: json['tipo'] as String? ?? '',
-      // El backend serializa PersonaRef como `nombre`.
-      actorNombre: (actor?['nombre'] ?? actor?['nombreDisplay']) as String? ?? '',
+      // El backend serializa PersonaRef como `username`.
+      actorUsername: actor?['username'] as String? ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
       eventoId: json['eventoId'] as String?,
       eventoNombre: json['eventoNombre'] as String?,
@@ -444,14 +444,14 @@ class Tarea {
     required this.titulo,
     required this.estado,
     this.asignadoId,
-    this.asignadoNombre,
+    this.asignadoUsername,
   });
 
   final String id;
   final String titulo;
   final String estado;
   final String? asignadoId;
-  final String? asignadoNombre;
+  final String? asignadoUsername;
 
   bool get estaCompletada => estado == 'completado';
   bool get estaSinAsignar => estado == 'no_asignado';
@@ -463,8 +463,8 @@ class Tarea {
       titulo: json['titulo'] as String? ?? '',
       estado: json['estado'] as String? ?? 'no_asignado',
       asignadoId: asignado?['id'] as String?,
-      // El backend serializa el nombre como `nombre` en TareaConAsignado.
-      asignadoNombre: (asignado?['nombre'] ?? asignado?['nombreDisplay']) as String?,
+      // El backend serializa el username como `username` en TareaConAsignado.
+      asignadoUsername: asignado?['username'] as String?,
     );
   }
 }

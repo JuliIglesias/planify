@@ -26,7 +26,7 @@ function armar() {
 describe('EventsService — creación (HU-06)', () => {
   it('crea el evento junto con su participante organizador', async () => {
     const { service, usuarios, grupos } = armar();
-    const usuario = usuarios.agregar({ nombre: 'Julieta' });
+    const usuario = usuarios.agregar({ username: 'Julieta' });
     const grupo = await grupos.create('Los Fibes', [usuario.id]);
 
     const { evento, organizador } = await service.crear(usuario.id, {

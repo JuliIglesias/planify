@@ -24,7 +24,7 @@ void main() {
         id: 'a-${DateTime.now().microsecondsSinceEpoch}-${actor}_$tipo$eventoId'
             '${contraparteNombre ?? ''}',
         tipo: tipo,
-        actorNombre: actor,
+        actorUsername: actor,
         createdAt: DateTime(2026, 8, 1),
         eventoId: eventoId,
         payload: contraparteNombre != null ? {'contraparteNombre': contraparteNombre} : null,
@@ -81,7 +81,7 @@ void main() {
       final grupos = agruparActividades(entradas, limite: 5);
 
       expect(grupos, hasLength(5));
-      expect(grupos.map((g) => g.entrada.actorNombre), ['A', 'B', 'C', 'D', 'E']);
+      expect(grupos.map((g) => g.entrada.actorUsername), ['A', 'B', 'C', 'D', 'E']);
       expect(grupos.last.cantidad, 2);
     });
   });

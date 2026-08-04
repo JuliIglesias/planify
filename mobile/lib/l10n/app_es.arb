@@ -63,6 +63,15 @@
       }
     }
   },
+  "unreadActivities": "{count} mensajes nuevos",
+  "@unreadActivities": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventUrgentDecision": "Decisión pendiente",
   "groupsNoUpcoming": "Sin eventos próximos",
   "balancesTitle": "Saldos",
   "balancesNet": "BALANCE NETO",

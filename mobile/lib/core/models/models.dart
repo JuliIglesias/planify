@@ -200,6 +200,8 @@ class EventoDeGrupo {
     this.confirmados = 0,
     this.tareasPendientes = 0,
     this.gastos = 0,
+    this.necesitaDecisionRango = false,
+    this.noLeidos = 0,
   });
 
   final String id;
@@ -210,6 +212,8 @@ class EventoDeGrupo {
   final int confirmados;
   final int tareasPendientes;
   final int gastos;
+  final bool necesitaDecisionRango;
+  final int noLeidos;
 
   factory EventoDeGrupo.fromJson(Map<String, dynamic> json) => EventoDeGrupo(
         id: json['id'] as String,
@@ -222,6 +226,8 @@ class EventoDeGrupo {
         confirmados: json['confirmados'] as int? ?? 0,
         tareasPendientes: json['tareasPendientes'] as int? ?? 0,
         gastos: json['gastos'] as int? ?? 0,
+        necesitaDecisionRango: json['necesitaDecisionRango'] as bool? ?? false,
+        noLeidos: json['noLeidos'] as int? ?? 0,
       );
 }
 

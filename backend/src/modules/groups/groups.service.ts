@@ -25,6 +25,8 @@ export interface EventoDeGrupo {
   confirmados: number;
   tareasPendientes: number;
   gastos: number;
+  necesitaDecisionRango: boolean;
+  noLeidos: number;
 }
 
 export interface ResumenGrupo {
@@ -112,6 +114,11 @@ export class GroupsService {
           confirmados: confirmadosPorEvento.get(evento.id) ?? 0,
           tareasPendientes: tareasPendientes[evento.id] ?? 0,
           gastos: gastosPorEvento[evento.id] ?? 0,
+          necesitaDecisionRango:
+            evento.estado === 'planificacion' &&
+            this.clock.now() > evento.rangoFin &&
+            evento.extensionesRango >= 1,
+          noLeidos: noLeidosPorEvento[evento.id] ?? 0,
         })),
       };
     });

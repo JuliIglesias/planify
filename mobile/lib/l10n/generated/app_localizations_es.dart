@@ -124,6 +124,14 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String unreadActivities(int count) {
+    return '$count mensajes nuevos';
+  }
+
+  @override
+  String get eventUrgentDecision => 'Decisión pendiente';
+
+  @override
   String get groupsNoUpcoming => 'Sin eventos próximos';
 
   @override

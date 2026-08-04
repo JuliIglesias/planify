@@ -29,3 +29,19 @@
 - **Frontend:**
   - En `mobile/lib/features/groups/groups_screen.dart`, se actualizó el widget `UnreadDot` en `_CarruselDeGrupos` pasando la propiedad `mostrarNumero: true`.
   - Esto habilita el comportamiento estilo WhatsApp que muestra el contador de eventos nuevos no leídos dentro del globo verde (o rojo dependiendo del tema) de notificaciones del grupo.
+
+## Item 3: Eventos: Pills con resumen de incidentes (Actualización de Cards)
+- **Backend:**
+  - Se actualizó el mapper de `eventos` de `GroupsService.resumenPara` para incluir la propiedad `necesitaDecisionRango: boolean` que determina si un evento está pendiente de confirmación de fecha habiendo agotado sus prórrogas.
+- **Frontend:**
+  - Se actualizó la clase `EventoDeGrupo` en `models.dart` para incluir y parsear `necesitaDecisionRango`.
+  - Se extendió el widget `EventCard` para aceptar una lista opcional de `EventCardPill` (que contiene etiqueta, ícono, color de fondo y color de texto).
+  - En `groups_screen.dart`, el widget `_EventoDeGrupoCard` ahora construye pills de colores pastel e íconos descriptivos para confirmaciones, tareas, gastos e incidentes urgentes, logrando el diseño esperado.
+
+## Item 4: Eventos: Badges de actividad dentro de la Card
+- **Backend:**
+  - Se modificó la interfaz `EventoDeGrupo` para exponer el contador de `noLeidos` para cada evento individual dentro de la lista de eventos activos.
+- **Frontend:**
+  - Se actualizó `EventoDeGrupo` en `models.dart` para incluir y parsear `noLeidos`.
+  - En `groups_screen.dart`, el widget `_EventoDeGrupoCard` agrega dinámicamente un pill celeste/azul con ícono `Icons.chat_bubble_outline` indicando "N mensajes nuevos" si `noLeidos > 0`.
+

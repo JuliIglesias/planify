@@ -187,7 +187,7 @@ class _CarruselDeGrupos extends ConsumerWidget {
                       Positioned(
                         right: -2,
                         top: -2,
-                        child: UnreadDot(cantidad: grupo.noLeidos),
+                        child: UnreadDot(cantidad: grupo.noLeidos, mostrarNumero: true),
                       ),
                     ],
                   ),

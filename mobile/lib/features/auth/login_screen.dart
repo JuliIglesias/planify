@@ -70,6 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Text(l10n.loginAnonymousLinkLabel),
             const SizedBox(height: AppSpacing.xs),
             AppTextField(
+              variant: AppTextFieldVariant.email,
               controller: tokenController,
               autofocus: true,
               decoration: const InputDecoration(

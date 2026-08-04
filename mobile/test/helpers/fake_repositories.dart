@@ -200,6 +200,21 @@ class FakeTasksRepository implements TasksRepository {
   Future<void> completar({required String eventoId, required String tareaId}) async {
     llamadas.add('completar:$tareaId');
   }
+
+  @override
+  Future<void> descompletar({required String eventoId, required String tareaId}) async {
+    llamadas.add('descompletar:$tareaId');
+  }
+
+  @override
+  Future<void> desasignar({required String eventoId, required String tareaId}) async {
+    llamadas.add('desasignar:$tareaId');
+  }
+
+  @override
+  Future<void> eliminar({required String eventoId, required String tareaId}) async {
+    llamadas.add('eliminar:$tareaId');
+  }
 }
 
 class FakeExpensesRepository implements ExpensesRepository {

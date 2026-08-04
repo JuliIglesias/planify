@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/money_format.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/event_card.dart';
 import '../../core/widgets/status_badge.dart';
@@ -100,7 +101,7 @@ class _HistorialCard extends StatelessWidget {
       participantes: evento.participantes,
       badge: StatusBadge.saldo(estado, estadoLabel),
       montoLabel: estado == SaldoEstado.pagar ? l10n.historyToPay : l10n.historyYourShare,
-      monto: '\$${evento.monto}',
+      monto: '\$${MoneyFormat.format(evento.monto)}',
       montoColor: switch (estado) {
         SaldoEstado.pagar => AppColors.danger,
         SaldoEstado.pendiente => AppColors.warning,

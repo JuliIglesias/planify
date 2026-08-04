@@ -70,6 +70,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
           AppTextField(
+            variant: AppTextFieldVariant.email,
             controller: _busquedaCtrl,
             onChanged: _buscar,
             decoration: InputDecoration(

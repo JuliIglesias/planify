@@ -107,18 +107,21 @@ class BalancesScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                    child: SegmentedButton<_Filtro>(
-                      segments: [
-                        ButtonSegment(value: _Filtro.todo, label: Text(l10n.balancesAll)),
-                        ButtonSegment(
-                          value: _Filtro.meDeben,
-                          label: Text(l10n.balancesOwedToMe),
-                        ),
-                        ButtonSegment(value: _Filtro.debo, label: Text(l10n.balancesIOwe)),
-                      ],
-                      selected: {filtro},
-                      onSelectionChanged: (s) =>
-                          ref.read(_filtroBalanceProvider.notifier).set(s.first),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: SegmentedButton<_Filtro>(
+                        segments: [
+                          ButtonSegment(value: _Filtro.todo, label: Text(l10n.balancesAll)),
+                          ButtonSegment(
+                            value: _Filtro.meDeben,
+                            label: Text(l10n.balancesOwedToMe),
+                          ),
+                          ButtonSegment(value: _Filtro.debo, label: Text(l10n.balancesIOwe)),
+                        ],
+                        selected: {filtro},
+                        onSelectionChanged: (s) =>
+                            ref.read(_filtroBalanceProvider.notifier).set(s.first),
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),

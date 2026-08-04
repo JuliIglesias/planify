@@ -22,6 +22,10 @@ abstract interface class TasksRepository {
 
   /// HU-23 — marcarla como completada.
   Future<void> completar({required String eventoId, required String tareaId});
+
+  Future<void> descompletar({required String eventoId, required String tareaId});
+  Future<void> desasignar({required String eventoId, required String tareaId});
+  Future<void> eliminar({required String eventoId, required String tareaId});
 }
 
 class TasksRepositoryHttp implements TasksRepository {
@@ -60,6 +64,24 @@ class TasksRepositoryHttp implements TasksRepository {
   Future<void> completar({required String eventoId, required String tareaId}) =>
       ejecutar(() async {
         await _dio.patch<void>('/events/$eventoId/tasks/$tareaId/complete');
+      });
+
+  @override
+  Future<void> descompletar({required String eventoId, required String tareaId}) =>
+      ejecutar(() async {
+        await _dio.patch<void>('/events/$eventoId/tasks/$tareaId/uncomplete');
+      });
+
+  @override
+  Future<void> desasignar({required String eventoId, required String tareaId}) =>
+      ejecutar(() async {
+        await _dio.patch<void>('/events/$eventoId/tasks/$tareaId/unassign');
+      });
+
+  @override
+  Future<void> eliminar({required String eventoId, required String tareaId}) =>
+      ejecutar(() async {
+        await _dio.delete<void>('/events/$eventoId/tasks/$tareaId');
       });
 }
 

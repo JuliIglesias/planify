@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/money_format.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/event_card.dart';
 import '../../core/widgets/evento_resumen_card.dart';
@@ -173,7 +174,7 @@ class _ResumenSaldo extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              monto == '—' ? monto : '\$$monto',
+              monto == '—' ? monto : '\$${MoneyFormat.format(monto)}',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: color,

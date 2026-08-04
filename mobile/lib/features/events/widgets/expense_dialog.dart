@@ -17,7 +17,8 @@ class DatosGasto {
     required this.descripcion,
     required this.montoTotal,
     required this.acreedores,
-    required this.deudoresIds,
+    this.deudoresIds,
+    this.deudores,
   });
 
   final String descripcion;
@@ -25,7 +26,8 @@ class DatosGasto {
 
   /// Uno o varios pagadores, con cuánto puso cada uno (FR7).
   final List<AporteInput> acreedores;
-  final List<String> deudoresIds;
+  final List<String>? deudoresIds;
+  final List<AporteInput>? deudores;
 }
 
 /// Pide descripción, monto, quién(es) pagó(aron) y entre quiénes se divide.
@@ -58,7 +60,8 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
   final Set<String> _acreedores = {};
   final Map<String, TextEditingController> _montoPorAcreedor = {};
 
-  late final Set<String> _deudoresSeleccionados;
+  final Set<String> _deudoresSeleccionados = {};
+  final Map<String, TextEditingController> _montoPorDeudor = {};
 
   @override
   void initState() {
@@ -73,8 +76,9 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
     _acreedores.add(pagadorInicial);
     for (final p in widget.participantes) {
       _montoPorAcreedor[p.id] = TextEditingController();
+      _montoPorDeudor[p.id] = TextEditingController();
     }
-    _deudoresSeleccionados = <String>{for (final p in widget.participantes) p.id};
+    _deudoresSeleccionados.addAll(widget.participantes.map((p) => p.id));
   }
 
   @override
@@ -82,6 +86,9 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
     _descripcionController.dispose();
     _montoController.dispose();
     for (final c in _montoPorAcreedor.values) {
+      c.dispose();
+    }
+    for (final c in _montoPorDeudor.values) {
       c.dispose();
     }
     super.dispose();
@@ -100,6 +107,14 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
     return _acreedores.fold(0.0, (acc, id) => acc + _aporteDe(id));
   }
 
+  double _deudaDe(String id) => MoneyFormat.parse(_montoPorDeudor[id]!.text);
+
+  double get _sumaDeudas =>
+      _deudoresSeleccionados.fold(0.0, (acc, id) => acc + _deudaDe(id));
+
+  bool get _usaDeudaManual =>
+      _deudoresSeleccionados.any((id) => _montoPorDeudor[id]!.text.isNotEmpty);
+
   void _alCambiarTotal() => setState(() {});
 
   void _repartirEntrePagadores() {
@@ -113,6 +128,23 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
       final montoBase = base / 100;
       final montoExtra = i < resto ? 0.01 : 0.0;
       _montoPorAcreedor[id]!.text =
+          MoneyFormat.format((montoBase + montoExtra).toStringAsFixed(2));
+      i++;
+    }
+    setState(() {});
+  }
+
+  void _repartirEntreDeudores() {
+    if (_deudoresSeleccionados.isEmpty) return;
+    final centavos = (_total * 100).round();
+    final n = _deudoresSeleccionados.length;
+    final base = centavos ~/ n;
+    final resto = centavos - base * n;
+    var i = 0;
+    for (final id in _deudoresSeleccionados) {
+      final montoBase = base / 100;
+      final montoExtra = i < resto ? 0.01 : 0.0;
+      _montoPorDeudor[id]!.text =
           MoneyFormat.format((montoBase + montoExtra).toStringAsFixed(2));
       i++;
     }
@@ -168,7 +200,7 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
               ],
             ),
             for (final p in widget.participantes)
-              _FilaAcreedor(
+              _FilaParticipante(
                 nombre: p.nombreDisplay,
                 seleccionado: _acreedores.contains(p.id),
                 mostrarMonto: !_unSoloPagador && _acreedores.contains(p.id),
@@ -198,18 +230,27 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
               ),
 
             const SizedBox(height: AppSpacing.md),
-            Text(
-              l10n.eventDetailDivideBetween,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.eventDetailDivideBetween,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _total > 0 ? _repartirEntreDeudores : null,
+                  child: Text(l10n.eventDetailSplitEqually),
+                ),
+              ],
             ),
-            const SizedBox(height: AppSpacing.xs),
             for (final p in widget.participantes)
-              CheckboxListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(p.nombreDisplay),
-                value: _deudoresSeleccionados.contains(p.id),
-                onChanged: (checked) {
+              _FilaParticipante(
+                nombre: p.nombreDisplay,
+                seleccionado: _deudoresSeleccionados.contains(p.id),
+                mostrarMonto: _deudoresSeleccionados.contains(p.id),
+                controller: _montoPorDeudor[p.id]!,
+                onCambio: (checked) {
                   setState(() {
                     if (checked == true) {
                       _deudoresSeleccionados.add(p.id);
@@ -222,6 +263,7 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
                     }
                   });
                 },
+                onMonto: () => setState(() {}),
               ),
           ],
         ),
@@ -251,6 +293,11 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
       return;
     }
 
+    if (_usaDeudaManual && (_sumaDeudas - total).abs() >= 0.005) {
+      _error(l10n.eventDetailPayersMustSum); // Reusamos el mismo mensaje de error o uno genérico
+      return;
+    }
+
     final acreedores = <AporteInput>[
       for (final id in _acreedores)
         (
@@ -261,13 +308,24 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
         ),
     ];
 
+    final deudores = _usaDeudaManual
+        ? <AporteInput>[
+            for (final id in _deudoresSeleccionados)
+              (
+                participanteId: id,
+                monto: _deudaDe(id).toStringAsFixed(2),
+              ),
+          ]
+        : null;
+
     Navigator.pop(
       context,
       DatosGasto(
         descripcion: descripcion,
         montoTotal: total.toStringAsFixed(2),
         acreedores: acreedores,
-        deudoresIds: _deudoresSeleccionados.toList(),
+        deudoresIds: _usaDeudaManual ? null : _deudoresSeleccionados.toList(),
+        deudores: deudores,
       ),
     );
   }
@@ -277,9 +335,9 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
   }
 }
 
-/// Una fila de "quién pagó": checkbox + (si hay varios) el monto que puso.
-class _FilaAcreedor extends StatelessWidget {
-  const _FilaAcreedor({
+/// Una fila de "quién pagó" o "quién debe": checkbox + el monto.
+class _FilaParticipante extends StatelessWidget {
+  const _FilaParticipante({
     required this.nombre,
     required this.seleccionado,
     required this.mostrarMonto,

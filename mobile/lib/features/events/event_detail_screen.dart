@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 
 
@@ -374,26 +375,35 @@ class _Contenido extends ConsumerWidget {
                   : Column(
                       children: [
                         for (final tarea in tareas)
-                          _TareaTile(
-                            tarea: tarea,
-                            participantes: evento.participantes,
-                            habilitado: habilitado,
-                            onTomar: () => onAccion(() => ref
-                                .read(tasksRepositoryProvider)
-                                .asignar(eventoId: evento.id, tareaId: tarea.id)),
-                            onAsignarA: (participanteId) => onAccion(() => ref
-                                .read(tasksRepositoryProvider)
-                                .asignar(
-                                  eventoId: evento.id,
-                                  tareaId: tarea.id,
-                                  asignadoA: participanteId,
-                                )),
-                            onCompletar: () => onAccion(() => ref
-                                .read(tasksRepositoryProvider)
-                                .completar(eventoId: evento.id, tareaId: tarea.id)),
-                          ),
-                      ],
-                    ),
+                            _TareaTile(
+                              tarea: tarea,
+                              participantes: evento.participantes,
+                              habilitado: habilitado,
+                              onTomar: () => onAccion(() => ref
+                                  .read(tasksRepositoryProvider)
+                                  .asignar(eventoId: evento.id, tareaId: tarea.id)),
+                              onAsignarA: (participanteId) => onAccion(() => ref
+                                  .read(tasksRepositoryProvider)
+                                  .asignar(
+                                    eventoId: evento.id,
+                                    tareaId: tarea.id,
+                                    asignadoA: participanteId,
+                                  )),
+                              onCompletar: () => onAccion(() => ref
+                                  .read(tasksRepositoryProvider)
+                                  .completar(eventoId: evento.id, tareaId: tarea.id)),
+                              onDescompletar: () => onAccion(() => ref
+                                  .read(tasksRepositoryProvider)
+                                  .descompletar(eventoId: evento.id, tareaId: tarea.id)),
+                              onDesasignar: () => onAccion(() => ref
+                                  .read(tasksRepositoryProvider)
+                                  .desasignar(eventoId: evento.id, tareaId: tarea.id)),
+                              onEliminar: () => onAccion(() => ref
+                                  .read(tasksRepositoryProvider)
+                                  .eliminar(eventoId: evento.id, tareaId: tarea.id)),
+                            ),
+                        ],
+                      ),
             ),
 
         // ── Log de actividad (HU-24) ──────────────────────────────────────
@@ -458,6 +468,9 @@ class _Contenido extends ConsumerWidget {
               for (final a in datos.acreedores)
                 AporteGasto(participanteId: a.participanteId, monto: a.monto),
             ],
+            deudores: datos.deudores?.map(
+              (d) => AporteGasto(participanteId: d.participanteId, monto: d.monto),
+            ).toList(),
             dividirEntre: datos.deudoresIds,
           ),
     );
@@ -521,6 +534,9 @@ class _TareaTile extends StatelessWidget {
     required this.onTomar,
     required this.onAsignarA,
     required this.onCompletar,
+    required this.onDescompletar,
+    required this.onDesasignar,
+    required this.onEliminar,
   });
 
   final Tarea tarea;
@@ -529,27 +545,75 @@ class _TareaTile extends StatelessWidget {
   final VoidCallback onTomar;
   final ValueChanged<String> onAsignarA;
   final VoidCallback onCompletar;
+  final VoidCallback onDescompletar;
+  final VoidCallback onDesasignar;
+  final VoidCallback onEliminar;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
+    final esTomar = tarea.estaSinAsignar;
+    final esCompletada = tarea.estaCompletada;
+
     return Card(
-      child: ListTile(
-        leading: Icon(
-          tarea.estaCompletada ? Icons.check_circle : Icons.radio_button_unchecked,
-          color: tarea.estaCompletada ? AppColors.success : AppColors.textSecondary,
+      clipBehavior: Clip.antiAlias,
+      child: Slidable(
+        key: ValueKey(tarea.id),
+        enabled: habilitado,
+        startActionPane: ActionPane(
+          motion: const ScrollMotion(),
+          dismissible: DismissiblePane(
+            onDismissed: esTomar
+                ? onTomar
+                : (esCompletada ? onDescompletar : onCompletar),
+          ),
+          children: [
+            SlidableAction(
+              onPressed: (_) => esTomar
+                  ? onTomar()
+                  : (esCompletada ? onDescompletar() : onCompletar()),
+              backgroundColor: esCompletada ? Colors.orange : AppColors.success,
+              foregroundColor: Colors.white,
+              icon: esCompletada ? Icons.undo : Icons.check,
+              label: esCompletada ? 'Deshacer' : (esTomar ? 'Tomar' : 'Completar'),
+            ),
+          ],
         ),
-        title: Text(tarea.titulo),
-        subtitle: Text(tarea.asignadoNombre ?? l10n.eventDetailTaskUnassigned),
-        trailing: tarea.estaCompletada
-            ? Text(l10n.eventDetailTaskDone)
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // HU-22 — asignar a otro participante.
-                  if (tarea.estaSinAsignar)
-                    PopupMenuButton<String>(
+        endActionPane: ActionPane(
+          motion: const ScrollMotion(),
+          dismissible: DismissiblePane(
+            onDismissed: onEliminar,
+          ),
+          children: [
+            SlidableAction(
+              onPressed: (_) => onEliminar(),
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              icon: Icons.delete,
+              label: 'Eliminar',
+            ),
+            if (!tarea.estaSinAsignar)
+              SlidableAction(
+                onPressed: (_) => onDesasignar(),
+                backgroundColor: Colors.grey.shade600,
+                foregroundColor: Colors.white,
+                icon: Icons.person_off,
+                label: 'Desasignar',
+              ),
+          ],
+        ),
+        child: ListTile(
+          leading: Icon(
+            tarea.estaCompletada ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: tarea.estaCompletada ? AppColors.success : AppColors.textSecondary,
+          ),
+          title: Text(tarea.titulo),
+          subtitle: Text(tarea.asignadoNombre ?? l10n.eventDetailTaskUnassigned),
+          trailing: tarea.estaCompletada
+              ? Text(l10n.eventDetailTaskDone)
+              : (tarea.estaSinAsignar
+                  ? PopupMenuButton<String>(
                       enabled: habilitado,
                       icon: const Icon(Icons.person_add_alt, size: 20),
                       tooltip: l10n.eventDetailAssignTo,
@@ -558,21 +622,9 @@ class _TareaTile extends StatelessWidget {
                         for (final p in participantes)
                           PopupMenuItem(value: p.id, child: Text(p.nombreDisplay)),
                       ],
-                    ),
-                  TextButton(
-                    onPressed: !habilitado
-                        ? null
-                        : tarea.estaSinAsignar
-                            ? onTomar
-                            : onCompletar,
-                    child: Text(
-                      tarea.estaSinAsignar
-                          ? l10n.eventDetailTakeTask
-                          : l10n.eventDetailCompleteTask,
-                    ),
-                  ),
-                ],
-              ),
+                    )
+                  : const SizedBox.shrink()),
+        ),
       ),
     );
   }

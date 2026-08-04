@@ -24,7 +24,7 @@ class EventoResumenCard extends StatelessWidget {
     return EventCard(
       titulo: evento.nombre,
       subtitulo: '$fecha · ${evento.lugarTexto}',
-      participantes: evento.participantes.map((p) => p.nombreDisplay).toList(),
+      participantes: evento.participantes.map((p) => p.username).toList(),
       chips: [l10n.groupsConfirmed(evento.confirmados)],
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(

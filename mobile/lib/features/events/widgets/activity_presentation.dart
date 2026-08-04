@@ -23,6 +23,7 @@ IconData iconoDeActividad(String tipo) => switch (tipo) {
       'participante_se_unio' => Icons.person_add,
       'disponibilidad_cargada' => Icons.calendar_month,
       'asistencia_confirmada' => Icons.how_to_reg,
+      'rango_extendido' => Icons.date_range,
       _ => Icons.bolt,
     };
 
@@ -34,7 +35,7 @@ Color colorDeActividad(String tipo) => switch (tipo) {
     };
 
 String textoActividad(AppLocalizations l10n, ActividadLog entrada) {
-  final actor = entrada.actorNombre;
+  final actor = entrada.actorUsername;
   return switch (entrada.tipo) {
     'evento_creado' => l10n.activityEventCreated(actor),
     'horario_confirmado' => l10n.activityScheduleConfirmed(actor),
@@ -51,6 +52,8 @@ String textoActividad(AppLocalizations l10n, ActividadLog entrada) {
     'asistencia_confirmada' => l10n.activityAttendance(actor),
     'disponibilidad_cargada' => l10n.activityAvailability(actor),
     'evento_cancelado' => l10n.activityCancelled(actor),
+    // Disparado por el sistema (Item 1), no por un participante real.
+    'rango_extendido' => l10n.activityRangeExtended,
     _ => actor,
   };
 }
@@ -87,7 +90,7 @@ List<ActividadAgrupada> agruparActividades(List<ActividadLog> entradas, {int lim
   for (final entrada in entradas) {
     if (resultado.isNotEmpty) {
       final ultimo = resultado.last;
-      if (ultimo.entrada.actorNombre == entrada.actorNombre &&
+      if (ultimo.entrada.actorUsername == entrada.actorUsername &&
           ultimo.entrada.tipo == entrada.tipo &&
           ultimo.entrada.eventoId == entrada.eventoId) {
         resultado[resultado.length - 1] =
@@ -130,7 +133,7 @@ List<ActividadLogAgrupada> agruparLogDeEvento(List<ActividadLog> entradas) {
     if (esSaldado && resultado.isNotEmpty) {
       final ultimo = resultado.last;
       if (ultimo.entrada.tipo == 'deuda_saldada' &&
-          ultimo.entrada.actorNombre == entrada.actorNombre) {
+          ultimo.entrada.actorUsername == entrada.actorUsername) {
         resultado[resultado.length - 1] = ActividadLogAgrupada(
           entrada: ultimo.entrada,
           contrapartes: [
@@ -155,7 +158,7 @@ List<ActividadLogAgrupada> agruparLogDeEvento(List<ActividadLog> entradas) {
 String textoActividadLogAgrupada(AppLocalizations l10n, ActividadLogAgrupada grupo) {
   if (grupo.entrada.tipo == 'deuda_saldada' && grupo.contrapartes.length > 1) {
     return l10n.activityDebtSettledWith(
-      grupo.entrada.actorNombre,
+      grupo.entrada.actorUsername,
       _formatearNombres(grupo.contrapartes),
     );
   }

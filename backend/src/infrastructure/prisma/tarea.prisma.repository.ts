@@ -15,13 +15,13 @@ export class PrismaTareaRepository implements TareaRepository {
     const rows = await this.prisma.tarea.findMany({
       where: { eventoId },
       orderBy: { createdAt: 'asc' },
-      include: { asignado: { select: { id: true, nombreDisplay: true } } },
+      include: { asignado: { select: { id: true, username: true } } },
     });
 
     return rows.map((row) => ({
       ...toTarea(row),
       asignado: row.asignado
-        ? { id: row.asignado.id, nombre: row.asignado.nombreDisplay }
+        ? { id: row.asignado.id, username: row.asignado.username }
         : null,
     }));
   }
@@ -47,13 +47,13 @@ export class PrismaTareaRepository implements TareaRepository {
     const row = await this.prisma.tarea.update({
       where: { id },
       data: { asignadoA, estado: 'pendiente' },
-      include: { asignado: { select: { id: true, nombreDisplay: true } } },
+      include: { asignado: { select: { id: true, username: true } } },
     });
 
     return {
       ...toTarea(row),
       asignado: row.asignado
-        ? { id: row.asignado.id, nombre: row.asignado.nombreDisplay }
+        ? { id: row.asignado.id, username: row.asignado.username }
         : null,
     };
   }

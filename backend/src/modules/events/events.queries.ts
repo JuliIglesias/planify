@@ -10,6 +10,7 @@ import {
   TareaRepository,
 } from '../../domain/repositories';
 import { toCents, fromCents } from '../debts/debt-engine';
+import { MAX_EXTENSIONES_RANGO } from './events.service';
 
 export interface EventoHistorial extends EventoConResumen {
   /** Los mismos 3 estados que Balances (Duda #2: "el historial trabaja igual"). */
@@ -24,7 +25,7 @@ export interface DetalleEvento extends Omit<EventoConResumen, 'participantes'> {
    */
   participantes: {
     id: string;
-    nombreDisplay: string;
+    username: string;
     estadoAsistencia: string;
     esOrganizador: boolean;
     esAnonimo: boolean;
@@ -39,6 +40,13 @@ export interface DetalleEvento extends Omit<EventoConResumen, 'participantes'> {
    * cualquier participante veía esas acciones y le daban 401 (H-04).
    */
   soyOrganizador: boolean;
+  /**
+   * Item 1 — el rango de fechas venció y ya se usó la única extensión
+   * automática: el organizador tiene que decidir a mano (cancelar o forzar
+   * una fecha). La extensión en sí ya se resolvió antes de llegar acá (ver
+   * `EventsService.chequearExtensionRango`, llamado desde la ruta).
+   */
+  necesitaDecisionRango: boolean;
 }
 
 /**
@@ -124,7 +132,7 @@ export class EventsQueryService {
       grupoNombre: '',
       participantes: participantes.map((p) => ({
         id: p.id,
-        nombreDisplay: p.nombreDisplay,
+        username: p.username,
         estadoAsistencia: p.estadoAsistencia,
         esOrganizador: p.esOrganizador,
         esAnonimo: p.esAnonimo,
@@ -134,6 +142,10 @@ export class EventsQueryService {
       gastos: gastos[eventoId] ?? 0,
       miParticipanteId: yo?.id ?? null,
       soyOrganizador: yo?.esOrganizador ?? false,
+      necesitaDecisionRango:
+        evento.estado === 'planificacion' &&
+        this.clock.now() > evento.rangoFin &&
+        evento.extensionesRango >= MAX_EXTENSIONES_RANGO,
     };
   }
 }

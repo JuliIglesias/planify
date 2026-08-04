@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import {
+  DisponibilidadEnRango,
   DisponibilidadRepository,
   SlotDisponibilidad,
   SlotHeatmap,
@@ -55,6 +56,45 @@ export class PrismaDisponibilidadRepository implements DisponibilidadRepository 
       select: { diaSemana: true, bloqueHora: true },
     });
     return slots.map((s) => ({ diaSemana: s.diaSemana, bloqueHora: s.bloqueHora }));
+  }
+
+  async disponiblesEnRango(
+    eventoId: string,
+    diaSemana: number,
+    bloqueHoraInicio: number,
+    bloqueHoraFin: number,
+  ): Promise<DisponibilidadEnRango> {
+    // No se puede pedir "todos los bloques del rango" con groupBy+having de
+    // Prisma cuando además hay que filtrar por una relación (estadoAsistencia
+    // != rechazado): se trae fila por fila y se cuenta en memoria, mismo
+    // criterio de exclusión que ya usa heatmapForEvento (Item 4).
+    const filas = await this.prisma.disponibilidadSlot.findMany({
+      where: {
+        eventoId,
+        diaSemana,
+        bloqueHora: { gte: bloqueHoraInicio, lt: bloqueHoraFin },
+        participante: { estadoAsistencia: { not: 'rechazado' } },
+      },
+      select: { participanteId: true, bloqueHora: true },
+    });
+
+    const bloquesPorParticipante = new Map<string, Set<number>>();
+    for (const fila of filas) {
+      const bloques = bloquesPorParticipante.get(fila.participanteId) ?? new Set<number>();
+      bloques.add(fila.bloqueHora);
+      bloquesPorParticipante.set(fila.participanteId, bloques);
+    }
+
+    const bloquesNecesarios = bloqueHoraFin - bloqueHoraInicio;
+    const disponibles = [...bloquesPorParticipante.values()].filter(
+      (bloques) => bloques.size >= bloquesNecesarios,
+    ).length;
+
+    const total = await this.prisma.participante.count({
+      where: { eventoId, estadoAsistencia: { not: 'rechazado' } },
+    });
+
+    return { disponibles, total };
   }
 }
 

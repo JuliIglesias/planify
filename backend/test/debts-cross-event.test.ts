@@ -35,24 +35,24 @@ function armarEscenario() {
   const juliEnAsado = participantes.agregar({
     eventoId: asado.id,
     usuarioId: 'usr-juli',
-    nombreDisplay: 'Julieta',
+    username: 'Julieta',
   });
   const juliEnCine = participantes.agregar({
     eventoId: cine.id,
     usuarioId: 'usr-juli',
-    nombreDisplay: 'Julieta',
+    username: 'Julieta',
   });
 
   // Marcos también.
   const marcosEnAsado = participantes.agregar({
     eventoId: asado.id,
     usuarioId: 'usr-marcos',
-    nombreDisplay: 'Marcos',
+    username: 'Marcos',
   });
   const marcosEnCine = participantes.agregar({
     eventoId: cine.id,
     usuarioId: 'usr-marcos',
-    nombreDisplay: 'Marcos',
+    username: 'Marcos',
   });
 
   deudas.agregar({
@@ -82,7 +82,7 @@ describe('Balances — compensación cruzada entre eventos (FR9)', () => {
     expect(balance.saldos).toHaveLength(1);
     expect(balance.saldos[0]).toMatchObject({
       id: 'usr-marcos',
-      nombre: 'Marcos',
+      username: 'Marcos',
       monto: '200.00',
       estado: 'pagar',
     });
@@ -137,7 +137,7 @@ describe('Balances — compensación cruzada entre eventos (FR9)', () => {
 
     const detalle = await service.detalleConPersona('usr-juli', 'usr-marcos');
 
-    expect(detalle.nombre).toBe('Marcos');
+    expect(detalle.username).toBe('Marcos');
     expect(detalle.monto).toBe('200.00');
     expect(detalle.estado).toBe('pagar');
     expect(detalle.totalQueDebo).toBe('500.00');
@@ -219,12 +219,12 @@ describe('Balances — compensación cruzada entre eventos (FR9)', () => {
     const juliAca = participantes.agregar({
       eventoId: otroEvento.id,
       usuarioId: 'usr-juli',
-      nombreDisplay: 'Julieta',
+      username: 'Julieta',
     });
     const sofia = participantes.agregar({
       eventoId: otroEvento.id,
       usuarioId: 'usr-sofia',
-      nombreDisplay: 'Sofía',
+      username: 'Sofía',
     });
     const conSofia = deudas.agregar({
       eventoId: otroEvento.id,
@@ -259,12 +259,12 @@ describe('Balances — compensación cruzada entre eventos (FR9)', () => {
     const juli = participantes.agregar({
       eventoId: evento.id,
       usuarioId: 'usr-juli',
-      nombreDisplay: 'Julieta',
+      username: 'Julieta',
     });
     const anonimo = participantes.agregar({
       eventoId: evento.id,
       esAnonimo: true,
-      nombreDisplay: 'Invitado',
+      username: 'Invitado',
     });
     deudas.agregar({
       eventoId: evento.id,
@@ -275,7 +275,7 @@ describe('Balances — compensación cruzada entre eventos (FR9)', () => {
 
     const detalle = await service.detalleConPersona('usr-juli', anonimo.id);
 
-    expect(detalle.nombre).toBe('Invitado');
+    expect(detalle.username).toBe('Invitado');
     expect(detalle.monto).toBe('150.00');
     expect(detalle.estado).toBe('pendiente');
   });

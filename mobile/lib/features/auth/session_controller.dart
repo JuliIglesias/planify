@@ -15,15 +15,15 @@ class SinSesion extends Session {
 }
 
 class SesionOrganizador extends Session {
-  const SesionOrganizador({required this.usuarioId, required this.nombre});
+  const SesionOrganizador({required this.usuarioId, required this.username});
   final String usuarioId;
-  final String nombre;
+  final String username;
 }
 
 class SesionAnonima extends Session {
-  const SesionAnonima({required this.eventoId, required this.nombre});
+  const SesionAnonima({required this.eventoId, required this.username});
   final String eventoId;
-  final String nombre;
+  final String username;
 }
 
 class SessionController extends AsyncNotifier<Session> {
@@ -35,44 +35,46 @@ class SessionController extends AsyncNotifier<Session> {
     final eventoId = await storage.read(StorageKeys.anonEventId);
     final participantToken = await storage.read(StorageKeys.participantToken);
     if (eventoId != null && participantToken != null) {
-      return SesionAnonima(eventoId: eventoId, nombre: '');
+      return SesionAnonima(eventoId: eventoId, username: '');
     }
 
     return const SinSesion();
   }
 
-  Future<void> loginOrganizador(String email, String password) async {
+  /// HU-41/HU-28 — el identificador puede ser el email o el username.
+  Future<void> loginOrganizador(String identificador, String password) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final api = ref.read(authRepositoryProvider);
       final storage = ref.read(tokenStorageProvider);
 
-      final res = await api.login(email, password);
+      final res = await api.login(identificador, password);
       await storage.write(StorageKeys.organizerToken, res.token);
 
-      return SesionOrganizador(usuarioId: res.usuarioId, nombre: res.nombre);
+      return SesionOrganizador(usuarioId: res.usuarioId, username: res.username);
     });
   }
 
   /// HU-27 — registro de una cuenta real; deja la sesión iniciada.
-  Future<void> registrar(String nombre, String email, String password) async {
+  Future<void> registrar(String username, String email, String password) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final api = ref.read(authRepositoryProvider);
       final storage = ref.read(tokenStorageProvider);
 
-      final res = await api.register(nombre, email, password);
+      final res = await api.register(username, email, password);
       await storage.write(StorageKeys.organizerToken, res.token);
 
-      return SesionOrganizador(usuarioId: res.usuarioId, nombre: res.nombre);
+      return SesionOrganizador(usuarioId: res.usuarioId, username: res.username);
     });
   }
 
   /// HU-01/HU-02/HU-03 — el anónimo se une a un evento existente por link.
-  /// Nunca crea eventos.
+  /// Nunca crea eventos. El username final puede diferir del pedido si el
+  /// backend tuvo que auto-sufijarlo por colisión (ver docs/05-fixes.md).
   Future<void> unirseComoAnonimo({
     required String eventoId,
-    required String nombreDisplay,
+    required String username,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -81,13 +83,13 @@ class SessionController extends AsyncNotifier<Session> {
 
       final res = await api.unirseComoAnonimo(
         eventoId: eventoId,
-        nombreDisplay: nombreDisplay,
+        username: username,
       );
 
       await storage.write(StorageKeys.participantToken, res.tokenSesion);
       await storage.write(StorageKeys.anonEventId, eventoId);
 
-      return SesionAnonima(eventoId: eventoId, nombre: nombreDisplay);
+      return SesionAnonima(eventoId: eventoId, username: res.username);
     });
   }
 

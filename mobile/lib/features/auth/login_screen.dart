@@ -55,7 +55,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final tokenController = TextEditingController(
       text: ref.read(pendingInvitationProvider) ?? '',
     );
-    final nombreController = TextEditingController();
+    final usernameController = TextEditingController();
 
     final datos = await showDialog<(String, String)>(
       context: context,
@@ -81,7 +81,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Text(l10n.loginAnonymousNameLabel),
             const SizedBox(height: AppSpacing.xs),
             AppTextField(
-              controller: nombreController,
+              controller: usernameController,
               decoration: InputDecoration(hintText: l10n.loginAnonymousNameHint),
             ),
           ],
@@ -94,9 +94,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           FilledButton(
             onPressed: () {
               final token = tokenController.text.trim();
-              final nombre = nombreController.text.trim();
-              if (token.isNotEmpty && nombre.isNotEmpty) {
-                Navigator.pop(ctx, (token, nombre));
+              final username = usernameController.text.trim();
+              if (token.isNotEmpty && username.isNotEmpty) {
+                Navigator.pop(ctx, (token, username));
               }
             },
             child: Text(l10n.commonConfirm),
@@ -109,16 +109,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // su cierre y los TextField siguen usando los controllers en ese frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       tokenController.dispose();
-      nombreController.dispose();
+      usernameController.dispose();
     });
 
     if (datos == null) return;
-    await _unirseConTokenYNombre(datos.$1, datos.$2);
+    await _unirseConTokenYUsername(datos.$1, datos.$2);
   }
 
-  /// Resuelve el token de invitación y une con el nombre ya recolectado, sin
+  /// Resuelve el token de invitación y une con el username ya recolectado, sin
   /// mostrar ningún diálogo adicional.
-  Future<void> _unirseConTokenYNombre(String tokenInput, String nombreDisplay) async {
+  Future<void> _unirseConTokenYUsername(String tokenInput, String username) async {
     final cleanToken = tokenInput
         .replaceAll('planify://invite/', '')
         .replaceAll('planify://', '')
@@ -129,7 +129,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final authRepo = ref.read(authRepositoryProvider);
       final eventoId = await authRepo.resolverInvitacion(cleanToken);
       if (!mounted) return;
-      await _unirseComoAnonimo(eventoId: eventoId, nombreDisplay: nombreDisplay);
+      await _unirseComoAnonimo(eventoId: eventoId, username: username);
       // El token ya se consumió: si venía de un deep link, no debe quedar
       // pendiente de aplicar de nuevo.
       ref.read(pendingInvitationProvider.notifier).set(null);
@@ -140,11 +140,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _unirseComoAnonimo({
     required String eventoId,
-    required String nombreDisplay,
+    required String username,
   }) =>
       ref.read(sessionControllerProvider.notifier).unirseComoAnonimo(
             eventoId: eventoId,
-            nombreDisplay: nombreDisplay,
+            username: username,
           );
 
 

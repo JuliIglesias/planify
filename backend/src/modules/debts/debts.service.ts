@@ -15,7 +15,7 @@ import { fromCents, ParticipantAmountCents, simplifyDebts, toCents } from './deb
 
 export interface SaldoPorPersona {
   id: string;
-  nombre: string;
+  username: string;
   monto: string;
   estado: 'pagar' | 'pendiente' | 'saldado';
 }
@@ -43,7 +43,7 @@ export interface DeudaDeEvento {
  */
 export interface DetalleConPersona {
   personaId: string;
-  nombre: string;
+  username: string;
   /** Neto ya compensado, siempre en positivo. El signo lo da `estado`. */
   monto: string;
   estado: 'pagar' | 'pendiente' | 'saldado';
@@ -141,7 +141,7 @@ export class DebtsService {
 
     const deudas = await this.deudas.listByParticipantes([...misIds]);
 
-    const porPersona = new Map<string, { nombre: string; netoCents: number }>();
+    const porPersona = new Map<string, { username: string; netoCents: number }>();
 
     for (const deuda of deudas) {
       if (deuda.estado === 'saldado') continue;
@@ -154,14 +154,14 @@ export class DebtsService {
       // participante, porque su identidad no sobrevive al evento (Duda #5).
       const clave = otro.usuarioId ?? otro.id;
 
-      const actual = porPersona.get(clave) ?? { nombre: otro.nombre, netoCents: 0 };
+      const actual = porPersona.get(clave) ?? { username: otro.username, netoCents: 0 };
       actual.netoCents += soyDeudor ? -montoCents : montoCents;
       porPersona.set(clave, actual);
     }
 
     const saldos: SaldoPorPersona[] = [...porPersona.entries()].map(([id, valor]) => ({
       id,
-      nombre: valor.nombre,
+      username: valor.username,
       monto: fromCents(Math.abs(valor.netoCents)),
       estado: valor.netoCents === 0 ? 'saldado' : valor.netoCents < 0 ? 'pagar' : 'pendiente',
     }));
@@ -200,7 +200,7 @@ export class DebtsService {
     let deboCents = 0;
     let meDebenCents = 0;
     const detalle: DeudaDeEvento[] = [];
-    let nombre = '';
+    let username = '';
 
     for (const deuda of deudas) {
       const montoCents = toCents(deuda.monto);
@@ -209,7 +209,7 @@ export class DebtsService {
       if (yoDebo) deboCents += montoCents;
       else meDebenCents += montoCents;
 
-      nombre = yoDebo ? deuda.acreedor.nombre : deuda.deudor.nombre;
+      username = yoDebo ? deuda.acreedor.username : deuda.deudor.username;
 
       detalle.push({
         id: deuda.id,
@@ -224,7 +224,7 @@ export class DebtsService {
 
     return {
       personaId,
-      nombre,
+      username,
       monto: fromCents(Math.abs(netoCents)),
       estado: netoCents === 0 ? 'saldado' : netoCents < 0 ? 'pagar' : 'pendiente',
       totalQueDebo: fromCents(deboCents),
@@ -329,7 +329,7 @@ export class DebtsService {
       eventoId: deuda.eventoId,
       tipo: ActivityType.deudaSaldada,
       actorParticipanteId: participanteId,
-      payload: { deudaId, monto: deuda.monto, contraparteNombre: otro?.nombreDisplay ?? '' },
+      payload: { deudaId, monto: deuda.monto, contraparteNombre: otro?.username ?? '' },
     });
 
     await this.actualizarEstadoEvento(deuda.eventoId);

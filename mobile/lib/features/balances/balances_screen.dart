@@ -151,7 +151,7 @@ class BalancesScreen extends ConsumerWidget {
                         children: [
                           for (final saldo in saldosFiltrados)
                             BalanceRow(
-                              nombre: saldo.nombre,
+                              nombre: saldo.username,
                               monto: '\$${MoneyFormat.format(saldo.monto)}',
                               estado: switch (saldo.estado) {
                                 'pagar' => SaldoEstado.pagar,

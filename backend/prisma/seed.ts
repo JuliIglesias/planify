@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 const SEED_ORGANIZER = {
-  nombre: 'Organizador Planify',
+  username: 'organizador_planify',
   email: 'organizador@planify.test',
   password: 'planify-mvp-2026', // solo para el MVP, se reemplaza por Cognito en SCRUM-14
 };
@@ -18,7 +18,7 @@ async function main() {
     where: { email: SEED_ORGANIZER.email },
     update: {},
     create: {
-      nombre: SEED_ORGANIZER.nombre,
+      username: SEED_ORGANIZER.username,
       email: SEED_ORGANIZER.email,
       passwordHash,
     },

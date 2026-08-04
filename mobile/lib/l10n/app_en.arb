@@ -14,17 +14,17 @@
   "loginError": "We couldn't sign you in. Check your details.",
   "loginAnonymousHint": "To join as a guest you need an event invitation link.",
   "loginAnonymousLinkLabel": "Invitation link",
-  "loginAnonymousNameLabel": "Your name",
+  "loginAnonymousNameLabel": "Your username",
   "loginAnonymousNameHint": "e.g. Sofía",
   "loginPendingInvitation": "You've been invited to an event. Sign in, create an account, or continue as a guest to join.",
   "navHome": "Home",
   "navGroups": "Groups",
   "navBalances": "Balances",
   "navProfile": "Profile",
-  "homeGreeting": "Hi, {nombre}!",
+  "homeGreeting": "Hi, {username}!",
   "@homeGreeting": {
     "placeholders": {
-      "nombre": {
+      "username": {
         "type": "String"
       }
     }
@@ -100,7 +100,16 @@
   "eventNewGroup": "Create a new group",
   "eventNewGroupName": "Group name",
   "eventCreateError": "We couldn't create the event",
-  "eventDateComesLater": "The date is set later, once everyone shares their availability",
+  "eventDateComesLater": "The exact time is set later, once everyone shares their availability within the chosen range",
+  "eventDateRangeLabel": "Date range",
+  "eventDateRangeExpiredBanner": "The date range expired and was already extended once. Pick a time to confirm the event, or cancel it from the feed.",
+  "eventDateRangeShowing": "Looking for a time between {inicio} and {fin}",
+  "@eventDateRangeShowing": {
+    "placeholders": {
+      "inicio": { "type": "String" },
+      "fin": { "type": "String" }
+    }
+  },
   "eventAiButton": "Generate with AI",
   "eventAiTitle": "Describe your event",
   "eventAiHint": "E.g.: a barbecue at Juli's place with Marcos and Sofía",
@@ -242,6 +251,7 @@
       }
     }
   },
+  "activityRangeExtended": "The event's date range was extended",
   "commonSave": "Save",
   "commonCancel": "Cancel",
   "commonAdd": "Add",
@@ -257,6 +267,20 @@
   "eventDetailNoDebts": "No debts in this event",
   "eventDetailAssignTo": "Assign to someone",
   "eventDetailTapToConfirm": "Tap a block on the map to confirm the time",
+  "eventDetailPickEndTime": "Until what time?",
+  "eventDetailStartTimeLabel": "The event starts at {hora}",
+  "@eventDetailStartTimeLabel": {
+    "placeholders": {
+      "hora": { "type": "String" }
+    }
+  },
+  "eventDetailAvailableForRange": "{disponibles} of {total} are free for this whole range",
+  "@eventDetailAvailableForRange": {
+    "placeholders": {
+      "disponibles": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
   "eventDetailWhoPaid": "Who paid?",
   "eventDetailDivideBetween": "Divide between:",
   "eventDetailSelectAtLeastOne": "Select at least one person",
@@ -302,18 +326,18 @@
     }
   },
   "friendsTitle": "My friends",
-  "friendsSearchHint": "Search by name or email",
+  "friendsSearchHint": "Search by username or email",
   "friendsAdd": "Add",
   "friendsRequests": "Requests",
   "friendsAccept": "Accept",
   "friendsRequestSent": "Request sent",
   "friendsNoResults": "No results",
   "profileEdit": "Edit profile",
-  "profileName": "Name",
+  "profileName": "Username",
   "profileLanguage": "Language",
   "profileSave": "Save",
   "registerTitle": "Create account",
-  "registerName": "Name",
+  "registerName": "Username",
   "registerEmail": "Email",
   "registerPassword": "Password",
   "registerSubmit": "Sign up",
@@ -337,21 +361,21 @@
   },
   "homeNoActivity": "No activity yet",
   "balancesSettleAll": "Settle all",
-  "balancesSettleAllConfirm": "Your debt with {nombre} will be marked as settled.",
-  "balancesSettleAllConfirmMulti": "This will settle all {count} debts you have with {nombre}, across every event.",
+  "balancesSettleAllConfirm": "Your debt with {username} will be marked as settled.",
+  "balancesSettleAllConfirmMulti": "This will settle all {count} debts you have with {username}, across every event.",
   "balancesBreakdown": "BREAKDOWN BY EVENT",
-  "balancesNoDebtsWith": "You have no pending debts with {nombre}",
+  "balancesNoDebtsWith": "You have no pending debts with {username}",
   "balancesCompensationHint": "Offset: you owe ${debo} and you are owed ${meDeben}",
   "@balancesSettleAllConfirm": {
     "placeholders": {
-      "nombre": {
+      "username": {
         "type": "String"
       }
     }
   },
   "@balancesSettleAllConfirmMulti": {
     "placeholders": {
-      "nombre": {
+      "username": {
         "type": "String"
       },
       "count": {
@@ -361,7 +385,7 @@
   },
   "@balancesNoDebtsWith": {
     "placeholders": {
-      "nombre": {
+      "username": {
         "type": "String"
       }
     }

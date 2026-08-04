@@ -22,7 +22,7 @@ class HomeScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final session = ref.watch(sessionControllerProvider).value;
-    final nombre = session is SesionOrganizador ? session.nombre.split(' ').first : '';
+    final username = session is SesionOrganizador ? session.username : '';
 
     final eventos = ref.watch(upcomingEventsProvider);
     final balance = ref.watch(balanceProvider);
@@ -32,7 +32,7 @@ class HomeScreen extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.only(bottom: AppSpacing.xl),
         children: [
-          AppHeader(titulo: l10n.homeGreeting(nombre)),
+          AppHeader(titulo: l10n.homeGreeting(username)),
 
           // Resumen de saldos
           Padding(

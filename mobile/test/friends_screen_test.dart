@@ -21,7 +21,7 @@ void main() {
       (tester) async {
     final friends = FakeFriendsRepository(
       resultadosBusqueda: const [
-        Persona(id: 'u1', nombre: 'Bruno', email: 'bruno@mail.com'),
+        Persona(id: 'u1', username: 'Bruno', email: 'bruno@mail.com'),
       ],
     );
 
@@ -38,7 +38,7 @@ void main() {
 
   testWidgets('enviar solicitud llama al repositorio', (tester) async {
     final friends = FakeFriendsRepository(
-      resultadosBusqueda: const [Persona(id: 'u1', nombre: 'Bruno', email: 'b@mail.com')],
+      resultadosBusqueda: const [Persona(id: 'u1', username: 'Bruno', email: 'b@mail.com')],
     );
 
     await tester.pumpWidget(appDePrueba(const FriendsScreen(), friends: friends));
@@ -57,7 +57,7 @@ void main() {
       (tester) async {
     final friends = FakeFriendsRepository(
       solicitudes: const [
-        SolicitudAmistad(amistadId: 'am1', de: Persona(id: 'u2', nombre: 'Sofía')),
+        SolicitudAmistad(amistadId: 'am1', de: Persona(id: 'u2', username: 'Sofía')),
       ],
     );
 

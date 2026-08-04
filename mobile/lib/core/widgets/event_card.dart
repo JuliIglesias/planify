@@ -207,7 +207,9 @@ class BalanceRow extends StatelessWidget {
   }
 }
 
-/// Ítem del feed de actividad (Home "Actividad reciente" y Log del evento).
+/// Ítem del feed de actividad (Home "Actividad reciente", Notificaciones y
+/// Log del evento). Item 2 (Tanda 6) — clickeable: si se pasa [onTap], rutea
+/// al evento específico de esa actividad.
 class ActivityFeedItem extends StatelessWidget {
   const ActivityFeedItem({
     super.key,
@@ -216,6 +218,7 @@ class ActivityFeedItem extends StatelessWidget {
     required this.titulo,
     this.subtitulo,
     this.trailing,
+    this.onTap,
   });
 
   final IconData icon;
@@ -223,49 +226,54 @@ class ActivityFeedItem extends StatelessWidget {
   final String titulo;
   final String? subtitulo;
   final String? trailing;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 20, color: iconColor),
               ),
-              child: Icon(icon, size: 20, color: iconColor),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(titulo, style: theme.textTheme.bodyMedium),
-                  if (subtitulo != null)
-                    Text(
-                      subtitulo!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(titulo, style: theme.textTheme.bodyMedium),
+                    if (subtitulo != null)
+                      Text(
+                        subtitulo!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                ],
-              ),
-            ),
-            if (trailing != null)
-              Text(
-                trailing!,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  ],
                 ),
               ),
-          ],
+              if (trailing != null)
+                Text(
+                  trailing!,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

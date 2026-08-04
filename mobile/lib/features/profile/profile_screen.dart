@@ -12,6 +12,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../auth/session_controller.dart';
 import '../friends/friends_screen.dart';
 import '../history/history_screen.dart';
+import '../notifications/notifications_screen.dart';
 
 import 'profile_availability_provider.dart';
 
@@ -116,6 +117,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const HistoryScreen()),
+          ),
+        ),
+        // Item 2 (Tanda 6) — segundo acceso a Notificaciones (el otro es la
+        // campana del Home).
+        ListTile(
+          leading: const Icon(Icons.notifications_none),
+          title: Text(l10n.profileNotifications),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
           ),
         ),
         ListTile(

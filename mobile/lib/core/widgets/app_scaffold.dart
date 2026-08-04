@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../../features/home/home_providers.dart';
+import '../../features/notifications/notifications_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 /// Header con título + campana, común a las 4 pantallas raíz.
-/// La campana muestra un badge con la actividad sin leer (H-17).
+/// La campana muestra un badge con la actividad sin leer (H-17) y, desde el
+/// Item 2 (Tanda 6), abre la pantalla de Notificaciones.
 class AppHeader extends ConsumerWidget {
   const AppHeader({super.key, required this.titulo, this.subtitulo, this.trailing});
 
@@ -51,12 +53,17 @@ class AppHeader extends ConsumerWidget {
             ),
           ),
           trailing ??
-              (noLeidos > 0
-                  ? Badge(
-                      label: Text('$noLeidos'),
-                      child: const Icon(Icons.notifications_none, color: AppColors.primary),
-                    )
-                  : const Icon(Icons.notifications_none, color: AppColors.primary)),
+              IconButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
+                ),
+                icon: noLeidos > 0
+                    ? Badge(
+                        label: Text('$noLeidos'),
+                        child: const Icon(Icons.notifications_none, color: AppColors.primary),
+                      )
+                    : const Icon(Icons.notifications_none, color: AppColors.primary),
+              ),
         ],
       ),
     );

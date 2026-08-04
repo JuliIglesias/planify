@@ -269,16 +269,31 @@ class FakeExpensesRepository implements ExpensesRepository {
 
 
 class FakeActivityLogRepository implements ActivityLogRepository {
-  FakeActivityLogRepository({this.entradas = const [], this.recientesEntradas = const []});
+  FakeActivityLogRepository({
+    this.entradas = const [],
+    this.recientesEntradas = const [],
+    this.pageSize = 20,
+  });
 
   List<ActividadLog> entradas;
   List<ActividadLog> recientesEntradas;
+  final int pageSize;
+
+  /// Tanda 6, Item 2 — cada cursor pedido, para verificar la paginación.
+  final List<DateTime?> llamadasRecientes = [];
 
   @override
   Future<List<ActividadLog>> listar(String eventoId) async => entradas;
 
   @override
-  Future<List<ActividadLog>> recientes() async => recientesEntradas;
+  Future<List<ActividadLog>> recientes({DateTime? before}) async {
+    llamadasRecientes.add(before);
+    final ordenadas = [...recientesEntradas]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final filtradas =
+        before == null ? ordenadas : ordenadas.where((e) => e.createdAt.isBefore(before)).toList();
+    return filtradas.take(pageSize).toList();
+  }
 
   @override
   Future<Map<String, int>> noLeidas() async => const {};

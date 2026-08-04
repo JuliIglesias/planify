@@ -186,7 +186,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileHistory => 'Event history';
 
   @override
+  String get profileNotifications => 'Notifications';
+
+  @override
   String get profileLogout => 'Sign out';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsTabAll => 'All';
+
+  @override
+  String get notificationsTabEvents => 'Events';
+
+  @override
+  String get notificationsTabExpenses => 'Expenses';
+
+  @override
+  String get notificationsToday => 'TODAY';
+
+  @override
+  String get notificationsYesterday => 'YESTERDAY';
+
+  @override
+  String get notificationsEmpty => 'You don\'t have any notifications yet';
 
   @override
   String get historyTitle => 'Event history';

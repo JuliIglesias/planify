@@ -13,6 +13,7 @@ import 'package:planify/features/groups/groups_screen.dart';
 import 'package:planify/features/home/app_shell.dart';
 import 'package:planify/features/home/home_screen.dart';
 import 'package:planify/features/history/history_screen.dart';
+import 'package:planify/features/notifications/notifications_screen.dart';
 import 'package:planify/features/profile/profile_screen.dart';
 import 'package:planify/l10n/generated/app_localizations.dart';
 
@@ -202,6 +203,46 @@ void main() {
       expect(find.text(r'+$450.00'), findsNothing);
       // La actividad distinta de Sofía se sigue viendo aparte.
       expect(find.text(l10n.activityTaskCreated('Sofía')), findsOneWidget);
+    });
+
+    testWidgets(
+        'Item 2 (Tanda 6) — tocar una actividad rutea al evento específico',
+        (tester) async {
+      usarPantallaAlta(tester);
+
+      final activityLog = FakeActivityLogRepository(
+        recientesEntradas: [
+          ActividadLog(
+            id: 'a1',
+            tipo: 'deuda_saldada',
+            actorUsername: 'Mati',
+            createdAt: DateTime(2026, 7, 28, 20, 30),
+            eventoId: 'evt-1',
+            eventoNombre: 'Asado en lo de Marcos',
+            payload: const {'monto': '450.00'},
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(appDePrueba(const HomeScreen(), activityLog: activityLog));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.activityDebtSettled('Mati')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EventDetailScreen), findsOneWidget);
+    });
+
+    testWidgets('Item 2 (Tanda 6) — la campana abre la pantalla de Notificaciones',
+        (tester) async {
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(appDePrueba(const HomeScreen()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.notifications_none));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NotificationsScreen), findsOneWidget);
     });
   });
 
@@ -768,6 +809,18 @@ void main() {
       expect(find.text('Coincidencias con amigos'), findsNothing);
       // "Mis amigos" (la lista simple) sigue estando.
       expect(find.text(l10n.friendsTitle), findsOneWidget);
+    });
+
+    testWidgets('Item 2 (Tanda 6) — ofrece un acceso a Notificaciones',
+        (tester) async {
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(appDePrueba(const ProfileScreen()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.profileNotifications));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NotificationsScreen), findsOneWidget);
     });
   });
 

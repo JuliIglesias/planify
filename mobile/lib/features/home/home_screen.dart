@@ -9,6 +9,7 @@ import '../../core/widgets/event_card.dart';
 import '../../core/widgets/evento_resumen_card.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../auth/session_controller.dart';
+import '../events/event_detail_screen.dart';
 import '../events/widgets/activity_presentation.dart';
 import '../history/history_screen.dart';
 import 'home_providers.dart';
@@ -151,6 +152,17 @@ class HomeScreen extends ConsumerWidget {
                                 trailing: grupo.cantidad > 1
                                     ? null
                                     : montoDeActividad(grupo.entrada),
+                                // Item 2 (Tanda 6) — clickeable: rutea al
+                                // evento específico de esa actividad.
+                                onTap: grupo.entrada.eventoId == null
+                                    ? null
+                                    : () => Navigator.of(context).push(
+                                          MaterialPageRoute<void>(
+                                            builder: (_) => EventDetailScreen(
+                                              eventoId: grupo.entrada.eventoId!,
+                                            ),
+                                          ),
+                                        ),
                               ),
                           ],
                         ),

@@ -428,11 +428,59 @@ abstract class AppLocalizations {
   /// **'Historial de eventos'**
   String get profileHistory;
 
+  /// No description provided for @profileNotifications.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones'**
+  String get profileNotifications;
+
   /// No description provided for @profileLogout.
   ///
   /// In es, this message translates to:
   /// **'Cerrar sesión'**
   String get profileLogout;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsTabAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Todo'**
+  String get notificationsTabAll;
+
+  /// No description provided for @notificationsTabEvents.
+  ///
+  /// In es, this message translates to:
+  /// **'Eventos'**
+  String get notificationsTabEvents;
+
+  /// No description provided for @notificationsTabExpenses.
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos'**
+  String get notificationsTabExpenses;
+
+  /// No description provided for @notificationsToday.
+  ///
+  /// In es, this message translates to:
+  /// **'HOY'**
+  String get notificationsToday;
+
+  /// No description provided for @notificationsYesterday.
+  ///
+  /// In es, this message translates to:
+  /// **'AYER'**
+  String get notificationsYesterday;
+
+  /// No description provided for @notificationsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No tenés notificaciones todavía'**
+  String get notificationsEmpty;
 
   /// No description provided for @historyTitle.
   ///

@@ -11,8 +11,11 @@ abstract interface class ActivityLogRepository {
   /// Trae el feed. Consultarlo marca el evento como leído (HU-25).
   Future<List<ActividadLog>> listar(String eventoId);
 
-  /// Actividad reciente de todos los eventos del usuario (feed de Home).
-  Future<List<ActividadLog>> recientes();
+  /// Actividad reciente de todos los eventos del usuario (feed de Home y
+  /// pantalla de Notificaciones). Item 2 (Tanda 6) — paginada de a 20: pasar
+  /// el `createdAt` de la última entrada recibida como [before] para pedir
+  /// la siguiente página.
+  Future<List<ActividadLog>> recientes({DateTime? before});
 
   /// Contadores de actividad sin leer, por evento.
   Future<Map<String, int>> noLeidas();
@@ -32,8 +35,11 @@ class ActivityLogRepositoryHttp implements ActivityLogRepository {
       });
 
   @override
-  Future<List<ActividadLog>> recientes() => ejecutar(() async {
-        final res = await _dio.get<List<dynamic>>('/me/activity');
+  Future<List<ActividadLog>> recientes({DateTime? before}) => ejecutar(() async {
+        final res = await _dio.get<List<dynamic>>(
+          '/me/activity',
+          queryParameters: before == null ? null : {'before': before.toIso8601String()},
+        );
         return (res.data ?? [])
             .map((a) => ActividadLog.fromJson(a as Map<String, dynamic>))
             .toList();

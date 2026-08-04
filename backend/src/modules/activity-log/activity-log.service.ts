@@ -7,7 +7,10 @@ import {
 } from '../../domain/repositories';
 import { ActivityTypeValue } from './activity-log.types';
 
-/** Cuántas entradas muestra el feed de Home. */
+/**
+ * Cuántas entradas trae cada página del feed de Home y de Notificaciones
+ * (Tanda 6, Item 2 — paginación de a 20).
+ */
 const LIMITE_ACTIVIDAD_RECIENTE = 20;
 
 export interface RegistrarActividad {
@@ -68,14 +71,17 @@ export class ActivityLogService {
   }
 
   /**
-   * Feed de "Actividad reciente" de Home: lo último que pasó en todos los
-   * eventos del usuario, con el nombre del evento para dar contexto.
+   * Feed de "Actividad reciente" de Home y de la pantalla de Notificaciones:
+   * lo último que pasó en todos los eventos del usuario, con el nombre del
+   * evento para dar contexto. Paginado (Tanda 6, Item 2): pasar el
+   * `createdAt` de la última entrada recibida como [before] para la
+   * siguiente página; si el resultado trae menos de 20, no hay más páginas.
    */
-  async recientesDe(usuarioId: string): Promise<EntradaLogConEvento[]> {
+  async recientesDe(usuarioId: string, before?: Date): Promise<EntradaLogConEvento[]> {
     const participaciones = await this.participantes.listByUsuario(usuarioId);
     const eventoIds = [...new Set(participaciones.map((p) => p.eventoId))];
 
-    return this.logs.listRecientesPorEventos(eventoIds, LIMITE_ACTIVIDAD_RECIENTE);
+    return this.logs.listRecientesPorEventos(eventoIds, LIMITE_ACTIVIDAD_RECIENTE, before);
   }
 
   /** Abrir el log marca el evento como leído (HU-25). */

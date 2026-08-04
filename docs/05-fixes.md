@@ -62,6 +62,42 @@ layout, para que esta regresión no vuelva.
   toggle filtrando la lista; `AppShell` con el FAB abriendo "Crear evento"
   en Home pero arrancando el flujo de gasto (no un evento) en Gastos.
 
+## Item 2: Pantalla de Notificaciones, accesos y redirección al evento
+
+**Duda resuelta antes de implementar:** el payload de actividad ya traía
+`eventoId` (backend en `data.eventoId` del push, y el modelo mobile
+`ActividadLog.eventoId` ya lo parseaba) — no hizo falta tocar el modelo ni
+la API para el ruteo. Lo que sí faltaba era la paginación pedida ("20
+actividades a la vez"), que no existía en absoluto.
+
+- **Backend — paginación por cursor:** `LogActividadRepository.listRecientesPorEventos`
+  ahora acepta un `before?: Date` opcional (trae solo entradas más viejas que
+  esa fecha). `ActivityLogService.recientesDe(usuarioId, before?)` y la ruta
+  `GET /me/activity` (ahora acepta `?before=<ISO>`) lo exponen sin romper el
+  contrato existente: sigue devolviendo un array plano — el cliente infiere
+  "hay más páginas" cuando la página recibida viene completa (20 entradas).
+  Se valida que `before` sea una fecha ISO válida (400 si no).
+- **`NotificationsScreen` (nueva, `features/notifications/`):** tabs
+  Todo/Eventos/Gastos (con el mismo `PillToggle` de los Items 1/4),
+  agrupada por día ("HOY"/"AYER"/fecha), reutilizando `ActivityFeedItem`,
+  `iconoDeActividad`/`colorDeActividad`/`textoActividad` — mismo feed que ya
+  alimenta a Home, sin duplicar presentación. `notifications_providers.dart`
+  maneja el estado paginado (`NotificationsFeed{items, hasMore}`) y pide la
+  próxima página (`cargarMas()`) cuando el scroll llega cerca del final.
+- **Accesos:** la campana de `AppHeader` (antes un ícono estático) ahora es
+  un `IconButton` que abre `NotificationsScreen`; se sumó un ítem
+  "Notificaciones" en `profile_screen.dart`.
+- **Redirección al evento:** `ActivityFeedItem` ganó un `onTap` opcional.
+  Tanto en Home (`home_screen.dart`) como en `NotificationsScreen`, cada fila
+  rutea a `EventDetailScreen(eventoId: ...)` (deshabilitado si la entrada no
+  trae `eventoId`, ej. `rango_extendido` que es del sistema).
+- **Tests:** backend — `activity-feed-pagination.test.ts` (servicio +
+  endpoint, primera/segunda página sin solapar, cursor inválido → 400).
+  Mobile — `notifications_test.dart` (paginación del provider, filtro por
+  tab, tap→navegación, estado vacío) y casos nuevos en `screens_test.dart`
+  (tap en Home rutea al evento, campana abre Notificaciones, acceso desde
+  Perfil).
+
 ## Item 6: Auth — Login/Registro como card blanca flotante
 
 **Pendiente (bloqueado por mí, no por código):** el ícono oficial de la app

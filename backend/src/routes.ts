@@ -598,12 +598,22 @@ export function createRoutes(c: Container): Router {
     }),
   );
 
-  // Feed de "Actividad reciente" de la pantalla Home (mockup de Figma).
+  // Feed de "Actividad reciente" de Home y de Notificaciones (Item 2, Tanda
+  // 6 — paginado de a 20 con el cursor `before`; ver docs/05-fixes.md).
   router.get(
     '/me/activity',
     soloOrganizador,
     asyncHandler(async (req: OrganizerRequest, res: Response) => {
-      res.json(await c.activityLog.recientesDe(exigirUsuario(req)));
+      const beforeRaw = req.query.before;
+      let before: Date | undefined;
+      if (typeof beforeRaw === 'string' && beforeRaw) {
+        const parsed = new Date(beforeRaw);
+        if (Number.isNaN(parsed.getTime())) {
+          throw new BadRequestError('before debe ser una fecha ISO válida');
+        }
+        before = parsed;
+      }
+      res.json(await c.activityLog.recientesDe(exigirUsuario(req), before));
     }),
   );
 

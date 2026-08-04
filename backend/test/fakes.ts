@@ -709,7 +709,9 @@ export class FakeLogActividadRepository implements R.LogActividadRepository {
       tipo: data.tipo,
       actorParticipanteId: data.actorParticipanteId,
       payload: data.payload ?? null,
-      createdAt: new Date('2026-07-28T12:00:00Z'),
+      // Cada entrada un segundo más tarde que la anterior: así el orden y la
+      // paginación por cursor (Tanda 6, Item 2) son deterministas en los tests.
+      createdAt: new Date(new Date('2026-07-28T12:00:00Z').getTime() + this.entradas.length * 1000),
     };
     this.entradas.push(entrada);
     return entrada;
@@ -727,9 +729,11 @@ export class FakeLogActividadRepository implements R.LogActividadRepository {
   async listRecientesPorEventos(
     eventoIds: string[],
     limite: number,
+    before?: Date,
   ): Promise<R.EntradaLogConEvento[]> {
     return this.entradas
       .filter((e) => eventoIds.includes(e.eventoId))
+      .filter((e) => !before || e.createdAt.getTime() < before.getTime())
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, limite)
       .map((e) => ({

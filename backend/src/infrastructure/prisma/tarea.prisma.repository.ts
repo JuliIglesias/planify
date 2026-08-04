@@ -58,8 +58,25 @@ export class PrismaTareaRepository implements TareaRepository {
     };
   }
 
+  async desasignar(id: string): Promise<TareaConAsignado> {
+    const row = await this.prisma.tarea.update({
+      where: { id },
+      data: { asignadoA: null, estado: 'no_asignado' },
+      include: { asignado: true }, // Prisma will return null for asignado
+    });
+
+    return {
+      ...toTarea(row),
+      asignado: null,
+    };
+  }
+
   async cambiarEstado(id: string, estado: TareaEstado): Promise<Tarea> {
     const row = await this.prisma.tarea.update({ where: { id }, data: { estado } });
     return toTarea(row);
+  }
+
+  async eliminar(id: string): Promise<void> {
+    await this.prisma.tarea.delete({ where: { id } });
   }
 }

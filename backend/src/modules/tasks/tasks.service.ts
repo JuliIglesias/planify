@@ -103,4 +103,29 @@ export class TasksService {
 
     return actualizada;
   }
+
+  async descompletar(tareaId: string, participanteId: string): Promise<Tarea> {
+    const tarea = await this.tareas.findById(tareaId);
+    if (!tarea) throw new NotFoundError('Tarea no encontrada');
+    
+    // Si estaba completada, vuelve a su estado anterior según si tiene asignado
+    const estadoAnterior = tarea.asignadoA ? 'pendiente' : 'no_asignado';
+    const actualizada = await this.tareas.cambiarEstado(tareaId, estadoAnterior);
+    return actualizada;
+  }
+
+  async desasignar(tareaId: string, participanteId: string): Promise<TareaConAsignado> {
+    const tarea = await this.tareas.findById(tareaId);
+    if (!tarea) throw new NotFoundError('Tarea no encontrada');
+    
+    const actualizada = await this.tareas.desasignar(tareaId);
+    return actualizada;
+  }
+
+  async eliminar(tareaId: string, participanteId: string): Promise<void> {
+    const tarea = await this.tareas.findById(tareaId);
+    if (!tarea) throw new NotFoundError('Tarea no encontrada');
+    
+    await this.tareas.eliminar(tareaId);
+  }
 }

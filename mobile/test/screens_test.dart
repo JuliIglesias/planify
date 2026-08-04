@@ -502,7 +502,10 @@ void main() {
       expect(find.text('Comprar carne'), findsOneWidget);
       expect(find.text(l10n.eventDetailTaskUnassigned), findsOneWidget);
 
-      await tester.tap(find.text(l10n.eventDetailTakeTask));
+      await tester.drag(find.text('Comprar carne'), const Offset(500, 0));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Tomar'));
       await tester.pumpAndSettle();
 
       expect(tasks.llamadas, contains('asignar:t1:yo'));
@@ -526,9 +529,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.eventDetailTaskDone), findsOneWidget);
-      expect(find.text(l10n.eventDetailTakeTask), findsNothing);
-      expect(find.text(l10n.eventDetailCompleteTask), findsNothing);
+      expect(find.text('Comprar hielo'), findsOneWidget);
+      
+      await tester.drag(find.text('Comprar hielo'), const Offset(500, 0));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Deshacer'), findsOneWidget);
     });
 
     testWidgets('un evento cancelado deshabilita las acciones rápidas', (tester) async {

@@ -419,6 +419,31 @@ export function createRoutes(c: Container): Router {
     }),
   );
 
+  router.patch(
+    '/events/:id/tasks/:taskId/uncomplete',
+    soloParticipante,
+    asyncHandler(async (req: ParticipantRequest, res: Response) => {
+      res.json(await c.tasks.descompletar(String(req.params.taskId), exigirParticipante(req)));
+    }),
+  );
+
+  router.patch(
+    '/events/:id/tasks/:taskId/unassign',
+    soloParticipante,
+    asyncHandler(async (req: ParticipantRequest, res: Response) => {
+      res.json(await c.tasks.desasignar(String(req.params.taskId), exigirParticipante(req)));
+    }),
+  );
+
+  router.delete(
+    '/events/:id/tasks/:taskId',
+    soloParticipante,
+    asyncHandler(async (req: ParticipantRequest, res: Response) => {
+      await c.tasks.eliminar(String(req.params.taskId), exigirParticipante(req));
+      res.status(204).send();
+    }),
+  );
+
   // ── SCRUM-11 · Gastos, deudas y balances ────────────────────────────────
   router.get(
     '/events/:id/expenses',

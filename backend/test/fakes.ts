@@ -642,16 +642,30 @@ export class FakeTareaRepository implements R.TareaRepository {
   }
 
   async asignar(id: string, asignadoA: string): Promise<R.TareaConAsignado> {
-    const tarea = this.tareas.find((t) => t.id === id)!;
-    tarea.asignadoA = asignadoA;
-    tarea.estado = 'pendiente';
-    return { ...tarea, asignado: { id: asignadoA, nombre: asignadoA } };
+    const t = this.tareas.find((x) => x.id === id);
+    if (!t) throw new Error('not found');
+    t.asignadoA = asignadoA;
+    t.estado = 'pendiente';
+    return { ...t, asignado: { id: asignadoA, nombre: asignadoA } };
   }
 
-  async cambiarEstado(id: string, estado: D.TareaEstado) {
-    const tarea = this.tareas.find((t) => t.id === id)!;
-    tarea.estado = estado;
-    return tarea;
+  async desasignar(id: string): Promise<R.TareaConAsignado> {
+    const t = this.tareas.find((x) => x.id === id);
+    if (!t) throw new Error('not found');
+    t.asignadoA = null;
+    t.estado = 'no_asignado';
+    return { ...t, asignado: null };
+  }
+
+  async cambiarEstado(id: string, estado: D.TareaEstado): Promise<D.Tarea> {
+    const t = this.tareas.find((x) => x.id === id);
+    if (!t) throw new Error('not found');
+    t.estado = estado;
+    return t;
+  }
+
+  async eliminar(id: string): Promise<void> {
+    this.tareas = this.tareas.filter((t) => t.id !== id);
   }
 }
 

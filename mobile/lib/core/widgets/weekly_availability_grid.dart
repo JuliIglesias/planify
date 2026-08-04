@@ -35,6 +35,8 @@ class WeeklyAvailabilityGrid extends StatelessWidget {
     this.onToggle,
     this.onSlotTap,
     this.slotsFijados = const {},
+    this.colorResolver,
+    this.semanticsLabelResolver,
   });
 
   /// Primera franja mostrada, en horas (ej. 8 = 08:00).
@@ -55,6 +57,17 @@ class WeeklyAvailabilityGrid extends StatelessWidget {
   /// que se note que es EL horario elegido y no solo un bloque con buena
   /// disponibilidad.
   final Set<AvailabilitySlot> slotsFijados;
+
+  /// Item 4 — para modos con más de dos colores por celda (ej. disponibilidad
+  /// comparada con un amigo: coincide/solo yo/solo el amigo/ninguno), en vez
+  /// de la intensidad de un solo color que usa el heatmap normal. Cuando se
+  /// pasa, tiene prioridad sobre `esFijado`/heatmap/selección para decidir
+  /// el color de la celda.
+  final Color Function(AvailabilitySlot slot)? colorResolver;
+
+  /// Texto accesible por celda cuando se usa `colorResolver` (el color solo
+  /// no alcanza, ver design system §6).
+  final String Function(AvailabilitySlot slot)? semanticsLabelResolver;
 
   bool get _esHeatmap => onToggle == null;
 
@@ -110,6 +123,8 @@ class WeeklyAvailabilityGrid extends StatelessWidget {
                       totalParticipantes: totalParticipantes,
                       esHeatmap: _esHeatmap,
                       esFijado: slotsFijados.contains(AvailabilitySlot(dia, horaInicio + fila)),
+                      colorResolver: colorResolver,
+                      semanticsLabelResolver: semanticsLabelResolver,
                       onTap: () {
                         final slot = AvailabilitySlot(dia, horaInicio + fila);
                         onToggle?.call(slot);
@@ -134,6 +149,8 @@ class _Celda extends StatelessWidget {
     required this.esHeatmap,
     required this.onTap,
     this.esFijado = false,
+    this.colorResolver,
+    this.semanticsLabelResolver,
   });
 
   final AvailabilitySlot slot;
@@ -143,11 +160,15 @@ class _Celda extends StatelessWidget {
   final bool esHeatmap;
   final bool esFijado;
   final VoidCallback onTap;
+  final Color Function(AvailabilitySlot slot)? colorResolver;
+  final String Function(AvailabilitySlot slot)? semanticsLabelResolver;
 
   @override
   Widget build(BuildContext context) {
     final Color color;
-    if (esFijado) {
+    if (colorResolver != null) {
+      color = colorResolver!(slot);
+    } else if (esFijado) {
       // Item 5 — el horario ya elegido por el organizador se distingue del
       // resto del heatmap: no es "buena disponibilidad", es EL horario.
       color = AppColors.warning;
@@ -164,7 +185,9 @@ class _Celda extends StatelessWidget {
     return Semantics(
       button: true,
       selected: seleccionado || esFijado,
-      label: esFijado ? 'Horario confirmado' : null,
+      label: semanticsLabelResolver != null
+          ? semanticsLabelResolver!(slot)
+          : (esFijado ? 'Horario confirmado' : null),
       child: GestureDetector(
         onTap: onTap,
         child: Container(

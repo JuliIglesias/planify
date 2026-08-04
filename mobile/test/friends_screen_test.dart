@@ -71,4 +71,24 @@ void main() {
 
     expect(friends.llamadas, contains('aceptar:am1'));
   });
+
+  testWidgets('tocar un amigo de la lista abre su perfil de solo lectura (Item 4)',
+      (tester) async {
+    final friends = FakeFriendsRepository(
+      amigos: const [Persona(id: 'u3', username: 'Lucas')],
+      perfil: FakeFriendsRepository.perfilDeEjemplo(
+        persona: const Persona(id: 'u3', username: 'Lucas', email: 'lucas@mail.com'),
+      ),
+    );
+
+    usarPantallaAlta(tester);
+    await tester.pumpWidget(appDePrueba(const FriendsScreen(), friends: friends));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Lucas'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('lucas@mail.com'), findsOneWidget);
+    expect(friends.llamadas, contains('perfilDe:u3'));
+  });
 }

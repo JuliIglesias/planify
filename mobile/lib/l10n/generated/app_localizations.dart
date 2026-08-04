@@ -1142,6 +1142,60 @@ abstract class AppLocalizations {
   /// **'Sin resultados'**
   String get friendsNoResults;
 
+  /// No description provided for @friendProfileAvailability.
+  ///
+  /// In es, this message translates to:
+  /// **'Disponibilidad comparada'**
+  String get friendProfileAvailability;
+
+  /// No description provided for @friendProfileLegendBoth.
+  ///
+  /// In es, this message translates to:
+  /// **'Coincidimos'**
+  String get friendProfileLegendBoth;
+
+  /// No description provided for @friendProfileLegendMeOnly.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo vos'**
+  String get friendProfileLegendMeOnly;
+
+  /// No description provided for @friendProfileLegendFriendOnly.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo {username}'**
+  String friendProfileLegendFriendOnly(String username);
+
+  /// No description provided for @friendProfileLegendNeither.
+  ///
+  /// In es, this message translates to:
+  /// **'Ninguno libre'**
+  String get friendProfileLegendNeither;
+
+  /// No description provided for @friendProfileEventsInCommon.
+  ///
+  /// In es, this message translates to:
+  /// **'Eventos en común'**
+  String get friendProfileEventsInCommon;
+
+  /// No description provided for @friendProfileNoEvents.
+  ///
+  /// In es, this message translates to:
+  /// **'No comparten eventos todavía'**
+  String get friendProfileNoEvents;
+
+  /// No description provided for @friendProfileGroupsInCommon.
+  ///
+  /// In es, this message translates to:
+  /// **'Grupos en común'**
+  String get friendProfileGroupsInCommon;
+
+  /// No description provided for @friendProfileNoGroups.
+  ///
+  /// In es, this message translates to:
+  /// **'No comparten grupos todavía'**
+  String get friendProfileNoGroups;
+
   /// No description provided for @profileEdit.
   ///
   /// In es, this message translates to:

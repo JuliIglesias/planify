@@ -185,6 +185,16 @@ export function createRoutes(c: Container): Router {
     }),
   );
 
+  // Item 4 (Fase 5) — perfil de solo lectura de un amigo: disponibilidad
+  // comparada (solo esa dupla) + eventos y grupos en común.
+  router.get(
+    '/friends/:id/profile',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.friendProfile.obtener(exigirUsuario(req), String(req.params.id)));
+    }),
+  );
+
   router.post(
     '/participants/anonymous',
     asyncHandler(async (req: Request, res: Response) => {

@@ -34,9 +34,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final session = ref.watch(sessionControllerProvider).value;
     final profileAvailAsync = ref.watch(profileAvailabilityProvider);
     final seleccionados = profileAvailAsync.value ?? const <AvailabilitySlot>{};
-    final nombre = switch (session) {
-      SesionOrganizador(:final nombre) => nombre,
-      SesionAnonima(:final nombre) => nombre,
+    final username = switch (session) {
+      SesionOrganizador(:final username) => username,
+      SesionAnonima(:final username) => username,
       _ => '',
     };
 
@@ -47,10 +47,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Center(
           child: Column(
             children: [
-              AvatarStack(nombres: [nombre.isEmpty ? '?' : nombre], radius: 40),
+              AvatarStack(nombres: [username.isEmpty ? '?' : username], radius: 40),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                nombre,
+                username,
                 style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],

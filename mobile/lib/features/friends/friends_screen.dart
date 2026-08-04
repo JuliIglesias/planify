@@ -84,9 +84,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           for (final p in _resultados)
             ListTile(
               leading: const Icon(Icons.person_outline),
-              title: Text(p.nombre),
-              // Item 3 — el nombre no es único; el email en gris desambigua
-              // entre resultados parecidos sin necesitar un username.
+              title: Text(p.username),
+              // Item 3 — el email en gris ayuda a confirmar que es la
+              // persona correcta antes de mandar la solicitud.
               subtitle: p.email != null
                   ? Text(p.email!, style: const TextStyle(color: AppColors.textSecondary))
                   : null,
@@ -117,7 +117,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                       for (final s in lista)
                         ListTile(
                           leading: const Icon(Icons.person_add_alt),
-                          title: Text(s.de.nombre),
+                          title: Text(s.de.username),
                           trailing: FilledButton(
                             onPressed: () => _accion(
                               () => ref.read(friendsRepositoryProvider).aceptar(s.amistadId),
@@ -154,7 +154,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                       for (final p in lista)
                         ListTile(
                           leading: const Icon(Icons.person, color: AppColors.primary),
-                          title: Text(p.nombre),
+                          title: Text(p.username),
                         ),
                     ],
                   ),

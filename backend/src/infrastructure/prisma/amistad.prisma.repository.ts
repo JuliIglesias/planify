@@ -60,24 +60,24 @@ export class PrismaAmistadRepository implements AmistadRepository {
         OR: [{ usuarioId1: usuarioId }, { usuarioId2: usuarioId }],
       },
       include: {
-        usuario1: { select: { id: true, nombre: true } },
-        usuario2: { select: { id: true, nombre: true } },
+        usuario1: { select: { id: true, username: true } },
+        usuario2: { select: { id: true, username: true } },
       },
     });
     return rows.map((a) => {
       const otro = a.usuarioId1 === usuarioId ? a.usuario2 : a.usuario1;
-      return { id: otro.id, nombre: otro.nombre };
+      return { id: otro.id, username: otro.username };
     });
   }
 
   async listSolicitudesRecibidas(usuarioId: string): Promise<SolicitudAmistad[]> {
     const rows = await this.prisma.amistad.findMany({
       where: { estado: 'pendiente', usuarioId2: usuarioId },
-      include: { usuario1: { select: { id: true, nombre: true } } },
+      include: { usuario1: { select: { id: true, username: true } } },
     });
     return rows.map((a) => ({
       amistadId: a.id,
-      de: { id: a.usuario1.id, nombre: a.usuario1.nombre },
+      de: { id: a.usuario1.id, username: a.usuario1.username },
     }));
   }
 }

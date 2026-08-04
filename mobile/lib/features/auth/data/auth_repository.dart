@@ -8,33 +8,43 @@ class SesionOrganizadorDto {
   const SesionOrganizadorDto({
     required this.token,
     required this.usuarioId,
-    required this.nombre,
+    required this.username,
   });
 
   final String token;
   final String usuarioId;
-  final String nombre;
+  final String username;
 }
 
 class SesionAnonimaDto {
-  const SesionAnonimaDto({required this.participanteId, required this.tokenSesion});
+  const SesionAnonimaDto({
+    required this.participanteId,
+    required this.tokenSesion,
+    required this.username,
+  });
 
   final String participanteId;
   final String tokenSesion;
+
+  /// Puede diferir del pedido si el backend tuvo que auto-sufijarlo por
+  /// colisión con otro username ya existente (registrado o anónimo).
+  final String username;
 }
 
 /// SCRUM-7 — acceso a la app. Las pantallas dependen de esta interfaz, no de Dio.
 abstract interface class AuthRepository {
-  /// HU-41 — login del organizador semilla / usuario registrado.
-  Future<SesionOrganizadorDto> login(String email, String password);
+  /// HU-41 — login del organizador semilla / usuario registrado. El
+  /// identificador puede ser el email o el username (username único —
+  /// ver docs/05-fixes.md).
+  Future<SesionOrganizadorDto> login(String identificador, String password);
 
   /// HU-27 — registro de una cuenta real.
-  Future<SesionOrganizadorDto> register(String nombre, String email, String password);
+  Future<SesionOrganizadorDto> register(String username, String email, String password);
 
   /// HU-01/HU-03 — un anónimo se une a un evento existente.
   Future<SesionAnonimaDto> unirseComoAnonimo({
     required String eventoId,
-    required String nombreDisplay,
+    required String username,
   });
 
   /// HU-02 — resuelve un link de invitación al id del evento.
@@ -52,47 +62,49 @@ class AuthRepositoryHttp implements AuthRepository {
   final Dio _dio;
 
   @override
-  Future<SesionOrganizadorDto> login(String email, String password) => ejecutar(() async {
+  Future<SesionOrganizadorDto> login(String identificador, String password) =>
+      ejecutar(() async {
         final res = await _dio.post<Map<String, dynamic>>(
           '/auth/login',
-          data: {'email': email, 'password': password},
+          data: {'email': identificador, 'password': password},
         );
         final usuario = res.data!['usuario'] as Map<String, dynamic>;
         return SesionOrganizadorDto(
           token: res.data!['token'] as String,
           usuarioId: usuario['id'] as String,
-          nombre: usuario['nombre'] as String,
+          username: usuario['username'] as String,
         );
       });
 
   @override
-  Future<SesionOrganizadorDto> register(String nombre, String email, String password) =>
+  Future<SesionOrganizadorDto> register(String username, String email, String password) =>
       ejecutar(() async {
         final res = await _dio.post<Map<String, dynamic>>(
           '/auth/register',
-          data: {'nombre': nombre, 'email': email, 'password': password},
+          data: {'username': username, 'email': email, 'password': password},
         );
         final usuario = res.data!['usuario'] as Map<String, dynamic>;
         return SesionOrganizadorDto(
           token: res.data!['token'] as String,
           usuarioId: usuario['id'] as String,
-          nombre: usuario['nombre'] as String,
+          username: usuario['username'] as String,
         );
       });
 
   @override
   Future<SesionAnonimaDto> unirseComoAnonimo({
     required String eventoId,
-    required String nombreDisplay,
+    required String username,
   }) =>
       ejecutar(() async {
         final res = await _dio.post<Map<String, dynamic>>(
           '/participants/anonymous',
-          data: {'eventoId': eventoId, 'nombreDisplay': nombreDisplay},
+          data: {'eventoId': eventoId, 'username': username},
         );
         return SesionAnonimaDto(
           participanteId: res.data!['participanteId'] as String,
           tokenSesion: res.data!['tokenSesion'] as String,
+          username: res.data!['username'] as String? ?? username,
         );
       });
 

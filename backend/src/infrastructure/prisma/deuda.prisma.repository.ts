@@ -4,14 +4,14 @@ import { DeudaConPersonas, DeudaRepository, NuevaDeuda } from '../../domain/repo
 import { toDeuda } from './mappers';
 
 const CON_PERSONAS = {
-  deudor: { select: { id: true, nombreDisplay: true, usuarioId: true } },
-  acreedor: { select: { id: true, nombreDisplay: true, usuarioId: true } },
+  deudor: { select: { id: true, username: true, usuarioId: true } },
+  acreedor: { select: { id: true, username: true, usuarioId: true } },
   evento: { select: { nombre: true } },
 } as const;
 
 type FilaConPersonas = Parameters<typeof toDeuda>[0] & {
-  deudor: { id: string; nombreDisplay: string; usuarioId: string | null };
-  acreedor: { id: string; nombreDisplay: string; usuarioId: string | null };
+  deudor: { id: string; username: string; usuarioId: string | null };
+  acreedor: { id: string; username: string; usuarioId: string | null };
   evento: { nombre: string };
 };
 
@@ -20,12 +20,12 @@ function toDeudaConPersonas(row: FilaConPersonas): DeudaConPersonas {
     ...toDeuda(row),
     deudor: {
       id: row.deudor.id,
-      nombre: row.deudor.nombreDisplay,
+      username: row.deudor.username,
       usuarioId: row.deudor.usuarioId,
     },
     acreedor: {
       id: row.acreedor.id,
-      nombre: row.acreedor.nombreDisplay,
+      username: row.acreedor.username,
       usuarioId: row.acreedor.usuarioId,
     },
     eventoNombre: row.evento.nombre,

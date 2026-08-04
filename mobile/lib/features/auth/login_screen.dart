@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/app_text_field.dart';
+import '../../core/widgets/auth_scaffold.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'data/auth_repository.dart';
 import 'pending_invitation_provider.dart';
@@ -167,123 +168,98 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final cargando = ref.watch(sessionControllerProvider).isLoading;
     final invitacionPendiente = ref.watch(pendingInvitationProvider) != null;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  l10n.appName,
-                  style: theme.textTheme.displaySmall?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  l10n.appTagline,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                if (invitacionPendiente) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.mail_outline, color: AppColors.primary, size: 20),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Text(
-                            l10n.loginPendingInvitation,
-                            style: theme.textTheme.bodySmall,
-                          ),
-                        ),
-                      ],
-                    ),
+    return AuthScaffold(
+      card: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (invitacionPendiente) ...[
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.mail_outline, color: AppColors.primary, size: 20),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(l10n.loginPendingInvitation, style: theme.textTheme.bodySmall),
                   ),
                 ],
-                const SizedBox(height: AppSpacing.xl),
-                AppTextField(
-                  variant: AppTextFieldVariant.email,
-                  controller: _emailController,
-                  enabled: !cargando,
-                  decoration: InputDecoration(
-                    hintText: l10n.loginUserOrEmail,
-                    prefixIcon: const Icon(Icons.person_outline),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                AppTextField(
-                  variant: AppTextFieldVariant.password,
-                  controller: _passwordController,
-                  enabled: !cargando,
-                  onSubmitted: (_) => _ingresar(),
-                  decoration: InputDecoration(
-                    hintText: l10n.loginPassword,
-                    prefixIcon: const Icon(Icons.lock_outline),
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => _mensaje(l10n.loginComingSoon),
-                    child: Text(l10n.loginForgotPassword),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                ElevatedButton(
-                  onPressed: cargando ? null : _ingresar,
-                  child: cargando
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(l10n.loginSubmit),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(l10n.loginOr, style: theme.textTheme.bodySmall),
-                const SizedBox(height: AppSpacing.md),
-                OutlinedButton.icon(
-                  onPressed: cargando ? null : _continuarComoAnonimo,
-                  icon: const Icon(Icons.visibility_off_outlined),
-                  label: Text(l10n.loginContinueAnonymous),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(l10n.loginNoAccount, style: theme.textTheme.bodySmall),
-                    TextButton(
-                      // HU-27 (SCRUM-14): registro real de una cuenta.
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(builder: (_) => const RegisterScreen()),
-                      ),
-                      child: Text(l10n.loginCreateAccount),
-                    ),
-                  ],
-                ),
-              ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          AppTextField(
+            variant: AppTextFieldVariant.email,
+            controller: _emailController,
+            enabled: !cargando,
+            decoration: InputDecoration(
+              hintText: l10n.loginUserOrEmail,
+              prefixIcon: const Icon(Icons.person_outline),
             ),
           ),
-        ),
+          const SizedBox(height: AppSpacing.sm),
+          AppTextField(
+            variant: AppTextFieldVariant.password,
+            controller: _passwordController,
+            enabled: !cargando,
+            onSubmitted: (_) => _ingresar(),
+            decoration: InputDecoration(
+              hintText: l10n.loginPassword,
+              prefixIcon: const Icon(Icons.lock_outline),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => _mensaje(l10n.loginComingSoon),
+              child: Text(l10n.loginForgotPassword),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: cargando ? null : _ingresar,
+              child: cargando
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(l10n.loginSubmit),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(l10n.loginOr, style: theme.textTheme.bodySmall),
+          const SizedBox(height: AppSpacing.md),
+          OutlinedButton.icon(
+            onPressed: cargando ? null : _continuarComoAnonimo,
+            icon: const Icon(Icons.visibility_off_outlined),
+            label: Text(l10n.loginContinueAnonymous),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+              ),
+            ),
+          ),
+        ],
+      ),
+      footer: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(l10n.loginNoAccount, style: theme.textTheme.bodySmall),
+          TextButton(
+            // HU-27 (SCRUM-14): registro real de una cuenta.
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const RegisterScreen()),
+            ),
+            child: Text(l10n.loginCreateAccount),
+          ),
+        ],
       ),
     );
   }

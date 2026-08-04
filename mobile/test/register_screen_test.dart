@@ -52,4 +52,17 @@ void main() {
 
     expect(find.textContaining('No se pudo registrar'), findsOneWidget);
   });
+
+  testWidgets(
+      'Item 6 (Tanda 6) — card flotante con logo/título arriba y flecha de '
+      'volver (ya no hay AppBar)', (tester) async {
+    await tester.pumpWidget(appDePrueba(const RegisterScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.appName), findsOneWidget);
+    expect(find.text(l10n.appTagline), findsOneWidget);
+    expect(find.text(l10n.registerTitle), findsOneWidget);
+    expect(find.byType(BackButton), findsOneWidget);
+    expect(find.byType(AppBar), findsNothing);
+  });
 }

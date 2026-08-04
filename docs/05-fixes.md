@@ -62,6 +62,37 @@ layout, para que esta regresión no vuelva.
   toggle filtrando la lista; `AppShell` con el FAB abriendo "Crear evento"
   en Home pero arrancando el flujo de gasto (no un evento) en Gastos.
 
+## Item 6: Auth — Login/Registro como card blanca flotante
+
+**Pendiente (bloqueado por mí, no por código):** el ícono oficial de la app
+(`image_aedb4c.png` de la referencia) se pegó en el chat, no existe como
+archivo en el repo, y no tengo forma de extraer el adjunto a disco. El
+usuario prefirió pasarlo él mismo. Mientras tanto, `_AuthLogo` en
+`auth_scaffold.dart` usa un ícono vectorial placeholder (`Icons.autorenew`,
+en el azul de la marca) dentro del mismo círculo blanco con sombra que
+tendría el logo real — apenas esté el archivo en
+`mobile/assets/logo.png` (+ su entrada en `pubspec.yaml`), reemplazar el
+`Icon` por un `Image.asset(...)` es el único cambio que hace falta.
+
+- **`core/widgets/auth_scaffold.dart` (nuevo):** chrome compartido por Login
+  y Registro — fondo `AppColors.background` (celeste clarito), logo +
+  "Planify" + tagline arriba, y una card blanca flotante (bordes de 28,
+  sombra suave) con el contenido de cada pantalla adentro. Acepta un
+  `footer` opcional para lo que va debajo de la card (ej. "¿No tenés cuenta?
+  Crear cuenta") y un `showBackButton` para Registro.
+- **`login_screen.dart`:** se sacó el `Scaffold` propio; ahora es
+  `AuthScaffold(card: ..., footer: ...)`. Mismo contenido y mismo orden de
+  campos que antes (los tests de `login_screen_test.dart` que dependen del
+  orden de los `TextField` siguen pasando sin tocarlos).
+- **`register_screen.dart`:** se sacó el `AppBar` (con su flecha de volver
+  implícita) — ahora usa el `BackButton` manual de `AuthScaffold`
+  (`showBackButton: true`) y un título ("Crear cuenta") dentro de la propia
+  card, para diferenciarse visualmente de Login.
+- **Tests:** se agregaron casos puntuales en `login_screen_test.dart` y
+  `register_screen_test.dart` para la estructura nueva (sin `AppBar`, con/sin
+  `BackButton` según corresponda, logo+tagline visibles); todos los tests
+  preexistentes de ambas pantallas siguen pasando tal cual, sin modificarlos.
+
 ## Item 5: Foto de grupo nativa + limpieza de "Disponibilidad entre amigos"
 
 **Contexto de la duda planteada:** se encontraron dos features distintas

@@ -114,15 +114,15 @@ export class PrismaEventoRepository implements EventoRepository {
     return rows.map(this.toResumen);
   }
 
-  async listPastForUsuario(usuarioId: string, ahora: Date): Promise<EventoConResumen[]> {
+  async listHistoryForUsuario(usuarioId: string, finDeMesActual: Date): Promise<EventoConResumen[]> {
     const rows = await this.prisma.evento.findMany({
       where: {
         participantes: { some: { usuarioId } },
-        // Terminado, cancelado, o confirmado cuya fecha ya pasó.
+        // Terminado, cancelado, o cualquier evento (confirmado/borrador) antes del fin de mes actual.
         OR: [
           { estado: 'finalizado' },
           { estado: 'cancelado' },
-          { estado: 'confirmado', fechaHoraInicio: { lt: ahora } },
+          { fechaHoraInicio: { lt: finDeMesActual } },
         ],
       },
       orderBy: { createdAt: 'desc' },

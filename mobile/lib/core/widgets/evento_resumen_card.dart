@@ -16,16 +16,32 @@ class EventoResumenCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final badgeText = evento.fechaHoraInicio != null
+        ? DateFormat("MMM d", 'es').format(evento.fechaHoraInicio!).toUpperCase()
+        : l10n.commonToBeDefined.toUpperCase();
 
-    final fecha = evento.fechaHoraInicio != null
-        ? DateFormat("EEEE d 'de' MMMM · HH:mm", 'es').format(evento.fechaHoraInicio!)
-        : l10n.commonToBeDefined;
+    final topBadge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        badgeText,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
 
     return EventCard(
+      width: 260, // Fixed width for carousel
       titulo: evento.nombre,
-      subtitulo: '$fecha · ${evento.lugarTexto}',
+      topBadge: topBadge,
+      trailing: Icon(Icons.more_horiz, color: Theme.of(context).colorScheme.primary),
       participantes: evento.participantes.map((p) => p.username).toList(),
-      chips: [l10n.groupsConfirmed(evento.confirmados)],
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => EventDetailScreen(eventoId: evento.id),

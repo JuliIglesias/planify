@@ -51,7 +51,7 @@ export interface EventoRepository {
    * Historial: finalizados, cancelados, o confirmados cuya fecha ya pasó. Así un
    * mismo evento no aparece a la vez en Próximos y en Historial (H-09).
    */
-  listPastForUsuario(usuarioId: string, ahora: Date): Promise<EventoConResumen[]>;
+  listHistoryForUsuario(usuarioId: string, finDeMesActual: Date): Promise<EventoConResumen[]>;
 
   listByGrupo(grupoId: string): Promise<Evento[]>;
 }

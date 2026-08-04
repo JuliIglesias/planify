@@ -10,6 +10,7 @@ import '../../core/widgets/evento_resumen_card.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../auth/session_controller.dart';
 import '../events/widgets/activity_presentation.dart';
+import '../history/history_screen.dart';
 import 'home_providers.dart';
 
 /// Home — resumen de saldos, próximos eventos y actividad reciente
@@ -61,9 +62,20 @@ class HomeScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.lg),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Text(
-              l10n.homeUpcomingEvents,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  l10n.homeUpcomingEvents,
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const HistoryScreen()),
+                  ),
+                  child: const Text('Ver todos'),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -84,12 +96,14 @@ class HomeScreen extends ConsumerWidget {
                     mensaje: l10n.homeNoEvents,
                     detalle: l10n.homeNoEventsHint,
                   )
-                : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                    child: Column(
-                      children: [
-                        for (final evento in lista) EventoResumenCard(evento: evento),
-                      ],
+                : SizedBox(
+                    height: 200, // Altura fija para el carrusel
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: lista.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+                      itemBuilder: (_, index) => EventoResumenCard(evento: lista[index]),
                     ),
                   ),
           ),

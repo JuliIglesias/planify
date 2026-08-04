@@ -72,8 +72,11 @@ export class EventsQueryService {
 
   /** Historial — eventos pasados con su estado de saldo. */
   async historialDe(usuarioId: string): Promise<EventoHistorial[]> {
+    const ahora = this.clock.now();
+    const finDeMesActual = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1);
+    
     const [eventos, participaciones] = await Promise.all([
-      this.eventos.listPastForUsuario(usuarioId, this.clock.now()),
+      this.eventos.listHistoryForUsuario(usuarioId, finDeMesActual),
       this.participantes.listByUsuario(usuarioId),
     ]);
 

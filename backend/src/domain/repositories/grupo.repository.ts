@@ -12,7 +12,7 @@ export interface GrupoRepository {
   listMiembros(grupoId: string): Promise<PersonaRef[]>;
 
   create(nombre: string, usuarioIds: string[]): Promise<Grupo>;
-  rename(id: string, nombre: string): Promise<Grupo>;
+  actualizar(id: string, data: { nombre?: string, avatarUrl?: string | null }): Promise<Grupo>;
 
   esMiembro(grupoId: string, usuarioId: string): Promise<boolean>;
   contarMiembros(grupoId: string): Promise<number>;

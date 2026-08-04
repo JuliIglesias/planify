@@ -99,7 +99,27 @@ class _GestionGrupoSheetState extends ConsumerState<_GestionGrupoSheet> {
                 );
                 if (nombre == null) return;
                 await _accion(
-                  () => repo.renombrar(grupoId: widget.grupo.id, nombre: nombre),
+                  () => repo.actualizar(grupoId: widget.grupo.id, nombre: nombre),
+                  cerrar: true,
+                );
+              },
+            ),
+
+            // Cambiar imagen
+            ListTile(
+              leading: const Icon(Icons.image_outlined),
+              title: Text(l10n.groupsUpdateImage),
+              enabled: !_ocupado,
+              onTap: () async {
+                final avatarUrl = await _pedirTexto(
+                  context,
+                  titulo: l10n.groupsUpdateImage,
+                  label: l10n.groupsImageUrl,
+                  inicial: widget.grupo.avatarUrl,
+                );
+                if (avatarUrl == null) return;
+                await _accion(
+                  () => repo.actualizar(grupoId: widget.grupo.id, avatarUrl: avatarUrl),
                   cerrar: true,
                 );
               },

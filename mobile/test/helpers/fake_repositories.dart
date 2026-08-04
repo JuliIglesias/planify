@@ -358,8 +358,12 @@ class FakeGroupsRepository implements GroupsRepository {
   Future<List<GrupoResumen>> mios() async => grupos;
 
   @override
-  Future<void> renombrar({required String grupoId, required String nombre}) async {
-    llamadas.add('renombrar:$grupoId:$nombre');
+  Future<void> actualizar({
+    required String grupoId,
+    String? nombre,
+    String? avatarUrl,
+  }) async {
+    llamadas.add('actualizar:$grupoId:$nombre');
   }
 
   @override

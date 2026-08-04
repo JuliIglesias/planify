@@ -155,7 +155,7 @@ describe('GroupsService — gestión de miembros (Duda #12.2)', () => {
     const usuario = usuarios.agregar();
     const grupo = await grupos.create('Nombre viejo', [usuario.id]);
 
-    const renombrado = await service.renombrar(grupo.id, usuario.id, 'Los Fibes');
+    const renombrado = await service.actualizar(grupo.id, usuario.id, { nombre: 'Los Fibes' });
 
     expect(renombrado.nombre).toBe('Los Fibes');
   });
@@ -166,7 +166,7 @@ describe('GroupsService — gestión de miembros (Duda #12.2)', () => {
     const intruso = usuarios.agregar();
     const grupo = await grupos.create('Privado', [miembro.id]);
 
-    await expect(service.renombrar(grupo.id, intruso.id, 'Hackeado')).rejects.toThrow(
+    await expect(service.actualizar(grupo.id, intruso.id, { nombre: 'Hackeado' })).rejects.toThrow(
       /miembro/,
     );
   });

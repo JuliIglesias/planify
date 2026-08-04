@@ -171,18 +171,23 @@ class _CarruselDeGrupos extends ConsumerWidget {
                         backgroundColor: activo
                             ? AppColors.primary
                             : AppColors.primary.withValues(alpha: 0.15),
-                        child: Text(
-                          _iniciales(grupo.nombre),
-                          style: TextStyle(
-                            color: activo ? Colors.white : AppColors.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        backgroundImage: grupo.avatarUrl != null
+                            ? NetworkImage(grupo.avatarUrl!)
+                            : null,
+                        child: grupo.avatarUrl == null
+                            ? Text(
+                                _iniciales(grupo.nombre),
+                                style: TextStyle(
+                                  color: activo ? Colors.white : AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              )
+                            : null,
                       ),
                       Positioned(
                         right: -2,
                         top: -2,
-                        child: UnreadDot(cantidad: grupo.noLeidos),
+                        child: UnreadDot(cantidad: grupo.noLeidos, mostrarNumero: true),
                       ),
                     ],
                   ),

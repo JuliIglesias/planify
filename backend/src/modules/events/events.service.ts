@@ -95,7 +95,6 @@ export class EventsService {
       nombre,
       lugarTexto: lugar,
       organizadorUsuarioId: usuarioId,
-      organizadorNombre: usuario.nombre,
       rangoInicio,
       rangoFin,
       organizadorUsername: usuario.username,

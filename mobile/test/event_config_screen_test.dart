@@ -168,6 +168,19 @@ void main() {
       detalleEvento: FakeEventsRepository.detalleDeEjemplo(
         rangoInicio: DateTime(2026, 8, 1),
         rangoFin: DateTime(2026, 8, 20),
+      ),
+    );
+
+    usarPantallaAlta(tester, alto: 4000);
+    await tester.pumpWidget(
+      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), events: events),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.eventDateRangeShowing('1 ago', '20 ago')), findsOneWidget);
+    expect(find.text(l10n.eventDateRangeExpiredBanner), findsNothing);
+  });
+
   testWidgets(
       'un rango horario fijado marca TODOS sus bloques con estrella, no solo el primero (Item 5)',
       (tester) async {
@@ -181,12 +194,11 @@ void main() {
 
     usarPantallaAlta(tester, alto: 4000);
     await tester.pumpWidget(
-      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), events: events),
+      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), events: confirmado),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text(l10n.eventDateRangeShowing('1 ago', '20 ago')), findsOneWidget);
-    expect(find.text(l10n.eventDateRangeExpiredBanner), findsNothing);
+    expect(find.byIcon(Icons.star), findsNWidgets(4));
   });
 
   testWidgets(
@@ -203,11 +215,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.eventDateRangeExpiredBanner), findsOneWidget);
-      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), events: confirmado),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byIcon(Icons.star), findsNWidgets(4));
   });
 
   testWidgets(

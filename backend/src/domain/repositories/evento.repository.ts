@@ -5,7 +5,6 @@ export interface CrearEventoData {
   nombre: string;
   lugarTexto: string;
   organizadorUsuarioId: string;
-  organizadorNombre: string;
   /** Rango de fechas calendario del evento (Item 1). */
   rangoInicio: Date;
   rangoFin: Date;

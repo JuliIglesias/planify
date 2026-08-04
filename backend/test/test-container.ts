@@ -102,7 +102,7 @@ export function createTestContainer(): TestContainer {
   const locations = new LocationsService(ubicaciones);
   const participants = new ParticipantsService(participantes, usuarios, eventos, ids, activityLog);
   const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
-  const events = new EventsService(eventos, grupos, participantes, usuarios, activityLog);
+  const events = new EventsService(eventos, grupos, participantes, usuarios, activityLog, clock);
   const eventsQuery = new EventsQueryService(
     eventos,
     participantes,

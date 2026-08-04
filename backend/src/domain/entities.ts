@@ -47,6 +47,11 @@ export interface Evento {
   lugarTexto: string;
   estado: EventoEstado;
   fechaHoraInicio: Date | null;
+  /** Rango de fechas calendario dentro del cual se busca el horario (Item 1, ver docs/adrs/0001-rango-fechas-evento.md). */
+  rangoInicio: Date;
+  rangoFin: Date;
+  /** Cuántas veces se extendió `rangoFin` automáticamente (tope 1, ver ADR 0001). */
+  extensionesRango: number;
   /** Item 5 — fin del rango horario confirmado (ver docs/adrs/0002-rango-horario-evento.md). */
   fechaHoraFin: Date | null;
   creadoPor: string;

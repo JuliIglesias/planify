@@ -714,6 +714,70 @@ introducir un color nuevo que rompiera la paleta ya definida.
 > (rango horario, depende del 1) → 2 (visual, independiente) → 3 (visual,
 > independiente) → 4 (perfil de amigo, depende de que 1 y 5 ya existan para
 > que la disponibilidad comparada tenga sentido).
+
+## Item 1 — Rango de fechas calendario del evento
+
+**Modelo de datos, ver [ADR 0001](adrs/0001-rango-fechas-evento.md).**
+`Evento` gana `rangoInicio`/`rangoFin` (obligatorios) y `extensionesRango`
+(contador). Migración `20260804090000_evento_rango_fechas` con backfill
+para los eventos ya existentes (`rangoInicio = createdAt`,
+`rangoFin = createdAt + 14 días`).
+
+**Fix (backend):**
+- `EventsService.crear` ahora exige `rangoInicio`/`rangoFin` (HU-06):
+  valida que sean fechas válidas, que `rangoInicio <= rangoFin` y que
+  `rangoFin` no esté en el pasado. Pasa a depender de `Clock` (antes no lo
+  necesitaba).
+- `EventsService.chequearExtensionRango(eventoId)` (nuevo): si el evento
+  sigue en `planificacion` y `ahora > rangoFin`, extiende `rangoFin` 14
+  días (`extenderRango`, nuevo en `EventoRepository`) y registra actividad
+  `rango_extendido` (nuevo `ActivityType`, notifica a los participantes vía
+  el mismo `ActivityLogService`/`NotificationsService` de siempre — sin
+  infraestructura nueva). **Tope de 1 extensión automática** (confirmado
+  con el usuario): alcanzado el tope, no extiende más.
+- Se llama de forma lazy desde `GET /events/:id` (mismo patrón que
+  `listUpcoming/listPast` con `ahora: Date`, H-09) — no hay cron.
+- `EventsQueryService.detalle` agrega `necesitaDecisionRango: boolean`
+  (derivado, no persistido): true cuando el rango venció y ya se usó la
+  única extensión, para que la UI avise que el organizador tiene que
+  decidir a mano. No hace falta un flujo nuevo para "decidir": confirmar un
+  horario o cancelar el evento ya eran posibles con los controles
+  existentes.
+
+**Fix (mobile):**
+- `CreateEventScreen`: el paso 1 (nombre + lugar) gana un selector de rango
+  de fechas (`showDateRangePicker`), con default hoy→hoy+14 días editable
+  — sigue siendo "2 pasos" (NFR#3), no se agregó un paso nuevo.
+- `DetalleEvento` gana `rangoInicio`/`rangoFin`/`necesitaDecisionRango`.
+  `EventConfigScreen` muestra "Buscando horario entre X e Y" mientras el
+  evento está en planificación, y un banner de aviso cuando
+  `necesitaDecisionRango` es true.
+- `activity_presentation.dart`: nuevo caso `rango_extendido` (ícono
+  calendario, texto sin nombrar actor porque lo dispara el sistema, no una
+  persona).
+
+**Decisiones confirmadas con el usuario antes de implementar:** sí
+notificar al extender (reutilizando el sistema de actividad/push
+existente); tope de **1** extensión automática (no 3, no ilimitado); la
+disponibilidad semanal del perfil se proyecta día por día sobre cada fecha
+calendario dentro del rango del evento — sin cambiar el modelo de
+`DisponibilidadSlot` (sigue siendo día-de-semana + hora, no fecha exacta).
+
+**Validación:**
+- Backend: `events.service.test.ts` — nuevo describe "extensión automática
+  del rango": no toca el rango si no venció; extiende 14 días y notifica
+  si venció; no extiende un evento ya confirmado; deja de extender después
+  del tope. Más un test de rango inválido (`rangoInicio > rangoFin`,
+  `rangoFin` en el pasado). Se actualizaron los tests existentes de
+  creación de evento (`events.service.test.ts`, `audit-regression.test.ts`,
+  `api.test.ts`) para pasar un rango válido. Backend 100→105,
+  `tsc --noEmit` y `eslint .` limpios.
+- Mobile: `create_event_screen_test.dart` (nuevo) — el rango por defecto es
+  visible en el paso 1; crear el evento manda el rango elegido al
+  repositorio. `event_config_screen_test.dart` — 2 tests nuevos: un evento
+  en planificación muestra su rango vigente; un evento con
+  `necesitaDecisionRango` muestra el banner de aviso. Mobile 64→68,
+  `flutter analyze` limpio.
 >
 > Cada item vive en su propia branch, arrancada desde `main` de forma
 > independiente (mismo patrón de fases anteriores) — así que el Item 5

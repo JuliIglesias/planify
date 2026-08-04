@@ -100,7 +100,16 @@
   "eventNewGroup": "Crear un grupo nuevo",
   "eventNewGroupName": "Nombre del grupo",
   "eventCreateError": "No pudimos crear el evento",
-  "eventDateComesLater": "La fecha se define después, cuando todos carguen su disponibilidad",
+  "eventDateComesLater": "El horario exacto se define después, cuando todos carguen su disponibilidad dentro del rango elegido",
+  "eventDateRangeLabel": "Rango de fechas",
+  "eventDateRangeExpiredBanner": "El rango de fechas venció y ya se extendió una vez. Elegí un horario para confirmar el evento, o cancelalo desde el feed.",
+  "eventDateRangeShowing": "Buscando horario entre {inicio} y {fin}",
+  "@eventDateRangeShowing": {
+    "placeholders": {
+      "inicio": { "type": "String" },
+      "fin": { "type": "String" }
+    }
+  },
   "eventAiButton": "Generar con IA",
   "eventAiTitle": "Describí tu evento",
   "eventAiHint": "Ej: un asado en casa de Juli con Marcos y Sofía",
@@ -242,6 +251,7 @@
       }
     }
   },
+  "activityRangeExtended": "El rango de fechas del evento se extendió",
   "commonSave": "Guardar",
   "commonCancel": "Cancelar",
   "commonAdd": "Agregar",

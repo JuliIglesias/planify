@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import 'data/ai_events_repository.dart';
 import 'data/events_repository.dart';
@@ -36,6 +37,14 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   final List<Persona> _miembros = [];
   final List<String> _tareasSugeridas = [];
 
+  // Item 1 — rango de fechas calendario del evento. Arranca con un default
+  // razonable (hoy + 2 semanas) que el organizador puede cambiar; así no
+  // hace falta un tercer paso para cumplir NFR#3.
+  DateTimeRange _rango = DateTimeRange(
+    start: DateTime.now(),
+    end: DateTime.now().add(const Duration(days: 14)),
+  );
+
   @override
   void dispose() {
     _nombre.dispose();
@@ -46,6 +55,21 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
   bool get _paso1Valido =>
       _nombre.text.trim().isNotEmpty && _lugar.text.trim().isNotEmpty;
+
+  Future<void> _elegirRango() async {
+    final hoy = DateTime.now();
+    final inicio = DateTime(hoy.year, hoy.month, hoy.day);
+    final elegido = await showDateRangePicker(
+      context: context,
+      firstDate: inicio,
+      lastDate: inicio.add(const Duration(days: 365)),
+      initialDateRange: DateTimeRange(
+        start: _rango.start.isBefore(inicio) ? inicio : _rango.start,
+        end: _rango.end.isBefore(inicio) ? inicio.add(const Duration(days: 14)) : _rango.end,
+      ),
+    );
+    if (elegido != null) setState(() => _rango = elegido);
+  }
 
   bool get _paso2Valido =>
       _grupoSeleccionadoId != null || _nuevoGrupo.text.trim().isNotEmpty;
@@ -59,6 +83,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       final eventoId = await ref.read(eventsRepositoryProvider).crear(
             nombre: _nombre.text.trim(),
             lugarTexto: _lugar.text.trim(),
+            rangoInicio: _rango.start,
+            rangoFin: _rango.end,
             grupoId: _grupoSeleccionadoId,
             nuevoGrupoNombre: creandoGrupoNuevo ? _nuevoGrupo.text.trim() : null,
             // HU-04 (H-05): al crear un grupo nuevo se pueden elegir miembros;
@@ -336,6 +362,44 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                               label: Text(l10n.eventSavedPlaces),
                             ),
                           ),
+                          const SizedBox(height: AppSpacing.sm),
+                          // Item 1 — rango de fechas calendario dentro del
+                          // cual se busca el horario (distinto del horario
+                          // puntual, que sigue saliendo del heatmap).
+                          InkWell(
+                            onTap: _creando ? null : _elegirRango,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.sm),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.date_range_outlined,
+                                      color: AppColors.primary),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(l10n.eventDateRangeLabel,
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                    color: AppColors
+                                                        .textSecondary)),
+                                        Text(
+                                          _formatearRango(_rango),
+                                          style: theme.textTheme.bodyLarge,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.chevron_right,
+                                      color: AppColors.textSecondary),
+                                ],
+                              ),
+                            ),
+                          ),
                           const SizedBox(height: AppSpacing.md),
                           Row(
                             children: [
@@ -461,4 +525,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       ),
     );
   }
+}
+
+/// Item 1 — "1 ago – 20 ago" para mostrar el rango elegido sin ocupar lugar.
+String _formatearRango(DateTimeRange rango) {
+  final formato = DateFormat('d MMM', 'es');
+  return '${formato.format(rango.start)} – ${formato.format(rango.end)}';
 }

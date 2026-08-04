@@ -100,7 +100,16 @@
   "eventNewGroup": "Create a new group",
   "eventNewGroupName": "Group name",
   "eventCreateError": "We couldn't create the event",
-  "eventDateComesLater": "The date is set later, once everyone shares their availability",
+  "eventDateComesLater": "The exact time is set later, once everyone shares their availability within the chosen range",
+  "eventDateRangeLabel": "Date range",
+  "eventDateRangeExpiredBanner": "The date range expired and was already extended once. Pick a time to confirm the event, or cancel it from the feed.",
+  "eventDateRangeShowing": "Looking for a time between {inicio} and {fin}",
+  "@eventDateRangeShowing": {
+    "placeholders": {
+      "inicio": { "type": "String" },
+      "fin": { "type": "String" }
+    }
+  },
   "eventAiButton": "Generate with AI",
   "eventAiTitle": "Describe your event",
   "eventAiHint": "E.g.: a barbecue at Juli's place with Marcos and Sofía",
@@ -242,6 +251,7 @@
       }
     }
   },
+  "activityRangeExtended": "The event's date range was extended",
   "commonSave": "Save",
   "commonCancel": "Cancel",
   "commonAdd": "Add",

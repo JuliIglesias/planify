@@ -26,7 +26,7 @@ function armar() {
   const logs = new FakeLogActividadRepository();
   const clock = new FakeClock();
   const log = new ActivityLogService(logs, participantes, clock);
-  const events = new EventsService(eventos, grupos, participantes, usuarios, log);
+  const events = new EventsService(eventos, grupos, participantes, usuarios, log, clock);
   const availability = new AvailabilityService(disponibilidad, eventos, events, log);
 
   return { availability, events, eventos, participantes, disponibilidad, clock, usuarios, grupos };
@@ -100,6 +100,11 @@ describe('AvailabilityService — heatmap excluye a quien dijo "No voy" (Item 4)
   });
 });
 
+const RANGO = {
+  rangoInicio: new Date('2026-08-10T00:00:00Z'),
+  rangoFin: new Date('2026-08-24T00:00:00Z'),
+};
+
 describe('AvailabilityService — horario como rango, no como slot único (Item 5)', () => {
   it('confirmarHorario guarda inicio Y fin, y pasa el evento a confirmado', async () => {
     const { availability, events, usuarios, grupos } = armar();
@@ -109,6 +114,7 @@ describe('AvailabilityService — horario como rango, no como slot único (Item 
       nombre: 'Asado',
       lugarTexto: 'Casa',
       grupoId: grupo.id,
+      ...RANGO,
     });
 
     const confirmado = await availability.confirmarHorario(
@@ -131,6 +137,7 @@ describe('AvailabilityService — horario como rango, no como slot único (Item 
       nombre: 'Asado',
       lugarTexto: 'Casa',
       grupoId: grupo.id,
+      ...RANGO,
     });
 
     await expect(

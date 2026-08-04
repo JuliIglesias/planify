@@ -29,6 +29,9 @@ export function toEvento(row: {
   lugarTexto: string;
   estado: string;
   fechaHoraInicio: Date | null;
+  rangoInicio: Date;
+  rangoFin: Date;
+  extensionesRango: number;
   fechaHoraFin: Date | null;
   creadoPor: string;
   createdAt: Date;

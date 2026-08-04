@@ -23,6 +23,7 @@ const TEXTO: Record<string, string> = {
   participante_se_unio: 'Alguien se unió al evento',
   disponibilidad_cargada: 'Alguien cargó su disponibilidad',
   evento_cancelado: 'El evento fue cancelado',
+  rango_extendido: 'El rango de fechas del evento se extendió',
 };
 
 /**

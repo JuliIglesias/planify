@@ -5,6 +5,7 @@ import { crearOrganizerGuard, crearParticipantGuard } from '../src/middlewares/g
 import { ActivityLogService } from '../src/modules/activity-log/activity-log.service';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { FriendsService } from '../src/modules/friends/friends.service';
+import { FriendProfileService } from '../src/modules/friends/friend-profile.service';
 import { UsersService } from '../src/modules/users/users.service';
 import { NotificationsService } from '../src/modules/notifications/notifications.service';
 import { AiEventsService } from '../src/modules/ai-events/ai-events.service';
@@ -96,6 +97,14 @@ export function createTestContainer(): TestContainer {
   const activityLog = new ActivityLogService(logs, participantes, clock, notifications);
   const auth = new AuthService(usuarios, participantes, hasher, tokens);
   const friends = new FriendsService(amistades, usuarios);
+  const friendProfile = new FriendProfileService(
+    amistades,
+    usuarios,
+    disponibilidadPerfil,
+    grupos,
+    participantes,
+    eventos,
+  );
   const users = new UsersService(usuarios);
   const aiEvents = new AiEventsService(new HeuristicEventGenerator(), amistades);
   const profileAvailability = new ProfileAvailabilityService(disponibilidadPerfil, amistades);
@@ -144,6 +153,7 @@ export function createTestContainer(): TestContainer {
     },
     auth,
     friends,
+    friendProfile,
     users,
     notifications,
     aiEvents,

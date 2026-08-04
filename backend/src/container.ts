@@ -25,6 +25,7 @@ import { PrismaLocationRepository } from './infrastructure/prisma/location.prism
 import { ActivityLogService } from './modules/activity-log/activity-log.service';
 import { AuthService } from './modules/auth/auth.service';
 import { FriendsService } from './modules/friends/friends.service';
+import { FriendProfileService } from './modules/friends/friend-profile.service';
 import { UsersService } from './modules/users/users.service';
 import { NotificationsService } from './modules/notifications/notifications.service';
 import { AiEventsService } from './modules/ai-events/ai-events.service';
@@ -64,6 +65,7 @@ export interface Container {
   };
   auth: AuthService;
   friends: FriendsService;
+  friendProfile: FriendProfileService;
   users: UsersService;
   notifications: NotificationsService;
   aiEvents: AiEventsService;
@@ -125,6 +127,14 @@ export function createContainer(prisma: PrismaClient): Container {
 
   const auth = new AuthService(usuarios, participantes, hasher, tokens);
   const friends = new FriendsService(amistades, usuarios);
+  const friendProfile = new FriendProfileService(
+    amistades,
+    usuarios,
+    disponibilidadPerfil,
+    grupos,
+    participantes,
+    eventos,
+  );
   const users = new UsersService(usuarios);
   const aiEvents = new AiEventsService(eventGenerator, amistades);
   const profileAvailability = new ProfileAvailabilityService(disponibilidadPerfil, amistades);
@@ -172,6 +182,7 @@ export function createContainer(prisma: PrismaClient): Container {
     },
     auth,
     friends,
+    friendProfile,
     users,
     notifications,
     aiEvents,

@@ -6,7 +6,7 @@ import '../../../core/network/api_client.dart';
 
 /// Una persona (amiga o resultado de búsqueda). id = usuarioId.
 class Persona {
-  const Persona({required this.id, required this.username, this.email});
+  const Persona({required this.id, required this.username, this.email, this.avatarUrl});
   final String id;
   final String username;
   /// El username ya es único, pero el email se sigue mostrando en gris
@@ -14,11 +14,102 @@ class Persona {
   /// persona sin acordarse el username exacto — en búsqueda, en la lista
   /// de amigos y en solicitudes pendientes por igual.
   final String? email;
+  /// Item 4 — solo viaja en el perfil de amigo (`GET /friends/:id/profile`);
+  /// las demás listas de amigos no lo necesitan.
+  final String? avatarUrl;
 
   factory Persona.fromJson(Map<String, dynamic> json) => Persona(
         id: json['id'] as String,
         username: json['username'] as String? ?? '',
         email: json['email'] as String?,
+        avatarUrl: json['avatarUrl'] as String?,
+      );
+}
+
+/// Item 4 — un bloque de la disponibilidad semanal comparada con un amigo.
+enum EstadoSlotComparado { ambos, soloYo, soloAmigo }
+
+class SlotComparado {
+  const SlotComparado(this.diaSemana, this.bloqueHora, this.estado);
+  final int diaSemana;
+  final int bloqueHora;
+  final EstadoSlotComparado estado;
+
+  factory SlotComparado.fromJson(Map<String, dynamic> json) => SlotComparado(
+        json['diaSemana'] as int,
+        json['bloqueHora'] as int,
+        switch (json['estado'] as String?) {
+          'ambos' => EstadoSlotComparado.ambos,
+          'soloYo' => EstadoSlotComparado.soloYo,
+          _ => EstadoSlotComparado.soloAmigo,
+        },
+      );
+}
+
+/// Item 4 — evento donde tanto yo como el amigo somos participantes.
+class EventoCompartido {
+  const EventoCompartido({
+    required this.id,
+    required this.nombre,
+    required this.lugarTexto,
+    required this.estado,
+    this.fechaHoraInicio,
+  });
+  final String id;
+  final String nombre;
+  final String lugarTexto;
+  final String estado;
+  final DateTime? fechaHoraInicio;
+
+  factory EventoCompartido.fromJson(Map<String, dynamic> json) => EventoCompartido(
+        id: json['id'] as String,
+        nombre: json['nombre'] as String? ?? '',
+        lugarTexto: json['lugarTexto'] as String? ?? '',
+        estado: json['estado'] as String? ?? 'planificacion',
+        fechaHoraInicio: json['fechaHoraInicio'] != null
+            ? DateTime.tryParse(json['fechaHoraInicio'] as String)
+            : null,
+      );
+}
+
+/// Item 4 — grupo donde tanto yo como el amigo somos miembros.
+class GrupoCompartido {
+  const GrupoCompartido({required this.id, required this.nombre, this.avatarUrl});
+  final String id;
+  final String nombre;
+  final String? avatarUrl;
+
+  factory GrupoCompartido.fromJson(Map<String, dynamic> json) => GrupoCompartido(
+        id: json['id'] as String,
+        nombre: json['nombre'] as String? ?? '',
+        avatarUrl: json['avatarUrl'] as String?,
+      );
+}
+
+/// Item 4 — perfil de solo lectura de un amigo.
+class PerfilAmigo {
+  const PerfilAmigo({
+    required this.persona,
+    required this.heatmapComparado,
+    required this.eventosEnComun,
+    required this.gruposEnComun,
+  });
+  final Persona persona;
+  final List<SlotComparado> heatmapComparado;
+  final List<EventoCompartido> eventosEnComun;
+  final List<GrupoCompartido> gruposEnComun;
+
+  factory PerfilAmigo.fromJson(Map<String, dynamic> json) => PerfilAmigo(
+        persona: Persona.fromJson(json['persona'] as Map<String, dynamic>),
+        heatmapComparado: ((json['heatmapComparado'] as List<dynamic>?) ?? [])
+            .map((s) => SlotComparado.fromJson(s as Map<String, dynamic>))
+            .toList(),
+        eventosEnComun: ((json['eventosEnComun'] as List<dynamic>?) ?? [])
+            .map((e) => EventoCompartido.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        gruposEnComun: ((json['gruposEnComun'] as List<dynamic>?) ?? [])
+            .map((g) => GrupoCompartido.fromJson(g as Map<String, dynamic>))
+            .toList(),
       );
 }
 
@@ -41,6 +132,10 @@ abstract interface class FriendsRepository {
   Future<List<SolicitudAmistad>> solicitudesPendientes();
   Future<void> enviarSolicitud(String usuarioId);
   Future<void> aceptar(String amistadId);
+
+  /// Item 4 — perfil de solo lectura de un amigo (disponibilidad comparada
+  /// + eventos/grupos en común).
+  Future<PerfilAmigo> perfilDe(String usuarioId);
 }
 
 class FriendsRepositoryHttp implements FriendsRepository {
@@ -82,6 +177,12 @@ class FriendsRepositoryHttp implements FriendsRepository {
   @override
   Future<void> aceptar(String amistadId) => ejecutar(() async {
         await _dio.post<void>('/friends/$amistadId/accept');
+      });
+
+  @override
+  Future<PerfilAmigo> perfilDe(String usuarioId) => ejecutar(() async {
+        final res = await _dio.get<Map<String, dynamic>>('/friends/$usuarioId/profile');
+        return PerfilAmigo.fromJson(res.data ?? {});
       });
 }
 

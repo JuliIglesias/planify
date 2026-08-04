@@ -383,12 +383,27 @@ class FakeFriendsRepository implements FriendsRepository {
     this.resultadosBusqueda = const [],
     this.amigos = const [],
     this.solicitudes = const [],
-  });
+    PerfilAmigo? perfil,
+  }) : perfil = perfil ?? perfilDeEjemplo();
 
   List<Persona> resultadosBusqueda;
   List<Persona> amigos;
   List<SolicitudAmistad> solicitudes;
+  PerfilAmigo perfil;
   final List<String> llamadas = [];
+
+  static PerfilAmigo perfilDeEjemplo({
+    Persona persona = const Persona(id: 'u2', username: 'Sofía', email: 'sofia@mail.com'),
+    List<SlotComparado> heatmapComparado = const [],
+    List<EventoCompartido> eventosEnComun = const [],
+    List<GrupoCompartido> gruposEnComun = const [],
+  }) =>
+      PerfilAmigo(
+        persona: persona,
+        heatmapComparado: heatmapComparado,
+        eventosEnComun: eventosEnComun,
+        gruposEnComun: gruposEnComun,
+      );
 
   @override
   Future<List<Persona>> buscar(String query) async {
@@ -410,5 +425,11 @@ class FakeFriendsRepository implements FriendsRepository {
   @override
   Future<void> aceptar(String amistadId) async {
     llamadas.add('aceptar:$amistadId');
+  }
+
+  @override
+  Future<PerfilAmigo> perfilDe(String usuarioId) async {
+    llamadas.add('perfilDe:$usuarioId');
+    return perfil;
   }
 }

@@ -602,6 +602,35 @@ class AppLocalizationsEs extends AppLocalizations {
   String get friendsNoResults => 'Sin resultados';
 
   @override
+  String get friendProfileAvailability => 'Disponibilidad comparada';
+
+  @override
+  String get friendProfileLegendBoth => 'Coincidimos';
+
+  @override
+  String get friendProfileLegendMeOnly => 'Solo vos';
+
+  @override
+  String friendProfileLegendFriendOnly(String username) {
+    return 'Solo $username';
+  }
+
+  @override
+  String get friendProfileLegendNeither => 'Ninguno libre';
+
+  @override
+  String get friendProfileEventsInCommon => 'Eventos en común';
+
+  @override
+  String get friendProfileNoEvents => 'No comparten eventos todavía';
+
+  @override
+  String get friendProfileGroupsInCommon => 'Grupos en común';
+
+  @override
+  String get friendProfileNoGroups => 'No comparten grupos todavía';
+
+  @override
   String get profileEdit => 'Editar perfil';
 
   @override

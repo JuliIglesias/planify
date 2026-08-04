@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/avatar_stack.dart';
 import '../../core/widgets/status_badge.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -46,7 +47,7 @@ class _DetallePersonaSheetState extends ConsumerState<_DetallePersonaSheet> {
 
     final confirmado = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => AppDialog(
         title: Text(l10n.balancesSettleAll),
         content: Text(
           detalle.deudas.length > 1

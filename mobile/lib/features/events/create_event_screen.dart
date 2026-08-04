@@ -6,6 +6,7 @@ import 'data/events_repository.dart';
 import 'data/tasks_repository.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../friends/data/friends_repository.dart';
@@ -100,7 +101,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     final ctrl = TextEditingController();
     final descripcion = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => AppDialog(
         title: Text(l10n.eventAiTitle),
         content: AppTextField(
           controller: ctrl,
@@ -225,7 +226,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     final ctrl = TextEditingController();
     final res = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => AppDialog(
         title: Text(l10n.eventSavePlace),
         content: AppTextField(
           controller: ctrl,

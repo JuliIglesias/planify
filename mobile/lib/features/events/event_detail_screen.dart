@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/event_card.dart';
 import '../../core/widgets/quick_action_button.dart';
@@ -198,7 +199,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
       await showDialog<void>(
         context: context,
-        builder: (ctx) => AlertDialog(
+        builder: (ctx) => AppDialog(
           title: Text(l10n.eventDetailInviteTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -256,7 +257,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
     final confirmado = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => AppDialog(
         title: Text(l10n.eventDetailCancelEvent),
         content: Text(l10n.eventDetailCancelConfirm),
         actions: [

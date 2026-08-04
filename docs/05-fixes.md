@@ -734,3 +734,14 @@ introducir un color nuevo que rompiera la paleta ya definida.
 
 **Validación:**
 - `flutter analyze` 100% limpio en los archivos modificados.
+
+## Item 3 — Consistencia en Modales (UI/UX)
+
+**Causa raíz:** los modales (`AlertDialog`) nativos tienen márgenes distintos dependiendo del dispositivo y a veces no ocupaban el ancho esperado, rompiendo la consistencia visual, especialmente en pantallas chicas donde se sentían "apretados".
+
+**Fix:**
+- Se usó el componente `AppDialog` ya creado en `core/widgets/app_dialog.dart`, el cual envuelve a `AlertDialog` forzando un `insetPadding` horizontal de 16px para ocupar el máximo ancho posible.
+- Se reemplazaron todas las llamadas a `AlertDialog` crudas por `AppDialog` a lo largo de la app (`login_screen.dart`, `person_detail_sheet.dart`, `create_event_screen.dart`, `event_detail_screen.dart`, `expense_dialog.dart`, `task_dialogs.dart`, `group_manage_sheet.dart`).
+
+**Validación:**
+- `flutter analyze` limpio y consistencia visual garantizada por el componente centralizado.

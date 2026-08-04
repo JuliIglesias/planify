@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../friends/friend_picker.dart';
@@ -133,7 +134,7 @@ class _GestionGrupoSheetState extends ConsumerState<_GestionGrupoSheet> {
               onTap: () async {
                 final confirmado = await showDialog<bool>(
                   context: context,
-                  builder: (ctx) => AlertDialog(
+                  builder: (ctx) => AppDialog(
                     title: Text(l10n.groupsLeave),
                     content: Text(l10n.groupsLeaveConfirm),
                     actions: [
@@ -179,7 +180,7 @@ Future<String?> _pedirTexto(
 
   final resultado = await showDialog<String>(
     context: context,
-    builder: (ctx) => AlertDialog(
+    builder: (ctx) => AppDialog(
       title: Text(titulo),
       content: AppTextField(
         controller: ctrl,

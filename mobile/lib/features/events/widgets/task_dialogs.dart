@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/app_dialog.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
@@ -53,7 +54,7 @@ class _TaskTitleDialogState extends State<_TaskTitleDialog> {
   Widget build(BuildContext context) {
     final l10n = widget.l10n;
 
-    return AlertDialog(
+    return AppDialog(
       title: Text(l10n.eventDetailAddTask),
       content: AppTextField(
         controller: _ctrl,

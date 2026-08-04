@@ -8,6 +8,7 @@ import 'package:planify/features/events/data/expenses_repository.dart';
 import 'package:planify/features/events/data/tasks_repository.dart';
 import 'package:planify/features/friends/data/friends_repository.dart';
 import 'package:planify/features/groups/data/groups_repository.dart';
+import 'package:planify/features/profile/data/profile_repository.dart';
 
 /// Repositorios falsos para los tests de pantalla.
 ///
@@ -268,16 +269,31 @@ class FakeExpensesRepository implements ExpensesRepository {
 
 
 class FakeActivityLogRepository implements ActivityLogRepository {
-  FakeActivityLogRepository({this.entradas = const [], this.recientesEntradas = const []});
+  FakeActivityLogRepository({
+    this.entradas = const [],
+    this.recientesEntradas = const [],
+    this.pageSize = 20,
+  });
 
   List<ActividadLog> entradas;
   List<ActividadLog> recientesEntradas;
+  final int pageSize;
+
+  /// Tanda 6, Item 2 — cada cursor pedido, para verificar la paginación.
+  final List<DateTime?> llamadasRecientes = [];
 
   @override
   Future<List<ActividadLog>> listar(String eventoId) async => entradas;
 
   @override
-  Future<List<ActividadLog>> recientes() async => recientesEntradas;
+  Future<List<ActividadLog>> recientes({DateTime? before}) async {
+    llamadasRecientes.add(before);
+    final ordenadas = [...recientesEntradas]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final filtradas =
+        before == null ? ordenadas : ordenadas.where((e) => e.createdAt.isBefore(before)).toList();
+    return filtradas.take(pageSize).toList();
+  }
 
   @override
   Future<Map<String, int>> noLeidas() async => const {};
@@ -361,9 +377,26 @@ class FakeGroupsRepository implements GroupsRepository {
   Future<void> actualizar({
     required String grupoId,
     String? nombre,
-    String? avatarUrl,
   }) async {
     llamadas.add('actualizar:$grupoId:$nombre');
+  }
+
+  @override
+  Future<void> subirImagen({
+    required String grupoId,
+    required List<int> bytes,
+    required String nombreArchivo,
+  }) async {
+    llamadas.add('subirImagen:$grupoId:$nombreArchivo');
+  }
+
+  DisponibilidadDeGrupo disponibilidad =
+      const DisponibilidadDeGrupo(totalPersonas: 0, slots: []);
+
+  @override
+  Future<DisponibilidadDeGrupo> disponibilidadDeGrupo(String grupoId) async {
+    llamadas.add('disponibilidadDeGrupo:$grupoId');
+    return disponibilidad;
   }
 
   @override
@@ -376,6 +409,41 @@ class FakeGroupsRepository implements GroupsRepository {
 
   @override
   Future<void> abandonar(String grupoId) async => llamadas.add('abandonar:$grupoId');
+}
+
+/// Tanda 6, Item 5 — ya no expone coincidencias con "todos los amigos" (eso
+/// se eliminó de Perfil); solo la disponibilidad semanal individual y
+/// ubicaciones favoritas.
+class FakeProfileRepository implements ProfileRepository {
+  FakeProfileRepository({List<SlotSimple>? slots}) : slots = slots ?? const [];
+
+  List<SlotSimple> slots;
+  final List<UbicacionFavorita> ubicaciones = [];
+  final List<String> llamadas = [];
+
+  @override
+  Future<List<SlotSimple>> obtenerDisponibilidad() async => slots;
+
+  @override
+  Future<void> guardarDisponibilidad(List<SlotSimple> nuevos) async {
+    slots = nuevos;
+    llamadas.add('guardarDisponibilidad:${nuevos.length}');
+  }
+
+  @override
+  Future<List<UbicacionFavorita>> listarUbicaciones() async => ubicaciones;
+
+  @override
+  Future<UbicacionFavorita> crearUbicacion(String etiqueta, String texto) async {
+    final u = UbicacionFavorita(id: 'ubi-${ubicaciones.length + 1}', etiqueta: etiqueta, texto: texto);
+    ubicaciones.add(u);
+    return u;
+  }
+
+  @override
+  Future<void> eliminarUbicacion(String id) async {
+    ubicaciones.removeWhere((u) => u.id == id);
+  }
 }
 
 class FakeFriendsRepository implements FriendsRepository {

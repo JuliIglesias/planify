@@ -51,24 +51,97 @@ class HistoryScreen extends ConsumerWidget {
 
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
+            // Item 3 (Tanda 6) — cada mes es un tramo de la línea de tiempo:
+            // el punto de "_TimelineRail" queda a la altura de su propio
+            // encabezado, y la barra vertical se extiende exactamente hasta
+            // el final de las cards de ESE mes (IntrinsicHeight). Como los
+            // tramos van pegados uno debajo del otro, la barra se ve
+            // continua a lo largo de toda la lista.
             children: [
-              for (final entry in porMes.entries) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  child: Text(
-                    entry.key.toUpperCase(),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.6,
-                        ),
+              for (final entry in porMes.entries)
+                _TimelineRail(
+                  mes: entry.key,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final evento in entry.value) _HistorialCard(evento: evento),
+                    ],
                   ),
                 ),
-                for (final evento in entry.value) _HistorialCard(evento: evento),
-              ],
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Item 3 (Tanda 6) — guía visual de la línea de tiempo: un punto por mes
+/// sobre una barra vertical continua, para agrupar los eventos del
+/// historial de un vistazo (antes era una lista plana sin esa jerarquía).
+class _TimelineRail extends StatelessWidget {
+  const _TimelineRail({required this.mes, required this.child});
+
+  final String mes;
+  final Widget child;
+
+  static const _diametroPunto = 14.0;
+  static const _anchoBarra = 2.0;
+  static const _anchoRiel = 24.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: _anchoRiel,
+            child: Column(
+              children: [
+                // Centrado con la línea base del encabezado del mes.
+                const SizedBox(height: 6),
+                Container(
+                  width: _diametroPunto,
+                  height: _diametroPunto,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary,
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Container(width: _anchoBarra, color: AppColors.border),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: Text(
+                    mes.toUpperCase(),
+                    // Item 3 — antes labelSmall (11sp): muy chico para el
+                    // encabezado principal de cada grupo. titleMedium/bold
+                    // es la misma jerarquía que usan los encabezados de
+                    // sección de Home ("Próximos eventos", "Actividad
+                    // reciente"), por docs/guidelines.
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                child,
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

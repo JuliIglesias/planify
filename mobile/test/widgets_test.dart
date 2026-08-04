@@ -33,6 +33,28 @@ void main() {
       await tester.pumpWidget(_wrap(const AvatarStack(nombres: [])));
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+        'el contenedor deja lugar al borde de cada avatar y no lo recorta '
+        '(Item 3, Tanda 6)', (tester) async {
+      const radius = 14.0;
+      await tester.pumpWidget(
+        _wrap(const AvatarStack(nombres: ['Ana', 'Beto'], radius: radius)),
+      );
+
+      // Antes medía exactamente `radius * 2`: no dejaba lugar al borde
+      // blanco de 2px que dibuja cada avatar, y el Stack (que recorta por
+      // default) se lo comía arriba y abajo.
+      final sizedBox = tester.widget<SizedBox>(
+        find.descendant(of: find.byType(AvatarStack), matching: find.byType(SizedBox)).first,
+      );
+      expect(sizedBox.height, greaterThan(radius * 2));
+
+      final stack = tester.widget<Stack>(
+        find.descendant(of: find.byType(AvatarStack), matching: find.byType(Stack)),
+      );
+      expect(stack.clipBehavior, Clip.none);
+    });
   });
 
   group('EventCard', () {

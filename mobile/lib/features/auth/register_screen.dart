@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_text_field.dart';
+import '../../core/widgets/auth_scaffold.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'session_controller.dart';
 
@@ -51,63 +51,64 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final l10n = AppLocalizations.of(context)!;
     final cargando = ref.watch(sessionControllerProvider).isLoading;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.registerTitle), backgroundColor: AppColors.surface),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            children: [
-              AppTextField(
-                controller: _username,
-                enabled: !cargando,
-                decoration: InputDecoration(
-                  labelText: l10n.registerName,
-                  prefixIcon: const Icon(Icons.person_outline),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              AppTextField(
-                variant: AppTextFieldVariant.email,
-                controller: _email,
-                enabled: !cargando,
-                decoration: InputDecoration(
-                  labelText: l10n.registerEmail,
-                  prefixIcon: const Icon(Icons.mail_outline),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              AppTextField(
-                variant: AppTextFieldVariant.password,
-                controller: _password,
-                enabled: !cargando,
-                onSubmitted: (_) => _registrar(),
-                decoration: InputDecoration(
-                  labelText: l10n.registerPassword,
-                  prefixIcon: const Icon(Icons.lock_outline),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: cargando ? null : _registrar,
-                  child: cargando
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : Text(l10n.registerSubmit),
-                ),
-              ),
-              TextButton(
-                onPressed: cargando ? null : () => Navigator.of(context).pop(),
-                child: Text(l10n.registerHaveAccount),
-              ),
-            ],
+    return AuthScaffold(
+      showBackButton: true,
+      card: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            l10n.registerTitle,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
-        ),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(
+            controller: _username,
+            enabled: !cargando,
+            decoration: InputDecoration(
+              labelText: l10n.registerName,
+              prefixIcon: const Icon(Icons.person_outline),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          AppTextField(
+            variant: AppTextFieldVariant.email,
+            controller: _email,
+            enabled: !cargando,
+            decoration: InputDecoration(
+              labelText: l10n.registerEmail,
+              prefixIcon: const Icon(Icons.mail_outline),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          AppTextField(
+            variant: AppTextFieldVariant.password,
+            controller: _password,
+            enabled: !cargando,
+            onSubmitted: (_) => _registrar(),
+            decoration: InputDecoration(
+              labelText: l10n.registerPassword,
+              prefixIcon: const Icon(Icons.lock_outline),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: cargando ? null : _registrar,
+              child: cargando
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(l10n.registerSubmit),
+            ),
+          ),
+        ],
+      ),
+      footer: TextButton(
+        onPressed: cargando ? null : () => Navigator.of(context).pop(),
+        child: Text(l10n.registerHaveAccount),
       ),
     );
   }

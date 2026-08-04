@@ -20,12 +20,19 @@ export interface LogActividadRepository {
   listByEvento(eventoId: string): Promise<EntradaLog[]>;
 
   /**
-   * Actividad reciente de todos los eventos del usuario, para el feed de Home.
-   * Incluye el nombre del evento porque en Home no hay contexto de cuál es.
+   * Actividad reciente de todos los eventos del usuario, para el feed de Home
+   * y la pantalla de Notificaciones (Tanda 6, Item 2 — paginada de a
+   * [limite] por vez). Incluye el nombre del evento porque en Home/
+   * Notificaciones no hay contexto de cuál es.
+   *
+   * [before] es el cursor: si viene, trae solo entradas estrictamente más
+   * viejas que esa fecha (la `createdAt` de la última entrada de la página
+   * anterior). Sin [before], trae la primera página.
    */
   listRecientesPorEventos(
     eventoIds: string[],
     limite: number,
+    before?: Date,
   ): Promise<EntradaLogConEvento[]>;
 
   /**

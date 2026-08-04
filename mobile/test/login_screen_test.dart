@@ -154,4 +154,16 @@ void main() {
 
     expect(find.text(l10n.loginError), findsOneWidget);
   });
+
+  testWidgets('Item 6 (Tanda 6) — card flotante con logo/tagline arriba, sin AppBar',
+      (tester) async {
+    await tester.pumpWidget(appDePrueba(const LoginScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.appName), findsOneWidget);
+    expect(find.text(l10n.appTagline), findsOneWidget);
+    expect(find.byType(AppBar), findsNothing);
+    // Es la pantalla raíz: no hay a dónde volver.
+    expect(find.byType(BackButton), findsNothing);
+  });
 }

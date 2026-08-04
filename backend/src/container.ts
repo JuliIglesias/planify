@@ -21,6 +21,7 @@ import { PrismaDeudaRepository } from './infrastructure/prisma/deuda.prisma.repo
 import { PrismaLogActividadRepository } from './infrastructure/prisma/log-actividad.prisma.repository';
 import { PrismaProfileAvailabilityRepository } from './infrastructure/prisma/profile-availability.prisma.repository';
 import { PrismaLocationRepository } from './infrastructure/prisma/location.prisma.repository';
+import { S3ImageStorageRepository } from './infrastructure/aws/s3-image-storage.repository';
 
 import { ActivityLogService } from './modules/activity-log/activity-log.service';
 import { AuthService } from './modules/auth/auth.service';
@@ -114,6 +115,19 @@ export function createContainer(prisma: PrismaClient): Container {
   const push = new ConsolePushNotifier();
   const deviceRegistry = new InMemoryDeviceRegistry();
 
+  // ── Almacenamiento de imágenes (Tanda 6, Item 5) ─────────────────────────
+  // Mismo cliente S3 para AWS real y para LocalStack en desarrollo: solo
+  // cambia el endpoint (AWS_S3_ENDPOINT vacío en prod, LocalStack en local).
+  const imagenes = new S3ImageStorageRepository({
+    bucket: process.env.AWS_S3_BUCKET ?? 'planify-dev',
+    region: process.env.AWS_REGION ?? 'us-east-1',
+    endpoint: process.env.AWS_S3_ENDPOINT || undefined,
+    forcePathStyle: process.env.AWS_S3_FORCE_PATH_STYLE === 'true',
+    publicBaseUrl: process.env.AWS_S3_PUBLIC_BASE_URL || undefined,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || undefined,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || undefined,
+  });
+
   // ── Servicios de negocio ────────────────────────────────────────────────
   const notifications = new NotificationsService(participantes, deviceRegistry, push);
   const activityLog = new ActivityLogService(logs, participantes, clock, notifications);
@@ -137,7 +151,7 @@ export function createContainer(prisma: PrismaClient): Container {
   );
   const users = new UsersService(usuarios);
   const aiEvents = new AiEventsService(eventGenerator, amistades);
-  const profileAvailability = new ProfileAvailabilityService(disponibilidadPerfil, amistades);
+  const profileAvailability = new ProfileAvailabilityService(disponibilidadPerfil);
   const locations = new LocationsService(ubicaciones);
   const participants = new ParticipantsService(participantes, usuarios, eventos, ids, activityLog);
   const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
@@ -154,6 +168,8 @@ export function createContainer(prisma: PrismaClient): Container {
     clock,
     participantes,
     invitations,
+    disponibilidadPerfil,
+    imagenes,
   );
   const tasks = new TasksService(tareas, eventos, participantes, activityLog);
   const debts = new DebtsService(

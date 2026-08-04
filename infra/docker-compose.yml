@@ -1,11 +1,12 @@
-# Réplica local del ambiente de AWS (EC2 + RDS) — ver docs/01-plan-de-ejecucion.md §2
-# y docs/02-decisiones.md (Duda #8 revisada).
+# Réplica local del ambiente de AWS (EC2 + RDS + S3) — ver docs/01-plan-de-ejecucion.md §2,
+# docs/02-decisiones.md (Duda #8 revisada) y docs/05-fixes.md (Tanda 6, Item 5).
 #
 # `docker compose -f infra/docker-compose.yml up --build` deja todo listo:
 #  1. postgres arranca y queda "healthy"
-#  2. migrate aplica la migración y carga el usuario organizador semilla (H-07)
-#  3. backend arranca recién cuando migrate terminó OK
-#  4. proxy (Caddy) termina TLS delante del backend (NFR#7, H-03)
+#  2. localstack arranca y crea el bucket S3 de desarrollo (homónimo del bucket real de AWS)
+#  3. migrate aplica la migración y carga el usuario organizador semilla (H-07)
+#  4. backend arranca recién cuando migrate terminó OK
+#  5. proxy (Caddy) termina TLS delante del backend (NFR#7, H-03)
 
 services:
   postgres:
@@ -24,6 +25,26 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # Item 5 (Tanda 6) — "homónimo" local del bucket S3 de AWS: mismo cliente
+  # S3 del backend, apuntado acá en vez de al S3 real (AWS_S3_ENDPOINT).
+  # El script en localstack-init crea el bucket apenas el servicio queda listo.
+  localstack:
+    image: localstack/localstack:3
+    restart: unless-stopped
+    environment:
+      SERVICES: s3
+      DEFAULT_REGION: us-east-1
+    ports:
+      - "4566:4566"
+    volumes:
+      - ./localstack-init:/etc/localstack/init/ready.d:ro
+      - localstack_data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD", "awslocal", "s3", "ls"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   # One-shot: aplica migraciones y siembra el organizador. Usa el stage `build`
   # de la imagen porque ahí están el CLI de Prisma, ts-node y el código fuente
@@ -51,12 +72,23 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      localstack:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://planify:planify@postgres:5432/planify?schema=public
       PORT: 3000
       NODE_ENV: production
       # En AWS este secreto viene del entorno, no hardcodeado.
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      # Item 5 (Tanda 6) — acá apunta a LocalStack (nombre del servicio en la
+      # red de docker-compose); en AWS real, AWS_S3_ENDPOINT queda vacío y se
+      # usan credenciales reales (o el rol de IAM del EC2).
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-planify-dev}
+      AWS_S3_ENDPOINT: ${AWS_S3_ENDPOINT:-http://localstack:4566}
+      AWS_S3_FORCE_PATH_STYLE: ${AWS_S3_FORCE_PATH_STYLE:-true}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
     ports:
       - "3000:3000"
 
@@ -81,5 +113,6 @@ services:
 
 volumes:
   planify_postgres_data:
+  localstack_data:
   caddy_data:
   caddy_config:

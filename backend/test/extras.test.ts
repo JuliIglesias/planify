@@ -1,26 +1,23 @@
 /**
- * H-14 (disponibilidad de perfil), HU-B4 (coincidencias entre amigos),
- * HU-B5 (ubicaciones favoritas).
+ * H-14 (disponibilidad de perfil), HU-B5 (ubicaciones favoritas).
+ *
+ * La vieja HU-B4 (coincidencias con TODOS los amigos) se eliminó en la
+ * Tanda 6, Item 5: el heatmap agregado ahora vive scopeado a un grupo
+ * puntual (`GroupsService.disponibilidadDeGrupo`), con sus propios tests en
+ * `tasks-groups.service.test.ts`.
  */
 import { ProfileAvailabilityService } from '../src/modules/profile/profile-availability.service';
 import { LocationsService } from '../src/modules/profile/locations.service';
-import {
-  FakeAmistadRepository,
-  FakeLocationRepository,
-  FakeProfileAvailabilityRepository,
-  FakeUsuarioRepository,
-} from './fakes';
+import { FakeLocationRepository, FakeProfileAvailabilityRepository, FakeUsuarioRepository } from './fakes';
 
 function armar() {
   const usuarios = new FakeUsuarioRepository();
-  const amistades = new FakeAmistadRepository(usuarios);
   const disponibilidadPerfil = new FakeProfileAvailabilityRepository();
   const ubicaciones = new FakeLocationRepository();
   return {
-    availability: new ProfileAvailabilityService(disponibilidadPerfil, amistades),
+    availability: new ProfileAvailabilityService(disponibilidadPerfil),
     locations: new LocationsService(ubicaciones),
     usuarios,
-    amistades,
   };
 }
 
@@ -46,31 +43,6 @@ describe('H-14 — disponibilidad de perfil persistida', () => {
     await expect(availability.guardar(ana.id, [{ diaSemana: 0, bloqueHora: 99 }])).rejects.toThrow(
       /bloqueHora/,
     );
-  });
-});
-
-describe('HU-B4 — coincidencias de disponibilidad entre amigos', () => {
-  it('cuenta en cada bloque a cuántos (usuario + amigos) les queda libre', async () => {
-    const { availability, usuarios, amistades } = armar();
-    const ana = usuarios.agregar({ username: 'Ana' });
-    const bruno = usuarios.agregar({ username: 'Bruno' });
-    const carla = usuarios.agregar({ username: 'Carla' });
-
-    // Ana y Bruno amigos; Ana y Carla amigos; Carla NO comparte bloque.
-    amistades.amistades.push(
-      { id: 'a1', usuarioId1: ana.id, usuarioId2: bruno.id, estado: 'aceptada', createdAt: new Date() },
-      { id: 'a2', usuarioId1: ana.id, usuarioId2: carla.id, estado: 'aceptada', createdAt: new Date() },
-    );
-
-    await availability.guardar(ana.id, [{ diaSemana: 0, bloqueHora: 20 }]);
-    await availability.guardar(bruno.id, [{ diaSemana: 0, bloqueHora: 20 }]);
-    await availability.guardar(carla.id, [{ diaSemana: 3, bloqueHora: 10 }]);
-
-    const res = await availability.coincidenciasConAmigos(ana.id);
-    expect(res.totalPersonas).toBe(3); // Ana + 2 amigos
-
-    const bloque = res.slots.find((s) => s.diaSemana === 0 && s.bloqueHora === 20);
-    expect(bloque?.disponibles).toBe(2); // Ana y Bruno
   });
 });
 

@@ -174,6 +174,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get balancesYouOwe => 'Le debés';
 
   @override
+  String get expensesPickEventTitle => '¿A qué evento pertenece?';
+
+  @override
+  String get expensesNoEventsToPick =>
+      'Todavía no tenés eventos activos para agregarle un gasto';
+
+  @override
   String get profileTitle => 'Perfil';
 
   @override
@@ -187,7 +194,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileHistory => 'Historial de eventos';
 
   @override
+  String get profileNotifications => 'Notificaciones';
+
+  @override
   String get profileLogout => 'Cerrar sesión';
+
+  @override
+  String get notificationsTitle => 'Notificaciones';
+
+  @override
+  String get notificationsTabAll => 'Todo';
+
+  @override
+  String get notificationsTabEvents => 'Eventos';
+
+  @override
+  String get notificationsTabExpenses => 'Gastos';
+
+  @override
+  String get notificationsToday => 'HOY';
+
+  @override
+  String get notificationsYesterday => 'AYER';
+
+  @override
+  String get notificationsEmpty => 'No tenés notificaciones todavía';
 
   @override
   String get historyTitle => 'Historial de eventos';
@@ -286,12 +317,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventPlaceLabelHint => 'Etiqueta (ej. Casa de Juli)';
 
   @override
-  String get friendMatchesTitle => 'Coincidencias con amigos';
+  String get groupAvailabilityTitle => 'Disponibilidad del grupo';
 
   @override
-  String friendMatchesHint(int count) {
-    return 'Bloques donde vos y tus amigos ($count) coinciden. Más intenso = más gente libre.';
+  String groupAvailabilityHint(int count) {
+    return 'Bloques donde los miembros de este grupo ($count) coinciden. Más intenso = más gente libre.';
   }
+
+  @override
+  String get groupsSeeAvailability => 'Ver disponibilidad del grupo';
 
   @override
   String get eventConfigTitle => 'Configuración del evento';
@@ -545,9 +579,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get groupsUpdateImage => 'Cambiar imagen';
-
-  @override
-  String get groupsImageUrl => 'URL de la imagen';
 
   @override
   String get groupsAddMember => 'Agregar amigo';

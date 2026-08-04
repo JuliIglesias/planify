@@ -1,3 +1,232 @@
+# Tanda 6 - Rediseño de navegación y limpieza de features
+
+## Item 3: Historial de eventos — línea de tiempo y bug de avatares
+
+**Causa del recorte de avatares:** `AvatarStack` medía su `SizedBox` exactamente
+`radius * 2` — el diámetro puro del `CircleAvatar`, sin dejar lugar al borde
+blanco de 2px que dibuja cada avatar por encima (`Border.all` en `_Avatar`).
+Como `Stack` recorta por default (`Clip.hardEdge`), el borde de arriba y de
+abajo de cada avatar quedaba cortado.
+
+- **`core/widgets/avatar_stack.dart`:** el `SizedBox` ahora mide
+  `radius * 2 + borde * 2` (alto y ancho), y el `Stack` pasa a
+  `clipBehavior: Clip.none` — no hay nada que este stack decorativo necesite
+  ocultar, así que sacar el recorte de raíz es más robusto que ajustar solo
+  el número.
+- **`history_screen.dart` — línea de tiempo:** nuevo widget interno
+  `_TimelineRail` — un punto (`AppColors.primary`) a la altura del
+  encabezado de cada mes, con una barra vertical (`AppColors.border`) que
+  ocupa exactamente la altura de las cards de ESE mes vía `IntrinsicHeight`.
+  Como los tramos van uno debajo del otro sin espacio entre sí, la barra se
+  ve continua a lo largo de toda la lista, agrupando visualmente por mes tal
+  como pide la referencia.
+- **Jerarquía tipográfica:** el encabezado de mes usaba `labelSmall` (11sp,
+  por docs/guidelines) — demasiado chico para ser el título de cada grupo,
+  sobre todo ahora que ancla la línea de tiempo. Pasa a `titleMedium` bold
+  en `AppColors.primary`, la misma jerarquía que ya usan los encabezados de
+  sección de Home ("Próximos eventos", "Actividad reciente"). El resto de la
+  vista (título/subtítulo de cada card) es `EventCard`, compartido con Home
+  y Groups, así que no se tocó para no afectar esas pantallas fuera de
+  alcance de este item.
+- **Tests:** `widgets_test.dart` — el contenedor de `AvatarStack` ahora mide
+  más que `radius * 2` y su `Stack` no recorta. `screens_test.dart` — un
+  `IntrinsicHeight` (tramo de línea de tiempo) por mes distinto, y el
+  encabezado de mes con tamaño/peso mayores a los de antes.
+
+## Item 1: Navbar — estilos, textos siempre visibles y bug de layout
+
+**Causa raíz del corte (confirmada antes de tocar CSS):** no era un ancho
+fijo hardcodeado. `AppBottomNav` armaba un `Row` con
+`mainAxisAlignment.spaceEvenly` cuyos 4 `_NavItem` NO eran flexibles: cada uno
+se dimensionaba por su contenido intrínseco (ícono + padding, y el texto solo
+aparecía si estaba seleccionado). Con el texto oculto la mayoría del tiempo,
+el ancho combinado entraba de casualidad; apenas el texto pasa a estar
+siempre visible (este mismo item), el ancho combinado de los 4 ítems supera
+el ancho disponible y Flutter overflowea el `Row` sin wrappear ni encoger
+nada — se ve como la barra cortada, sin poder hacer scroll para verla
+completa. Se agregó un test (`app_bottom_nav_test.dart`) que renderiza la
+navbar en una pantalla de 320px de ancho y falla si hay una excepción de
+layout, para que esta regresión no vuelva.
+
+- **`mobile/lib/core/widgets/app_scaffold.dart` (`AppBottomNav`):**
+  - Se sacó el `BackdropFilter`/blur (glassmorphism): ahora es un contenedor
+    con `AppColors.surface.withValues(alpha: 0.92)` — blanco fijo, translúcido
+    pero sin desenfoque.
+  - Cada `_NavItem` ahora va envuelto en `Expanded` (el fix del bug) y es una
+    `Column` (ícono arriba, texto siempre debajo, antes era un `Row` que solo
+    mostraba el texto si estaba seleccionado).
+  - Colores: ítems no seleccionados usan el nuevo token `AppColors.inactiveBlue`
+    ("celestito"), el seleccionado usa `AppColors.primary`.
+  - El ítem seleccionado tiene un "pill" de fondo blanco (`AppColors.surface`,
+    opaco) con una sombra sutil para diferenciarse del contenedor
+    translúcido de fondo.
+- **`AppColors.inactiveBlue`** (`core/theme/app_colors.dart`) — token nuevo,
+  reusado también por el toggle de Gastos (Item 4) para que ambos componentes
+  compartan la misma línea visual.
+- **Tests:** `app_bottom_nav_test.dart` — los 4 textos siempre visibles, sin
+  overflow en una pantalla angosta (320px), colores correctos por selección,
+  y que tocar un tab dispara `onTap` con el índice correcto.
+
+## Item 4: Gastos (Saldos) — FAB contextual, toggle y cards de resumen
+
+- **FAB contextual (`app_shell.dart`):** el FAB global creaba siempre un
+  evento. Ahora es contextual por índice de tab: en Gastos (`_index == 2`,
+  la pantalla "Saldos"/`BalancesScreen`) llama a
+  `iniciarCrearGastoRapido(context, ref)`; en el resto sigue abriendo
+  `CreateEventScreen`.
+- **`quick_expense_sheet.dart` (nuevo):** como "nuevo gasto" no tiene un
+  evento implícito (a diferencia de crearlo desde el detalle de un evento),
+  primero muestra una hoja para elegir a cuál de los eventos activos del
+  usuario pertenece (`upcomingEventsProvider`), y recién ahí reutiliza el
+  mismo diálogo de siempre (`pedirDatosGasto`) con los participantes de ese
+  evento. Si no hay eventos activos, avisa en vez de abrir un diálogo vacío.
+- **Toggle (`PillToggle`, nuevo en `core/widgets/pill_toggle.dart`):** widget
+  genérico con la misma estructura visual que la Navbar del Item 1 (blanco
+  translúcido, opción no seleccionada en `AppColors.inactiveBlue`, la
+  seleccionada con chip blanco + texto `AppColors.primary`). Reemplaza el
+  `SegmentedButton` de Material en `balances_screen.dart`.
+- **Cards de resumen (`_MiniResumen` en `balances_screen.dart`):** ahora
+  llevan un `CircleAvatar` con ícono y color, reusando literalmente
+  `iconoDeActividad`/`colorDeActividad` de `activity_presentation.dart`:
+  "Me deben" toma el ícono/color de `deuda_saldada` (`Icons.price_check`,
+  verde) y "Debo" el de `gasto_agregado` (`Icons.receipt_long`, rojo) — el
+  mismo lenguaje visual que ya usa el feed de actividad de los eventos.
+- **Tests:** `screens_test.dart` — cards con los íconos esperados y el
+  toggle filtrando la lista; `AppShell` con el FAB abriendo "Crear evento"
+  en Home pero arrancando el flujo de gasto (no un evento) en Gastos.
+
+## Item 2: Pantalla de Notificaciones, accesos y redirección al evento
+
+**Duda resuelta antes de implementar:** el payload de actividad ya traía
+`eventoId` (backend en `data.eventoId` del push, y el modelo mobile
+`ActividadLog.eventoId` ya lo parseaba) — no hizo falta tocar el modelo ni
+la API para el ruteo. Lo que sí faltaba era la paginación pedida ("20
+actividades a la vez"), que no existía en absoluto.
+
+- **Backend — paginación por cursor:** `LogActividadRepository.listRecientesPorEventos`
+  ahora acepta un `before?: Date` opcional (trae solo entradas más viejas que
+  esa fecha). `ActivityLogService.recientesDe(usuarioId, before?)` y la ruta
+  `GET /me/activity` (ahora acepta `?before=<ISO>`) lo exponen sin romper el
+  contrato existente: sigue devolviendo un array plano — el cliente infiere
+  "hay más páginas" cuando la página recibida viene completa (20 entradas).
+  Se valida que `before` sea una fecha ISO válida (400 si no).
+- **`NotificationsScreen` (nueva, `features/notifications/`):** tabs
+  Todo/Eventos/Gastos (con el mismo `PillToggle` de los Items 1/4),
+  agrupada por día ("HOY"/"AYER"/fecha), reutilizando `ActivityFeedItem`,
+  `iconoDeActividad`/`colorDeActividad`/`textoActividad` — mismo feed que ya
+  alimenta a Home, sin duplicar presentación. `notifications_providers.dart`
+  maneja el estado paginado (`NotificationsFeed{items, hasMore}`) y pide la
+  próxima página (`cargarMas()`) cuando el scroll llega cerca del final.
+- **Accesos:** la campana de `AppHeader` (antes un ícono estático) ahora es
+  un `IconButton` que abre `NotificationsScreen`; se sumó un ítem
+  "Notificaciones" en `profile_screen.dart`.
+- **Redirección al evento:** `ActivityFeedItem` ganó un `onTap` opcional.
+  Tanto en Home (`home_screen.dart`) como en `NotificationsScreen`, cada fila
+  rutea a `EventDetailScreen(eventoId: ...)` (deshabilitado si la entrada no
+  trae `eventoId`, ej. `rango_extendido` que es del sistema).
+- **Tests:** backend — `activity-feed-pagination.test.ts` (servicio +
+  endpoint, primera/segunda página sin solapar, cursor inválido → 400).
+  Mobile — `notifications_test.dart` (paginación del provider, filtro por
+  tab, tap→navegación, estado vacío) y casos nuevos en `screens_test.dart`
+  (tap en Home rutea al evento, campana abre Notificaciones, acceso desde
+  Perfil).
+
+## Item 6: Auth — Login/Registro como card blanca flotante
+
+**Pendiente (bloqueado por mí, no por código):** el ícono oficial de la app
+(`image_aedb4c.png` de la referencia) se pegó en el chat, no existe como
+archivo en el repo, y no tengo forma de extraer el adjunto a disco. El
+usuario prefirió pasarlo él mismo. Mientras tanto, `_AuthLogo` en
+`auth_scaffold.dart` usa un ícono vectorial placeholder (`Icons.autorenew`,
+en el azul de la marca) dentro del mismo círculo blanco con sombra que
+tendría el logo real — apenas esté el archivo en
+`mobile/assets/logo.png` (+ su entrada en `pubspec.yaml`), reemplazar el
+`Icon` por un `Image.asset(...)` es el único cambio que hace falta.
+
+- **`core/widgets/auth_scaffold.dart` (nuevo):** chrome compartido por Login
+  y Registro — fondo `AppColors.background` (celeste clarito), logo +
+  "Planify" + tagline arriba, y una card blanca flotante (bordes de 28,
+  sombra suave) con el contenido de cada pantalla adentro. Acepta un
+  `footer` opcional para lo que va debajo de la card (ej. "¿No tenés cuenta?
+  Crear cuenta") y un `showBackButton` para Registro.
+- **`login_screen.dart`:** se sacó el `Scaffold` propio; ahora es
+  `AuthScaffold(card: ..., footer: ...)`. Mismo contenido y mismo orden de
+  campos que antes (los tests de `login_screen_test.dart` que dependen del
+  orden de los `TextField` siguen pasando sin tocarlos).
+- **`register_screen.dart`:** se sacó el `AppBar` (con su flecha de volver
+  implícita) — ahora usa el `BackButton` manual de `AuthScaffold`
+  (`showBackButton: true`) y un título ("Crear cuenta") dentro de la propia
+  card, para diferenciarse visualmente de Login.
+- **Tests:** se agregaron casos puntuales en `login_screen_test.dart` y
+  `register_screen_test.dart` para la estructura nueva (sin `AppBar`, con/sin
+  `BackButton` según corresponda, logo+tagline visibles); todos los tests
+  preexistentes de ambas pantallas siguen pasando tal cual, sin modificarlos.
+
+## Item 5: Foto de grupo nativa + limpieza de "Disponibilidad entre amigos"
+
+**Contexto de la duda planteada:** se encontraron dos features distintas
+bajo el nombre "disponibilidad": (1) la disponibilidad semanal *personal* en
+Perfil (H-14), que además pre-llena la disponibilidad de un evento nuevo, y
+(2) el heatmap de "coincidencias con TODOS los amigos" (HU-B4). Se acordó con
+el usuario: (1) se mantiene intacta, (2) se elimina — no como algo global de
+Perfil, sino re-scopeada a los miembros de un grupo puntual, accesible desde
+el menú de 3 puntos del grupo. La comparación 1-a-1 con un solo amigo (fuera
+de un grupo) queda pendiente para una tanda futura (no existía en el código:
+se verificó que `FriendsScreen` no tenía ningún tap-action ni endpoint propio).
+
+- **Backend — `ProfileAvailabilityService`:** se le sacó la dependencia de
+  `AmistadRepository` y el método `coincidenciasConAmigos` (y la ruta
+  `GET /me/availability/friend-matches`). Ahora solo expone `obtener`/`guardar`
+  de la disponibilidad semanal individual.
+- **Backend — `GroupsService`:** ganó dos métodos nuevos, ambos protegidos por
+  el mismo `exigirMiembro` que ya usan `actualizar`/`abandonar`:
+  - `disponibilidadDeGrupo(grupoId, usuarioId)` — arma el heatmap con
+    `ProfileAvailabilityRepository.slotsDeUsuarios` pero usando
+    `GrupoRepository.listMiembros(grupoId)` en vez de la lista de amigos.
+    Nueva ruta: `GET /groups/:id/availability-matches`.
+  - `actualizarImagen(grupoId, usuarioId, archivo)` — sube el archivo a S3 vía
+    el nuevo puerto `ImageStorageRepository` y persiste la URL resultante como
+    `avatarUrl` del grupo. Nueva ruta: `POST /groups/:id/avatar` (multipart,
+    campo `imagen`, hasta 5MB, vía `multer` con `memoryStorage`).
+- **Backend — `ImageStorageRepository` (`domain/repositories/image-storage.repository.ts`):**
+  puerto nuevo con un único método `subir(carpeta, buffer, mimeType) → url`.
+  Implementación real: `S3ImageStorageRepository`
+  (`infrastructure/aws/s3-image-storage.repository.ts`), usando
+  `@aws-sdk/client-s3`. No fija ACL en el `PutObject` porque muchos buckets
+  modernos tienen las ACLs deshabilitadas por default (Object Ownership =
+  "Bucket owner enforced"): el acceso público a las imágenes se resuelve con
+  una bucket policy configurada en AWS, fuera de este código.
+- **Infra — "homónimo" local del bucket:** se agregó el servicio `localstack`
+  a `infra/docker-compose.yml` (imagen `localstack/localstack:3`, solo
+  `SERVICES=s3`), con un script de init (`infra/localstack-init/01-create-bucket.sh`)
+  que crea el bucket apenas el contenedor queda "healthy". Es la MISMA clase
+  `S3ImageStorageRepository` para AWS real y para LocalStack: lo único que
+  cambia es la config (`AWS_S3_ENDPOINT` + `AWS_S3_FORCE_PATH_STYLE`), inyectada
+  desde variables de entorno en `container.ts`. Se probó end-to-end contra un
+  LocalStack real levantado en este entorno (subida + lectura por la URL
+  pública devuelta, HTTP 200).
+- **Mobile — imagen nativa:** se agregó `image_picker` a `pubspec.yaml`. En
+  `group_manage_sheet.dart`, "Cambiar imagen" ahora llama a
+  `ImagePicker().pickImage(source: ImageSource.gallery)` y sube los bytes con
+  `GroupsRepository.subirImagen` (multipart vía `dio`/`FormData`), en vez de
+  pedir una URL de texto (se eliminó el diálogo y la key `groupsImageUrl`).
+- **Mobile — disponibilidad de grupo:** pantalla nueva
+  `group_availability_screen.dart` (mismo heatmap que la vieja
+  `FriendMatchesScreen`, ahora alimentada por
+  `GroupsRepository.disponibilidadDeGrupo`), con un ítem nuevo "Ver
+  disponibilidad del grupo" en `group_manage_sheet.dart`. Se borró
+  `friend_matches_screen.dart` y el método `coincidenciasConAmigos` de
+  `ProfileRepository`; el ListTile correspondiente se sacó de
+  `profile_screen.dart`. La grilla personal "Disponibilidad Semanal" de
+  Perfil (y su pre-llenado en `event_config_screen.dart`) no se tocó.
+- **Tests:** `tasks-groups.service.test.ts` (membresía + agregado correcto
+  scopeado al grupo, subida de imagen), `api.test.ts` (multipart real vía
+  supertest `.attach()` + guard de membresía en ambas rutas nuevas),
+  `extras.test.ts` (se sacó el test de HU-B4 global). Mobile:
+  `screens_test.dart` cubre que Perfil ya no ofrece el matching global pero
+  conserva la grilla personal, que `GroupAvailabilityScreen` pinta el heatmap
+  scopeado, y que "Cambiar imagen" ya no abre un diálogo de texto.
+
 # Tanda 5 - Mejoras de navegación, componentes reutilizables y UI Mobile
 
 ## Item 3: Componente EventCard Unificado

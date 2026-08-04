@@ -8,6 +8,11 @@ abstract final class AppColors {
   static const primaryDark = Color(0xFF1A2BD1);
   static const accent = Color(0xFFFF6B5B);
 
+  /// "Celestito" — ítems no seleccionados de la Navbar y del toggle
+  /// Todo/Me deben/Debo (Tanda 6, Items 1 y 4). Mismo tono en ambos
+  /// componentes para que compartan una sola línea visual.
+  static const inactiveBlue = Color(0xFFA6B6EF);
+
   static const success = Color(0xFF2ECC71);
   static const danger = Color(0xFFE74C3C);
   static const warning = Color(0xFFF5A623);

@@ -6,9 +6,15 @@ import 'package:planify/core/widgets/quick_action_button.dart';
 import 'package:planify/features/balances/balances_screen.dart';
 import 'package:planify/features/events/event_detail_screen.dart';
 import 'package:planify/features/friends/data/friends_repository.dart';
+import 'package:planify/features/groups/data/groups_repository.dart';
+import 'package:planify/features/groups/group_availability_screen.dart';
+import 'package:planify/features/groups/group_manage_sheet.dart';
 import 'package:planify/features/groups/groups_screen.dart';
+import 'package:planify/features/home/app_shell.dart';
 import 'package:planify/features/home/home_screen.dart';
 import 'package:planify/features/history/history_screen.dart';
+import 'package:planify/features/notifications/notifications_screen.dart';
+import 'package:planify/features/profile/profile_screen.dart';
 import 'package:planify/l10n/generated/app_localizations.dart';
 
 import 'helpers/fake_repositories.dart';
@@ -69,6 +75,39 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(r'$-500,00'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Item 4 (Tanda 6) — las cards de resumen tienen ícono, y el toggle '
+        'en píldora filtra la lista', (tester) async {
+      final balances = FakeBalancesRepository(
+        balance: const Balance(
+          balanceNeto: '1000.00',
+          meDeben: '1500.00',
+          debo: '500.00',
+          saldos: [
+            SaldoPorPersona(id: 'u1', username: 'Sofía', monto: '1500.00', estado: 'pendiente'),
+            SaldoPorPersona(id: 'u2', username: 'Marcos', monto: '500.00', estado: 'pagar'),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(appDePrueba(const BalancesScreen(), balances: balances));
+      await tester.pumpAndSettle();
+
+      // Cards de resumen: mismos íconos que en el feed de actividad.
+      expect(find.byIcon(Icons.price_check), findsOneWidget); // "Me deben"
+      expect(find.byIcon(Icons.receipt_long), findsOneWidget); // "Debo"
+
+      // Arranca mostrando ambos.
+      expect(find.text('Sofía'), findsOneWidget);
+      expect(find.text('Marcos'), findsOneWidget);
+
+      await tester.tap(find.text(l10n.balancesIOwe).last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Marcos'), findsOneWidget);
+      expect(find.text('Sofía'), findsNothing);
     });
   });
 
@@ -164,6 +203,46 @@ void main() {
       expect(find.text(r'+$450.00'), findsNothing);
       // La actividad distinta de Sofía se sigue viendo aparte.
       expect(find.text(l10n.activityTaskCreated('Sofía')), findsOneWidget);
+    });
+
+    testWidgets(
+        'Item 2 (Tanda 6) — tocar una actividad rutea al evento específico',
+        (tester) async {
+      usarPantallaAlta(tester);
+
+      final activityLog = FakeActivityLogRepository(
+        recientesEntradas: [
+          ActividadLog(
+            id: 'a1',
+            tipo: 'deuda_saldada',
+            actorUsername: 'Mati',
+            createdAt: DateTime(2026, 7, 28, 20, 30),
+            eventoId: 'evt-1',
+            eventoNombre: 'Asado en lo de Marcos',
+            payload: const {'monto': '450.00'},
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(appDePrueba(const HomeScreen(), activityLog: activityLog));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.activityDebtSettled('Mati')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EventDetailScreen), findsOneWidget);
+    });
+
+    testWidgets('Item 2 (Tanda 6) — la campana abre la pantalla de Notificaciones',
+        (tester) async {
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(appDePrueba(const HomeScreen()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.notifications_none));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NotificationsScreen), findsOneWidget);
     });
   });
 
@@ -357,6 +436,44 @@ void main() {
       expect(find.text(l10n.balancesStatePay.toUpperCase()), findsOneWidget);
       expect(find.text(r'$1.200,00'), findsOneWidget);
       expect(find.text(l10n.historyToPay), findsOneWidget);
+    });
+
+    testWidgets(
+        'Item 3 (Tanda 6) — una línea de tiempo (un tramo por mes) agrupa '
+        'los eventos, con encabezados más grandes', (tester) async {
+      usarPantallaAlta(tester);
+      final events = FakeEventsRepository(
+        historialEventos: [
+          EventoHistorial(
+            id: 'e1',
+            nombre: 'Asado en mayo',
+            estadoSaldo: 'pagar',
+            monto: '1200.00',
+            participantes: const ['Marcos'],
+            fechaHoraInicio: DateTime(2026, 5, 12),
+          ),
+          EventoHistorial(
+            id: 'e2',
+            nombre: 'Cena en junio',
+            estadoSaldo: 'saldado',
+            monto: '800.00',
+            participantes: const ['Sofía'],
+            fechaHoraInicio: DateTime(2026, 6, 3),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(appDePrueba(const HistoryScreen(), events: events));
+      await tester.pumpAndSettle();
+
+      // Un tramo de línea de tiempo (IntrinsicHeight) por mes distinto.
+      expect(find.byType(IntrinsicHeight), findsNWidgets(2));
+
+      // El encabezado de mes ya no es labelSmall (11sp, poco jerárquico):
+      // ahora tiene el mismo peso que los encabezados de sección de Home.
+      final encabezado = tester.widget<Text>(find.text('MAYO 2026'));
+      expect(encabezado.style?.fontSize, greaterThan(11));
+      expect(encabezado.style?.fontWeight, FontWeight.bold);
     });
   });
 
@@ -686,6 +803,134 @@ void main() {
       );
       // No queda una línea individual por cada una.
       expect(find.text(l10n.activityDebtSettled('Marcos')), findsNothing);
+    });
+  });
+
+  group('AppShell (Tanda 6, Item 4 — FAB contextual)', () {
+    testWidgets('en Home, el FAB abre "Crear evento"', (tester) async {
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(appDePrueba(const AppShell()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.eventCreateTitle), findsOneWidget);
+    });
+
+    testWidgets(
+        'en Gastos (Saldos), el FAB arranca "nuevo gasto", no "crear evento"',
+        (tester) async {
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(appDePrueba(const AppShell()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.navBalances));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      // Sin eventos activos (fake vacío por default): el flujo de gasto
+      // avisa que no hay dónde cargarlo, en vez de abrir "Crear evento".
+      expect(find.text(l10n.expensesNoEventsToPick), findsOneWidget);
+      expect(find.text(l10n.eventCreateTitle), findsNothing);
+    });
+  });
+
+  group('ProfileScreen (Tanda 6, Item 5 — limpieza de disponibilidad)', () {
+    testWidgets(
+        'mantiene la disponibilidad semanal personal, pero ya no ofrece '
+        'coincidencias con todos los amigos', (tester) async {
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(appDePrueba(const ProfileScreen()));
+      await tester.pumpAndSettle();
+
+      // Se mantiene: preferencia individual (además pre-llena el evento).
+      expect(find.text(l10n.profileWeeklyAvailability), findsOneWidget);
+      // Se eliminó: agregado con TODOS los amigos, fuera de cualquier grupo.
+      expect(find.text('Coincidencias con amigos'), findsNothing);
+      // "Mis amigos" (la lista simple) sigue estando.
+      expect(find.text(l10n.friendsTitle), findsOneWidget);
+    });
+
+    testWidgets('Item 2 (Tanda 6) — ofrece un acceso a Notificaciones',
+        (tester) async {
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(appDePrueba(const ProfileScreen()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.profileNotifications));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NotificationsScreen), findsOneWidget);
+    });
+  });
+
+  group('GroupAvailabilityScreen (Tanda 6, Item 5)', () {
+    testWidgets('muestra el heatmap scopeado a los miembros de ESE grupo',
+        (tester) async {
+      final groups = FakeGroupsRepository()
+        ..disponibilidad = const DisponibilidadDeGrupo(
+          totalPersonas: 2,
+          slots: [HeatmapSlot(diaSemana: 0, bloqueHora: 20, disponibles: 2)],
+        );
+
+      await tester.pumpWidget(
+        appDePrueba(const GroupAvailabilityScreen(grupoId: 'g1'), groups: groups),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.groupAvailabilityTitle), findsOneWidget);
+      expect(find.text(l10n.groupAvailabilityHint(2)), findsOneWidget);
+      expect(groups.llamadas, contains('disponibilidadDeGrupo:g1'));
+    });
+  });
+
+  group('group_manage_sheet (Tanda 6, Item 5)', () {
+    const grupo = GrupoResumen(id: 'g1', nombre: 'Los Fibes', miembros: ['Marcos']);
+
+    testWidgets('ya no ofrece "URL de la imagen": cambiar imagen no pide texto',
+        (tester) async {
+      await tester.pumpWidget(
+        appDePrueba(
+          Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => mostrarGestionDeGrupo(context, grupo),
+              child: const Text('abrir'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('abrir'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.groupsUpdateImage), findsOneWidget);
+      // Ya no existe el diálogo de texto para pegar una URL.
+      expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets('"Ver disponibilidad del grupo" cierra la hoja y navega',
+        (tester) async {
+      await tester.pumpWidget(
+        appDePrueba(
+          Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => mostrarGestionDeGrupo(context, grupo),
+              child: const Text('abrir'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('abrir'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.groupsSeeAvailability));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.groupAvailabilityTitle), findsOneWidget);
+      // La hoja de gestión ya se cerró (no queda debajo).
+      expect(find.text(l10n.groupsUpdateImage), findsNothing);
     });
   });
 }

@@ -39,11 +39,15 @@ export class PrismaLogActividadRepository implements LogActividadRepository {
   async listRecientesPorEventos(
     eventoIds: string[],
     limite: number,
+    before?: Date,
   ): Promise<EntradaLogConEvento[]> {
     if (eventoIds.length === 0) return [];
 
     const rows = await this.prisma.logActividad.findMany({
-      where: { eventoId: { in: eventoIds } },
+      where: {
+        eventoId: { in: eventoIds },
+        ...(before ? { createdAt: { lt: before } } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: limite,
       include: {

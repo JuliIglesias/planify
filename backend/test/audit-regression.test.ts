@@ -15,9 +15,11 @@ import {
   FakeGastoRepository,
   FakeGrupoRepository,
   FakeIdGenerator,
+  FakeImageStorageRepository,
   FakeInvitacionRepository,
   FakeLogActividadRepository,
   FakeParticipanteRepository,
+  FakeProfileAvailabilityRepository,
   FakeTareaRepository,
   FakeUsuarioRepository,
 } from './fakes';
@@ -55,6 +57,8 @@ function armar() {
     clock,
     participantes,
     invitations,
+    new FakeProfileAvailabilityRepository(),
+    new FakeImageStorageRepository(),
   );
 
   return {

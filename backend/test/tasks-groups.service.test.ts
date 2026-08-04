@@ -9,9 +9,11 @@ import {
   FakeGastoRepository,
   FakeGrupoRepository,
   FakeIdGenerator,
+  FakeImageStorageRepository,
   FakeInvitacionRepository,
   FakeLogActividadRepository,
   FakeParticipanteRepository,
+  FakeProfileAvailabilityRepository,
   FakeTareaRepository,
   FakeUsuarioRepository,
 } from './fakes';
@@ -126,6 +128,8 @@ function armarGroups() {
   const log = new ActivityLogService(logs, participantes, clock);
   const invitaciones = new FakeInvitacionRepository();
   const invitations = new InvitationsService(invitaciones, eventos, new FakeIdGenerator(), clock);
+  const disponibilidadPerfil = new FakeProfileAvailabilityRepository();
+  const imagenes = new FakeImageStorageRepository();
 
   return {
     service: new GroupsService(
@@ -138,6 +142,8 @@ function armarGroups() {
       clock,
       participantes,
       invitations,
+      disponibilidadPerfil,
+      imagenes,
     ),
     grupos,
     eventos,
@@ -146,6 +152,8 @@ function armarGroups() {
     invitaciones,
     invitations,
     clock,
+    disponibilidadPerfil,
+    imagenes,
   };
 }
 
@@ -221,6 +229,68 @@ describe('GroupsService — gestión de miembros (Duda #12.2)', () => {
     const grupo = await grupos.create('G', [solo.id]);
 
     await expect(service.abandonar(grupo.id, solo.id)).rejects.toThrow(/único miembro/);
+  });
+});
+
+describe('GroupsService — foto de grupo vía galería nativa (Tanda 6, Item 5)', () => {
+  it('un miembro puede subir la imagen y queda como avatarUrl del grupo', async () => {
+    const { service, grupos, usuarios, imagenes } = armarGroups();
+    const miembro = usuarios.agregar();
+    const grupo = await grupos.create('Los Fibes', [miembro.id]);
+
+    const actualizado = await service.actualizarImagen(grupo.id, miembro.id, {
+      buffer: Buffer.from('fake-jpg-bytes'),
+      mimeType: 'image/jpeg',
+    });
+
+    expect(actualizado.avatarUrl).toContain(`grupos/${grupo.id}`);
+    expect(imagenes.subidas).toHaveLength(1);
+    expect(imagenes.subidas[0]).toEqual({ carpeta: `grupos/${grupo.id}`, mimeType: 'image/jpeg' });
+  });
+
+  it('alguien de afuera no puede cambiar la foto del grupo', async () => {
+    const { service, grupos, usuarios } = armarGroups();
+    const miembro = usuarios.agregar();
+    const intruso = usuarios.agregar();
+    const grupo = await grupos.create('Privado', [miembro.id]);
+
+    await expect(
+      service.actualizarImagen(grupo.id, intruso.id, {
+        buffer: Buffer.from('x'),
+        mimeType: 'image/png',
+      }),
+    ).rejects.toThrow(/miembro/);
+  });
+});
+
+describe('GroupsService — disponibilidad scopeada al grupo (Tanda 6, Item 5)', () => {
+  it('cuenta coincidencias solo entre los miembros de ESE grupo, no todos los amigos', async () => {
+    const { service, grupos, usuarios, disponibilidadPerfil } = armarGroups();
+    const ana = usuarios.agregar({ username: 'Ana' });
+    const bruno = usuarios.agregar({ username: 'Bruno' });
+    // Carla es amiga de Ana en la vida real, pero NO es miembro de este grupo:
+    // no debe contar en el heatmap scopeado al grupo.
+    const carla = usuarios.agregar({ username: 'Carla' });
+    const grupo = await grupos.create('Los Fibes', [ana.id, bruno.id]);
+
+    await disponibilidadPerfil.replaceForUsuario(ana.id, [{ diaSemana: 0, bloqueHora: 20 }]);
+    await disponibilidadPerfil.replaceForUsuario(bruno.id, [{ diaSemana: 0, bloqueHora: 20 }]);
+    await disponibilidadPerfil.replaceForUsuario(carla.id, [{ diaSemana: 0, bloqueHora: 20 }]);
+
+    const res = await service.disponibilidadDeGrupo(grupo.id, ana.id);
+
+    expect(res.totalPersonas).toBe(2); // solo Ana y Bruno, no Carla
+    const bloque = res.slots.find((s) => s.diaSemana === 0 && s.bloqueHora === 20);
+    expect(bloque?.disponibles).toBe(2);
+  });
+
+  it('alguien de afuera del grupo no puede ver su disponibilidad', async () => {
+    const { service, grupos, usuarios } = armarGroups();
+    const miembro = usuarios.agregar();
+    const intruso = usuarios.agregar();
+    const grupo = await grupos.create('Privado', [miembro.id]);
+
+    await expect(service.disponibilidadDeGrupo(grupo.id, intruso.id)).rejects.toThrow(/miembro/);
   });
 });
 

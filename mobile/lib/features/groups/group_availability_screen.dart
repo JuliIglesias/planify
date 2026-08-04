@@ -6,25 +6,28 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/weekly_availability_grid.dart';
 import '../../l10n/generated/app_localizations.dart';
-import '../profile/data/profile_repository.dart';
+import 'data/groups_repository.dart';
 
-final _matchesProvider = FutureProvider<CoincidenciasAmigos>(
-  (ref) => ref.watch(profileRepositoryProvider).coincidenciasConAmigos(),
+final _disponibilidadDeGrupoProvider =
+    FutureProvider.family<DisponibilidadDeGrupo, String>(
+  (ref, grupoId) => ref.watch(groupsRepositoryProvider).disponibilidadDeGrupo(grupoId),
 );
 
-/// HU-B4 — coincidencias de disponibilidad entre amigos (fuera de un evento).
-/// Muestra un heatmap semanal de la disponibilidad de perfil del usuario y sus
-/// amigos: dónde coinciden más, más intenso.
-class FriendMatchesScreen extends ConsumerWidget {
-  const FriendMatchesScreen({super.key});
+/// Tanda 6, Item 5 — heatmap de disponibilidad de los miembros de UN grupo
+/// puntual (reemplaza la vieja "coincidencias con todos los amigos" que vivía
+/// en Perfil): se entra desde el menú de 3 puntos del grupo.
+class GroupAvailabilityScreen extends ConsumerWidget {
+  const GroupAvailabilityScreen({super.key, required this.grupoId});
+
+  final String grupoId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final matches = ref.watch(_matchesProvider);
+    final matches = ref.watch(_disponibilidadDeGrupoProvider(grupoId));
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.friendMatchesTitle), backgroundColor: AppColors.surface),
+      appBar: AppBar(title: Text(l10n.groupAvailabilityTitle), backgroundColor: AppColors.surface),
       body: matches.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => AsyncStateView(
@@ -36,7 +39,7 @@ class FriendMatchesScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
             Text(
-              l10n.friendMatchesHint(c.totalPersonas),
+              l10n.groupAvailabilityHint(c.totalPersonas),
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium

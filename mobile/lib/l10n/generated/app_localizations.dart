@@ -404,6 +404,18 @@ abstract class AppLocalizations {
   /// **'Le debés'**
   String get balancesYouOwe;
 
+  /// No description provided for @expensesPickEventTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿A qué evento pertenece?'**
+  String get expensesPickEventTitle;
+
+  /// No description provided for @expensesNoEventsToPick.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no tenés eventos activos para agregarle un gasto'**
+  String get expensesNoEventsToPick;
+
   /// No description provided for @profileTitle.
   ///
   /// In es, this message translates to:
@@ -428,11 +440,59 @@ abstract class AppLocalizations {
   /// **'Historial de eventos'**
   String get profileHistory;
 
+  /// No description provided for @profileNotifications.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones'**
+  String get profileNotifications;
+
   /// No description provided for @profileLogout.
   ///
   /// In es, this message translates to:
   /// **'Cerrar sesión'**
   String get profileLogout;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsTabAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Todo'**
+  String get notificationsTabAll;
+
+  /// No description provided for @notificationsTabEvents.
+  ///
+  /// In es, this message translates to:
+  /// **'Eventos'**
+  String get notificationsTabEvents;
+
+  /// No description provided for @notificationsTabExpenses.
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos'**
+  String get notificationsTabExpenses;
+
+  /// No description provided for @notificationsToday.
+  ///
+  /// In es, this message translates to:
+  /// **'HOY'**
+  String get notificationsToday;
+
+  /// No description provided for @notificationsYesterday.
+  ///
+  /// In es, this message translates to:
+  /// **'AYER'**
+  String get notificationsYesterday;
+
+  /// No description provided for @notificationsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No tenés notificaciones todavía'**
+  String get notificationsEmpty;
 
   /// No description provided for @historyTitle.
   ///
@@ -614,17 +674,23 @@ abstract class AppLocalizations {
   /// **'Etiqueta (ej. Casa de Juli)'**
   String get eventPlaceLabelHint;
 
-  /// No description provided for @friendMatchesTitle.
+  /// No description provided for @groupAvailabilityTitle.
   ///
   /// In es, this message translates to:
-  /// **'Coincidencias con amigos'**
-  String get friendMatchesTitle;
+  /// **'Disponibilidad del grupo'**
+  String get groupAvailabilityTitle;
 
-  /// No description provided for @friendMatchesHint.
+  /// No description provided for @groupAvailabilityHint.
   ///
   /// In es, this message translates to:
-  /// **'Bloques donde vos y tus amigos ({count}) coinciden. Más intenso = más gente libre.'**
-  String friendMatchesHint(int count);
+  /// **'Bloques donde los miembros de este grupo ({count}) coinciden. Más intenso = más gente libre.'**
+  String groupAvailabilityHint(int count);
+
+  /// No description provided for @groupsSeeAvailability.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver disponibilidad del grupo'**
+  String get groupsSeeAvailability;
 
   /// No description provided for @eventConfigTitle.
   ///
@@ -1051,12 +1117,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Cambiar imagen'**
   String get groupsUpdateImage;
-
-  /// No description provided for @groupsImageUrl.
-  ///
-  /// In es, this message translates to:
-  /// **'URL de la imagen'**
-  String get groupsImageUrl;
 
   /// No description provided for @groupsAddMember.
   ///

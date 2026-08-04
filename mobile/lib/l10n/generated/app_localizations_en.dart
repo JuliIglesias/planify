@@ -175,6 +175,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get balancesYouOwe => 'You owe';
 
   @override
+  String get expensesPickEventTitle => 'Which event is this for?';
+
+  @override
+  String get expensesNoEventsToPick =>
+      'You don\'t have any active events to add an expense to yet';
+
+  @override
   String get profileTitle => 'Profile';
 
   @override
@@ -187,7 +194,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileHistory => 'Event history';
 
   @override
+  String get profileNotifications => 'Notifications';
+
+  @override
   String get profileLogout => 'Sign out';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsTabAll => 'All';
+
+  @override
+  String get notificationsTabEvents => 'Events';
+
+  @override
+  String get notificationsTabExpenses => 'Expenses';
+
+  @override
+  String get notificationsToday => 'TODAY';
+
+  @override
+  String get notificationsYesterday => 'YESTERDAY';
+
+  @override
+  String get notificationsEmpty => 'You don\'t have any notifications yet';
 
   @override
   String get historyTitle => 'Event history';
@@ -287,12 +318,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventPlaceLabelHint => 'Label (e.g. Juli\'s place)';
 
   @override
-  String get friendMatchesTitle => 'Matches with friends';
+  String get groupAvailabilityTitle => 'Group availability';
 
   @override
-  String friendMatchesHint(int count) {
-    return 'Slots where you and your friends ($count) overlap. Darker = more people free.';
+  String groupAvailabilityHint(int count) {
+    return 'Slots where this group\'s members ($count) overlap. Darker = more people free.';
   }
+
+  @override
+  String get groupsSeeAvailability => 'See group availability';
 
   @override
   String get eventConfigTitle => 'Event settings';
@@ -543,9 +577,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupsUpdateImage => 'Cambiar imagen';
-
-  @override
-  String get groupsImageUrl => 'URL de la imagen';
 
   @override
   String get groupsAddMember => 'Add friend';

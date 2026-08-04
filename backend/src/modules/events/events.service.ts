@@ -87,7 +87,7 @@ export class EventsService {
     const miembros = await this.grupos.listMiembros(grupoId);
     const otrosMiembros = miembros.filter((m) => m.id !== usuarioId).map((m) => ({
       usuarioId: m.id,
-      nombre: m.nombre,
+      username: m.username,
     }));
 
     const resultado = await this.eventos.createWithOrganizer({
@@ -98,6 +98,7 @@ export class EventsService {
       organizadorNombre: usuario.nombre,
       rangoInicio,
       rangoFin,
+      organizadorUsername: usuario.username,
       otrosMiembros,
     });
 

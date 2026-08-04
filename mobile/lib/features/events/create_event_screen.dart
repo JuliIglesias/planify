@@ -477,7 +477,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                                 children: [
                                   for (final m in _miembros)
                                     Chip(
-                                      label: Text(m.nombre),
+                                      label: Text(m.username),
                                       onDeleted: _creando
                                           ? null
                                           : () => setState(() => _miembros.remove(m)),

@@ -9,19 +9,20 @@ export interface CrearEventoData {
   /** Rango de fechas calendario del evento (Item 1). */
   rangoInicio: Date;
   rangoFin: Date;
+  organizadorUsername: string;
   /**
    * Los demás miembros registrados del grupo, que se materializan como
    * `Participante` del evento en la misma transacción. Sin esto, un miembro del
    * grupo no aparecería en la lista para asignarle gastos/tareas ni podría
    * confirmar asistencia (era el bug H-01 de la auditoría).
    */
-  otrosMiembros?: { usuarioId: string; nombre: string }[];
+  otrosMiembros?: { usuarioId: string; username: string }[];
 }
 
 /** Evento + datos derivados que las pantallas de listado necesitan. */
 export interface EventoConResumen extends Evento {
   grupoNombre: string;
-  participantes: Pick<Participante, 'id' | 'nombreDisplay' | 'estadoAsistencia'>[];
+  participantes: Pick<Participante, 'id' | 'username' | 'estadoAsistencia'>[];
   confirmados: number;
 }
 
@@ -35,7 +36,8 @@ export interface EventoRepository {
   createWithOrganizer(data: CrearEventoData): Promise<{ evento: Evento; organizador: Participante }>;
 
   updateEstado(id: string, estado: EventoEstado): Promise<Evento>;
-  confirmarHorario(id: string, fechaHoraInicio: Date): Promise<Evento>;
+  /** Item 5 — el horario confirmado es un rango: inicio y fin. */
+  confirmarHorario(id: string, fechaHoraInicio: Date, fechaHoraFin: Date): Promise<Evento>;
 
   /** Item 1 — extiende `rangoFin` 2 semanas más y suma una extensión usada. */
   extenderRango(id: string, nuevoRangoFin: Date): Promise<Evento>;

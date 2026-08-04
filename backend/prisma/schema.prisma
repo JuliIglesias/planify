@@ -42,7 +42,7 @@ enum AmistadEstado {
 
 model Usuario {
   id              String   @id @default(uuid())
-  nombre          String
+  username        String   @unique
   email           String   @unique
   passwordHash    String   @map("password_hash")
   avatarUrl       String?  @map("avatar_url")
@@ -99,6 +99,9 @@ model Evento {
   // vencer sin horario confirmado. Tope 1: a partir de ahí el organizador
   // decide manualmente (ver docs/adrs/0001-rango-fechas-evento.md).
   extensionesRango Int      @default(0) @map("extensiones_rango")
+  // Item 5 (Fase 5): el horario confirmado es un RANGO, no un instante — el
+  // organizador fija inicio y fin (ver docs/adrs/0002-rango-horario-evento.md).
+  fechaHoraFin    DateTime?   @map("fecha_hora_fin")
   creadoPor      String       @map("creado_por") // participante_id del organizador
   createdAt      DateTime     @default(now()) @map("created_at")
 
@@ -118,7 +121,12 @@ model Participante {
   id               String            @id @default(uuid())
   eventoId         String            @map("evento_id")
   usuarioId        String?           @map("usuario_id") // null si es anónimo
-  nombreDisplay    String            @map("nombre_display")
+  // Sin @@unique a nivel tabla a propósito: un usuario registrado participa
+  // de varios eventos y repite legítimamente su username en cada fila. La
+  // unicidad real (entre anónimos, y contra Usuario.username) se valida en
+  // ParticipantsService antes de insertar — Postgres no soporta un índice
+  // único parcial (solo para es_anonimo=true) declarado en este schema.
+  username         String
   esAnonimo        Boolean           @default(false) @map("es_anonimo")
   esOrganizador    Boolean           @default(false) @map("es_organizador")
   tokenSesion      String?           @unique @map("token_sesion") // solo si es_anonimo

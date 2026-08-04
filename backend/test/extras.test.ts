@@ -27,7 +27,7 @@ function armar() {
 describe('H-14 — disponibilidad de perfil persistida', () => {
   it('guarda y devuelve los bloques, y valida rangos', async () => {
     const { availability, usuarios } = armar();
-    const ana = usuarios.agregar({ nombre: 'Ana' });
+    const ana = usuarios.agregar({ username: 'Ana' });
 
     await availability.guardar(ana.id, [
       { diaSemana: 0, bloqueHora: 10 },
@@ -52,9 +52,9 @@ describe('H-14 — disponibilidad de perfil persistida', () => {
 describe('HU-B4 — coincidencias de disponibilidad entre amigos', () => {
   it('cuenta en cada bloque a cuántos (usuario + amigos) les queda libre', async () => {
     const { availability, usuarios, amistades } = armar();
-    const ana = usuarios.agregar({ nombre: 'Ana' });
-    const bruno = usuarios.agregar({ nombre: 'Bruno' });
-    const carla = usuarios.agregar({ nombre: 'Carla' });
+    const ana = usuarios.agregar({ username: 'Ana' });
+    const bruno = usuarios.agregar({ username: 'Bruno' });
+    const carla = usuarios.agregar({ username: 'Carla' });
 
     // Ana y Bruno amigos; Ana y Carla amigos; Carla NO comparte bloque.
     amistades.amistades.push(
@@ -77,8 +77,8 @@ describe('HU-B4 — coincidencias de disponibilidad entre amigos', () => {
 describe('HU-B5 — ubicaciones favoritas', () => {
   it('crea, lista y elimina; no deja borrar la de otro', async () => {
     const { locations, usuarios } = armar();
-    const ana = usuarios.agregar({ nombre: 'Ana' });
-    const otro = usuarios.agregar({ nombre: 'Otro' });
+    const ana = usuarios.agregar({ username: 'Ana' });
+    const otro = usuarios.agregar({ username: 'Otro' });
 
     const u = await locations.crear(ana.id, 'Casa', 'Casa de Ana, Palermo');
     expect((await locations.listar(ana.id))).toHaveLength(1);

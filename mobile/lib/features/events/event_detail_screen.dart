@@ -488,7 +488,7 @@ class _Contenido extends ConsumerWidget {
               ),
             for (final deuda in deudas)
               ListTile(
-                title: Text('${deuda.deudorNombre} → ${deuda.acreedorNombre}'),
+                title: Text('${deuda.deudorUsername} → ${deuda.acreedorUsername}'),
                 subtitle: Text('\$${deuda.monto}'),
                 trailing: deuda.estaSaldada
                     ? StatusBadge.saldo(SaldoEstado.saldado, l10n.balancesStateSettled)
@@ -539,7 +539,7 @@ class _TareaTile extends StatelessWidget {
           color: tarea.estaCompletada ? AppColors.success : AppColors.textSecondary,
         ),
         title: Text(tarea.titulo),
-        subtitle: Text(tarea.asignadoNombre ?? l10n.eventDetailTaskUnassigned),
+        subtitle: Text(tarea.asignadoUsername ?? l10n.eventDetailTaskUnassigned),
         trailing: tarea.estaCompletada
             ? Text(l10n.eventDetailTaskDone)
             : Row(
@@ -554,7 +554,7 @@ class _TareaTile extends StatelessWidget {
                       onSelected: onAsignarA,
                       itemBuilder: (_) => [
                         for (final p in participantes)
-                          PopupMenuItem(value: p.id, child: Text(p.nombreDisplay)),
+                          PopupMenuItem(value: p.id, child: Text(p.username)),
                       ],
                     ),
                   TextButton(

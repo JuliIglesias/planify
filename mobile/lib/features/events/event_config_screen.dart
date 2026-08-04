@@ -244,12 +244,15 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
                                 AvailabilitySlot(s.diaSemana, s.bloqueHora):
                                     s.disponibles,
                             },
-                            // Item 5 — el horario ya fijado se distingue del
-                            // resto del heatmap (color + estrella).
-                            slotFijado: _slotFijado(evento),
-                            // HU-09: tocar un bloque confirma el horario.
+                            // Item 5 — el RANGO horario ya fijado se
+                            // distingue del resto del heatmap (color +
+                            // estrella en cada bloque del rango).
+                            slotsFijados: _slotsFijados(evento),
+                            // HU-09: tocar un bloque abre el selector de
+                            // hora de fin (Item 5 — es un rango, no un
+                            // instante) y confirma el horario.
                             onSlotTap: habilitado && evento.soyOrganizador
-                                ? (slot) => _confirmarHorario(slot)
+                                ? (slot) => _elegirFinYConfirmar(slot)
                                 : null,
                           ),
                           if (evento.soyOrganizador) ...[
@@ -283,32 +286,115 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
     return null;
   }
 
-  /// Item 5 — el slot del heatmap que corresponde al horario ya fijado
-  /// (inverso de `_confirmarHorario`: de la fecha real al día de la
-  /// semana + hora que usa la grilla). `null` si el organizador todavía no
-  /// confirmó ningún horario.
-  AvailabilitySlot? _slotFijado(DetalleEvento evento) {
-    final fecha = evento.fechaHoraInicio;
-    if (evento.estado != 'confirmado' || fecha == null) return null;
-    return AvailabilitySlot(fecha.weekday - 1, fecha.hour);
+  /// Item 5 — todos los slots del RANGO horario ya fijado (inverso de
+  /// `_confirmarHorario`: de las fechas reales al día de semana + horas que
+  /// usa la grilla), no solo el de inicio. Vacío si el organizador todavía
+  /// no confirmó ningún horario. Si el evento viene de antes de este cambio
+  /// (`fechaHoraFin` nula), se lo trata como un rango de una sola hora —
+  /// mismo comportamiento que tenía antes.
+  Set<AvailabilitySlot> _slotsFijados(DetalleEvento evento) {
+    final inicio = evento.fechaHoraInicio;
+    if (evento.estado != 'confirmado' || inicio == null) return {};
+
+    final fin = evento.fechaHoraFin ?? inicio.add(const Duration(hours: 1));
+    final dia = inicio.weekday - 1;
+    return {
+      for (var h = inicio.hour; h < fin.hour; h++) AvailabilitySlot(dia, h),
+    };
   }
 
-  Future<void> _confirmarHorario(AvailabilitySlot slot) async {
+  /// Item 5 — el organizador elige hora de inicio (tocando el heatmap) y
+  /// luego hora de fin, viendo cuánta gente está libre en TODO el rango
+  /// propuesto (no en un bloque suelto) antes de confirmar.
+  Future<void> _elegirFinYConfirmar(AvailabilitySlot inicio) async {
+    final l10n = AppLocalizations.of(context)!;
+    const maxFin = 24;
+    var horaFin = (inicio.bloqueHora + 2).clamp(inicio.bloqueHora + 1, maxFin);
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          title: Text(l10n.eventDetailPickEndTime),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.eventDetailStartTimeLabel(
+                  '${inicio.bloqueHora.toString().padLeft(2, '0')}:00')),
+              const SizedBox(height: AppSpacing.sm),
+              DropdownButton<int>(
+                value: horaFin,
+                isExpanded: true,
+                items: [
+                  for (var h = inicio.bloqueHora + 1; h <= maxFin; h++)
+                    DropdownMenuItem(
+                      value: h,
+                      child: Text('${h.toString().padLeft(2, '0')}:00'),
+                    ),
+                ],
+                onChanged: (v) {
+                  if (v != null) setStateDialog(() => horaFin = v);
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              FutureBuilder<({int disponibles, int total})>(
+                future: ref.read(availabilityRepositoryProvider).disponiblesEnRango(
+                      eventoId: widget.eventoId,
+                      diaSemana: inicio.diaSemana,
+                      horaInicio: inicio.bloqueHora,
+                      horaFin: horaFin,
+                    ),
+                builder: (ctx, snap) {
+                  if (!snap.hasData) {
+                    return const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  }
+                  return Text(
+                    l10n.eventDetailAvailableForRange(
+                        snap.data!.disponibles, snap.data!.total),
+                    style: Theme.of(ctx).textTheme.bodySmall,
+                  );
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.commonCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.commonConfirm),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmar != true || !mounted) return;
+    await _confirmarHorario(inicio, horaFin);
+  }
+
+  Future<void> _confirmarHorario(AvailabilitySlot inicio, int horaFin) async {
     // El heatmap trabaja en día de la semana + hora; se traduce a la próxima
     // fecha real que caiga en ese día (la fecha sale de acá, no del alta — F4).
     final ahora = DateTime.now();
-    final diasHasta = (slot.diaSemana + 1 - ahora.weekday + 7) % 7;
-    final fecha = DateTime(
-      ahora.year,
-      ahora.month,
-      ahora.day + (diasHasta == 0 ? 7 : diasHasta),
-      slot.bloqueHora,
-    );
+    final diasHasta = (inicio.diaSemana + 1 - ahora.weekday + 7) % 7;
+    final dia = ahora.day + (diasHasta == 0 ? 7 : diasHasta);
+    final fechaInicio = DateTime(ahora.year, ahora.month, dia, inicio.bloqueHora);
+    final fechaFin = DateTime(ahora.year, ahora.month, dia, horaFin);
 
     await _accion(
-      () => ref
-          .read(availabilityRepositoryProvider)
-          .confirmarHorario(eventoId: widget.eventoId, fechaHoraInicio: fecha),
+      () => ref.read(availabilityRepositoryProvider).confirmarHorario(
+            eventoId: widget.eventoId,
+            fechaHoraInicio: fechaInicio,
+            fechaHoraFin: fechaFin,
+          ),
     );
   }
 }

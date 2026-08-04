@@ -185,7 +185,7 @@ abstract class AppLocalizations {
   /// No description provided for @loginAnonymousNameLabel.
   ///
   /// In es, this message translates to:
-  /// **'Tu nombre'**
+  /// **'Tu username'**
   String get loginAnonymousNameLabel;
 
   /// No description provided for @loginAnonymousNameHint.
@@ -227,8 +227,8 @@ abstract class AppLocalizations {
   /// No description provided for @homeGreeting.
   ///
   /// In es, this message translates to:
-  /// **'¡Hola, {nombre}!'**
-  String homeGreeting(String nombre);
+  /// **'¡Hola, {username}!'**
+  String homeGreeting(String username);
 
   /// No description provided for @homeOwedToMe.
   ///
@@ -914,6 +914,24 @@ abstract class AppLocalizations {
   /// **'Tocá un bloque del mapa para confirmar el horario'**
   String get eventDetailTapToConfirm;
 
+  /// No description provided for @eventDetailPickEndTime.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Hasta qué hora?'**
+  String get eventDetailPickEndTime;
+
+  /// No description provided for @eventDetailStartTimeLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'El evento empieza a las {hora}'**
+  String eventDetailStartTimeLabel(String hora);
+
+  /// No description provided for @eventDetailAvailableForRange.
+  ///
+  /// In es, this message translates to:
+  /// **'{disponibles} de {total} están libres en todo este rango'**
+  String eventDetailAvailableForRange(int disponibles, int total);
+
   /// No description provided for @eventDetailWhoPaid.
   ///
   /// In es, this message translates to:
@@ -1079,7 +1097,7 @@ abstract class AppLocalizations {
   /// No description provided for @friendsSearchHint.
   ///
   /// In es, this message translates to:
-  /// **'Buscar por nombre o email'**
+  /// **'Buscar por username o email'**
   String get friendsSearchHint;
 
   /// No description provided for @friendsAdd.
@@ -1121,7 +1139,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileName.
   ///
   /// In es, this message translates to:
-  /// **'Nombre'**
+  /// **'Username'**
   String get profileName;
 
   /// No description provided for @profileLanguage.
@@ -1145,7 +1163,7 @@ abstract class AppLocalizations {
   /// No description provided for @registerName.
   ///
   /// In es, this message translates to:
-  /// **'Nombre'**
+  /// **'Username'**
   String get registerName;
 
   /// No description provided for @registerEmail.
@@ -1205,14 +1223,14 @@ abstract class AppLocalizations {
   /// No description provided for @balancesSettleAllConfirm.
   ///
   /// In es, this message translates to:
-  /// **'Se va a marcar como saldada tu deuda con {nombre}.'**
-  String balancesSettleAllConfirm(String nombre);
+  /// **'Se va a marcar como saldada tu deuda con {username}.'**
+  String balancesSettleAllConfirm(String username);
 
   /// No description provided for @balancesSettleAllConfirmMulti.
   ///
   /// In es, this message translates to:
-  /// **'Se van a saldar las {count} deudas que tenés con {nombre}, en todos los eventos.'**
-  String balancesSettleAllConfirmMulti(String nombre, int count);
+  /// **'Se van a saldar las {count} deudas que tenés con {username}, en todos los eventos.'**
+  String balancesSettleAllConfirmMulti(String username, int count);
 
   /// No description provided for @balancesBreakdown.
   ///
@@ -1223,8 +1241,8 @@ abstract class AppLocalizations {
   /// No description provided for @balancesNoDebtsWith.
   ///
   /// In es, this message translates to:
-  /// **'No tenés deudas pendientes con {nombre}'**
-  String balancesNoDebtsWith(String nombre);
+  /// **'No tenés deudas pendientes con {username}'**
+  String balancesNoDebtsWith(String username);
 
   /// No description provided for @balancesCompensationHint.
   ///

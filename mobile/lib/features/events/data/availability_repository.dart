@@ -19,10 +19,22 @@ abstract interface class AvailabilityRepository {
   /// HU-08 — cuántos participantes pueden en cada bloque.
   Future<List<HeatmapSlot>> heatmap(String eventoId);
 
-  /// HU-09 — el organizador fija el horario a partir del heatmap.
+  /// Item 5 — cuántos participantes están libres en TODO un rango horario
+  /// propuesto (no en un bloque suelto), para elegir la hora de fin con
+  /// esa información.
+  Future<({int disponibles, int total})> disponiblesEnRango({
+    required String eventoId,
+    required int diaSemana,
+    required int horaInicio,
+    required int horaFin,
+  });
+
+  /// HU-09 — el organizador fija el horario a partir del heatmap. Item 5: es
+  /// un RANGO (inicio y fin), no un instante.
   Future<void> confirmarHorario({
     required String eventoId,
     required DateTime fechaHoraInicio,
+    required DateTime fechaHoraFin,
   });
 }
 
@@ -71,14 +83,40 @@ class AvailabilityRepositoryHttp implements AvailabilityRepository {
       });
 
   @override
+  Future<({int disponibles, int total})> disponiblesEnRango({
+    required String eventoId,
+    required int diaSemana,
+    required int horaInicio,
+    required int horaFin,
+  }) =>
+      ejecutar(() async {
+        final res = await _dio.get<Map<String, dynamic>>(
+          '/events/$eventoId/availability/range',
+          queryParameters: {
+            'diaSemana': diaSemana,
+            'horaInicio': horaInicio,
+            'horaFin': horaFin,
+          },
+        );
+        return (
+          disponibles: res.data?['disponibles'] as int? ?? 0,
+          total: res.data?['total'] as int? ?? 0,
+        );
+      });
+
+  @override
   Future<void> confirmarHorario({
     required String eventoId,
     required DateTime fechaHoraInicio,
+    required DateTime fechaHoraFin,
   }) =>
       ejecutar(() async {
         await _dio.patch<void>(
           '/events/$eventoId/confirm',
-          data: {'fechaHoraInicio': fechaHoraInicio.toIso8601String()},
+          data: {
+            'fechaHoraInicio': fechaHoraInicio.toIso8601String(),
+            'fechaHoraFin': fechaHoraFin.toIso8601String(),
+          },
         );
       });
 }

@@ -31,9 +31,12 @@ export function createRoutes(c: Container): Router {
   router.post(
     '/auth/login',
     asyncHandler(async (req: Request, res: Response) => {
-      const { email, password } = req.body ?? {};
-      if (!email || !password) throw new BadRequestError('email y password son requeridos');
-      res.json(await c.auth.login(email, password));
+      const { email, username, password } = req.body ?? {};
+      const identificador = email ?? username;
+      if (!identificador || !password) {
+        throw new BadRequestError('email (o username) y password son requeridos');
+      }
+      res.json(await c.auth.login(identificador, password));
     }),
   );
 
@@ -41,8 +44,8 @@ export function createRoutes(c: Container): Router {
   router.post(
     '/auth/register',
     asyncHandler(async (req: Request, res: Response) => {
-      const { nombre, email, password } = req.body ?? {};
-      res.status(201).json(await c.auth.register(nombre, email, password));
+      const { username, email, password } = req.body ?? {};
+      res.status(201).json(await c.auth.register(username, email, password));
     }),
   );
 
@@ -185,9 +188,9 @@ export function createRoutes(c: Container): Router {
   router.post(
     '/participants/anonymous',
     asyncHandler(async (req: Request, res: Response) => {
-      const { eventoId, nombreDisplay } = req.body ?? {};
+      const { eventoId, username } = req.body ?? {};
       if (!eventoId) throw new BadRequestError('eventoId es requerido');
-      res.status(201).json(await c.participants.unirseComoAnonimo(eventoId, nombreDisplay));
+      res.status(201).json(await c.participants.unirseComoAnonimo(eventoId, username));
     }),
   );
 
@@ -314,18 +317,37 @@ export function createRoutes(c: Container): Router {
     }),
   );
 
+  // Item 5 — cuánta gente está libre en TODO un rango horario propuesto (no
+  // en un bloque suelto), para que el organizador elija el fin con esa info.
+  router.get(
+    '/events/:id/availability/range',
+    soloParticipante,
+    asyncHandler(async (req: Request, res: Response) => {
+      const { diaSemana, horaInicio, horaFin } = req.query;
+      res.json(
+        await c.availability.disponiblesEnRango(
+          String(req.params.id),
+          Number(diaSemana),
+          Number(horaInicio),
+          Number(horaFin),
+        ),
+      );
+    }),
+  );
 
   router.patch(
     '/events/:id/confirm',
     soloOrganizador,
     asyncHandler(async (req: OrganizerRequest, res: Response) => {
-      const { fechaHoraInicio } = req.body ?? {};
+      const { fechaHoraInicio, fechaHoraFin } = req.body ?? {};
       if (!fechaHoraInicio) throw new BadRequestError('fechaHoraInicio es requerido');
+      if (!fechaHoraFin) throw new BadRequestError('fechaHoraFin es requerido');
       res.json(
         await c.availability.confirmarHorario(
           exigirUsuario(req),
           String(req.params.id),
           new Date(fechaHoraInicio),
+          new Date(fechaHoraFin),
         ),
       );
     }),

@@ -52,7 +52,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loginAnonymousLinkLabel => 'Link de invitación';
 
   @override
-  String get loginAnonymousNameLabel => 'Tu nombre';
+  String get loginAnonymousNameLabel => 'Tu username';
 
   @override
   String get loginAnonymousNameHint => 'ej. Sofía';
@@ -74,8 +74,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navProfile => 'Perfil';
 
   @override
-  String homeGreeting(String nombre) {
-    return '¡Hola, $nombre!';
+  String homeGreeting(String username) {
+    return '¡Hola, $username!';
   }
 
   @override
@@ -463,6 +463,19 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tocá un bloque del mapa para confirmar el horario';
 
   @override
+  String get eventDetailPickEndTime => '¿Hasta qué hora?';
+
+  @override
+  String eventDetailStartTimeLabel(String hora) {
+    return 'El evento empieza a las $hora';
+  }
+
+  @override
+  String eventDetailAvailableForRange(int disponibles, int total) {
+    return '$disponibles de $total están libres en todo este rango';
+  }
+
+  @override
   String get eventDetailWhoPaid => '¿Quién pagó?';
 
   @override
@@ -557,7 +570,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get friendsTitle => 'Mis amigos';
 
   @override
-  String get friendsSearchHint => 'Buscar por nombre o email';
+  String get friendsSearchHint => 'Buscar por username o email';
 
   @override
   String get friendsAdd => 'Agregar';
@@ -578,7 +591,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileEdit => 'Editar perfil';
 
   @override
-  String get profileName => 'Nombre';
+  String get profileName => 'Username';
 
   @override
   String get profileLanguage => 'Idioma';
@@ -590,7 +603,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get registerTitle => 'Crear cuenta';
 
   @override
-  String get registerName => 'Nombre';
+  String get registerName => 'Username';
 
   @override
   String get registerEmail => 'Email';
@@ -624,21 +637,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get balancesSettleAll => 'Saldar todo';
 
   @override
-  String balancesSettleAllConfirm(String nombre) {
-    return 'Se va a marcar como saldada tu deuda con $nombre.';
+  String balancesSettleAllConfirm(String username) {
+    return 'Se va a marcar como saldada tu deuda con $username.';
   }
 
   @override
-  String balancesSettleAllConfirmMulti(String nombre, int count) {
-    return 'Se van a saldar las $count deudas que tenés con $nombre, en todos los eventos.';
+  String balancesSettleAllConfirmMulti(String username, int count) {
+    return 'Se van a saldar las $count deudas que tenés con $username, en todos los eventos.';
   }
 
   @override
   String get balancesBreakdown => 'DETALLE POR EVENTO';
 
   @override
-  String balancesNoDebtsWith(String nombre) {
-    return 'No tenés deudas pendientes con $nombre';
+  String balancesNoDebtsWith(String username) {
+    return 'No tenés deudas pendientes con $username';
   }
 
   @override

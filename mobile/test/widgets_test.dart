@@ -133,7 +133,7 @@ void main() {
           horaFin: 12,
           totalParticipantes: 5,
           heatmap: {const AvailabilitySlot(0, 10): 3},
-          slotFijado: const AvailabilitySlot(0, 10),
+          slotsFijados: {const AvailabilitySlot(0, 10)},
         )),
       );
 
@@ -142,7 +142,7 @@ void main() {
       expect(find.byIcon(Icons.star), findsOneWidget);
     });
 
-    testWidgets('sin slotFijado no aparece ninguna estrella', (tester) async {
+    testWidgets('sin slotsFijados no aparece ninguna estrella', (tester) async {
       await tester.pumpWidget(
         _wrap(WeeklyAvailabilityGrid(
           horaInicio: 10,
@@ -153,6 +153,27 @@ void main() {
       );
 
       expect(find.byIcon(Icons.star), findsNothing);
+    });
+
+    testWidgets(
+        'un rango horario fijado (Item 5) pinta con estrella cada slot del '
+        'rango, no solo el primero', (tester) async {
+      await tester.pumpWidget(
+        _wrap(WeeklyAvailabilityGrid(
+          horaInicio: 19,
+          horaFin: 23,
+          totalParticipantes: 5,
+          // 19 a 23hs → slots 19, 20, 21, 22 (el fin es el límite, no un slot).
+          slotsFijados: {
+            const AvailabilitySlot(2, 19),
+            const AvailabilitySlot(2, 20),
+            const AvailabilitySlot(2, 21),
+            const AvailabilitySlot(2, 22),
+          },
+        )),
+      );
+
+      expect(find.byIcon(Icons.star), findsNWidgets(4));
     });
   });
 }

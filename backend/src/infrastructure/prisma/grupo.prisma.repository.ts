@@ -13,7 +13,7 @@ export class PrismaGrupoRepository implements GrupoRepository {
     const rows = await this.prisma.grupo.findMany({
       where: { miembros: { some: { usuarioId } } },
       include: {
-        miembros: { include: { usuario: { select: { id: true, nombre: true } } } },
+        miembros: { include: { usuario: { select: { id: true, username: true } } } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -23,16 +23,16 @@ export class PrismaGrupoRepository implements GrupoRepository {
       nombre: grupo.nombre,
       avatarUrl: grupo.avatarUrl,
       createdAt: grupo.createdAt,
-      miembros: grupo.miembros.map((m) => ({ id: m.usuario.id, nombre: m.usuario.nombre })),
+      miembros: grupo.miembros.map((m) => ({ id: m.usuario.id, username: m.usuario.username })),
     }));
   }
 
   async listMiembros(grupoId: string): Promise<PersonaRef[]> {
     const filas = await this.prisma.miembroGrupo.findMany({
       where: { grupoId },
-      include: { usuario: { select: { id: true, nombre: true } } },
+      include: { usuario: { select: { id: true, username: true } } },
     });
-    return filas.map((m) => ({ id: m.usuario.id, nombre: m.usuario.nombre }));
+    return filas.map((m) => ({ id: m.usuario.id, username: m.usuario.username }));
   }
 
   async create(nombre: string, usuarioIds: string[]): Promise<Grupo> {

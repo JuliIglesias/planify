@@ -71,13 +71,13 @@ export class PrismaGastoRepository implements GastoRepository {
       include: {
         acreedores: true,
         deudores: true,
-        creador: { select: { id: true, nombreDisplay: true } },
+        creador: { select: { id: true, username: true } },
       },
     });
 
     return rows.map((row) => ({
       ...toGastoCompleto(row),
-      creador: { id: row.creador.id, nombre: row.creador.nombreDisplay },
+      creador: { id: row.creador.id, username: row.creador.username },
     }));
   }
 

@@ -60,7 +60,7 @@ describe('TasksService — estados de tarea (Duda #4)', () => {
     const { service, eventos, participantes, logs } = armarTasks();
     const evento = eventos.agregar();
     const quienAsigna = participantes.agregar({ eventoId: evento.id });
-    const asignado = participantes.agregar({ eventoId: evento.id, nombreDisplay: 'Sofía' });
+    const asignado = participantes.agregar({ eventoId: evento.id, username: 'Sofía' });
 
     const tarea = await service.crear(evento.id, quienAsigna.id, 'Pedir pizzas');
     const resultado = await service.asignar(tarea.id, quienAsigna.id, asignado.id);
@@ -227,8 +227,8 @@ describe('GroupsService — gestión de miembros (Duda #12.2)', () => {
 describe('GroupsService — unirse por invitación con cuenta real (Item 2)', () => {
   it('un usuario registrado se une al grupo y queda participante del evento, no anónimo', async () => {
     const { service, grupos, eventos, usuarios, participantes, invitations } = armarGroups();
-    const organizador = usuarios.agregar({ nombre: 'Marcos' });
-    const invitado = usuarios.agregar({ nombre: 'Sofía' });
+    const organizador = usuarios.agregar({ username: 'Marcos' });
+    const invitado = usuarios.agregar({ username: 'Sofía' });
     const grupo = await grupos.create('Los Fibes', [organizador.id]);
     const evento = eventos.agregar({ grupoId: grupo.id, estado: 'planificacion' });
 
@@ -246,8 +246,8 @@ describe('GroupsService — unirse por invitación con cuenta real (Item 2)', ()
 
   it('reusar el link cuando ya es miembro del grupo no falla (idempotente)', async () => {
     const { service, grupos, eventos, usuarios, invitations } = armarGroups();
-    const organizador = usuarios.agregar({ nombre: 'Marcos' });
-    const invitado = usuarios.agregar({ nombre: 'Sofía' });
+    const organizador = usuarios.agregar({ username: 'Marcos' });
+    const invitado = usuarios.agregar({ username: 'Sofía' });
     const grupo = await grupos.create('Los Fibes', [organizador.id]);
     const evento = eventos.agregar({ grupoId: grupo.id, estado: 'planificacion' });
     const invitacion = await invitations.crear(evento.id);
@@ -260,7 +260,7 @@ describe('GroupsService — unirse por invitación con cuenta real (Item 2)', ()
 
   it('un token inexistente rechaza la unión', async () => {
     const { service, usuarios } = armarGroups();
-    const invitado = usuarios.agregar({ nombre: 'Sofía' });
+    const invitado = usuarios.agregar({ username: 'Sofía' });
 
     await expect(
       service.unirsePorInvitacion('token-que-no-existe', invitado.id),

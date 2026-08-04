@@ -94,13 +94,13 @@ export function createTestContainer(): TestContainer {
   const deviceRegistry = new FakeDeviceRegistry();
   const notifications = new NotificationsService(participantes, deviceRegistry, push);
   const activityLog = new ActivityLogService(logs, participantes, clock, notifications);
-  const auth = new AuthService(usuarios, hasher, tokens);
+  const auth = new AuthService(usuarios, participantes, hasher, tokens);
   const friends = new FriendsService(amistades, usuarios);
   const users = new UsersService(usuarios);
   const aiEvents = new AiEventsService(new HeuristicEventGenerator(), amistades);
   const profileAvailability = new ProfileAvailabilityService(disponibilidadPerfil, amistades);
   const locations = new LocationsService(ubicaciones);
-  const participants = new ParticipantsService(participantes, eventos, ids, activityLog);
+  const participants = new ParticipantsService(participantes, usuarios, eventos, ids, activityLog);
   const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
   const events = new EventsService(eventos, grupos, participantes, usuarios, activityLog, clock);
   const eventsQuery = new EventsQueryService(

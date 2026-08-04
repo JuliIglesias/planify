@@ -14,17 +14,17 @@
   "loginError": "No pudimos iniciar sesión. Revisá tus datos.",
   "loginAnonymousHint": "Para entrar como anónimo necesitás un link de invitación a un evento.",
   "loginAnonymousLinkLabel": "Link de invitación",
-  "loginAnonymousNameLabel": "Tu nombre",
+  "loginAnonymousNameLabel": "Tu username",
   "loginAnonymousNameHint": "ej. Sofía",
   "loginPendingInvitation": "Te invitaron a un evento. Iniciá sesión, creá una cuenta o continuá como anónimo para unirte.",
   "navHome": "Inicio",
   "navGroups": "Grupos",
   "navBalances": "Saldos",
   "navProfile": "Perfil",
-  "homeGreeting": "¡Hola, {nombre}!",
+  "homeGreeting": "¡Hola, {username}!",
   "@homeGreeting": {
     "placeholders": {
-      "nombre": {
+      "username": {
         "type": "String"
       }
     }
@@ -267,6 +267,20 @@
   "eventDetailNoDebts": "No hay deudas en este evento",
   "eventDetailAssignTo": "Asignar a alguien",
   "eventDetailTapToConfirm": "Tocá un bloque del mapa para confirmar el horario",
+  "eventDetailPickEndTime": "¿Hasta qué hora?",
+  "eventDetailStartTimeLabel": "El evento empieza a las {hora}",
+  "@eventDetailStartTimeLabel": {
+    "placeholders": {
+      "hora": { "type": "String" }
+    }
+  },
+  "eventDetailAvailableForRange": "{disponibles} de {total} están libres en todo este rango",
+  "@eventDetailAvailableForRange": {
+    "placeholders": {
+      "disponibles": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
   "eventDetailWhoPaid": "¿Quién pagó?",
   "eventDetailDivideBetween": "¿Entre quiénes se divide?",
   "eventDetailSelectAtLeastOne": "Debe seleccionar al menos una persona",
@@ -312,18 +326,18 @@
     }
   },
   "friendsTitle": "Mis amigos",
-  "friendsSearchHint": "Buscar por nombre o email",
+  "friendsSearchHint": "Buscar por username o email",
   "friendsAdd": "Agregar",
   "friendsRequests": "Solicitudes",
   "friendsAccept": "Aceptar",
   "friendsRequestSent": "Solicitud enviada",
   "friendsNoResults": "Sin resultados",
   "profileEdit": "Editar perfil",
-  "profileName": "Nombre",
+  "profileName": "Username",
   "profileLanguage": "Idioma",
   "profileSave": "Guardar",
   "registerTitle": "Crear cuenta",
-  "registerName": "Nombre",
+  "registerName": "Username",
   "registerEmail": "Email",
   "registerPassword": "Contraseña",
   "registerSubmit": "Registrarme",
@@ -347,21 +361,21 @@
   },
   "homeNoActivity": "Todavía no hay actividad",
   "balancesSettleAll": "Saldar todo",
-  "balancesSettleAllConfirm": "Se va a marcar como saldada tu deuda con {nombre}.",
-  "balancesSettleAllConfirmMulti": "Se van a saldar las {count} deudas que tenés con {nombre}, en todos los eventos.",
+  "balancesSettleAllConfirm": "Se va a marcar como saldada tu deuda con {username}.",
+  "balancesSettleAllConfirmMulti": "Se van a saldar las {count} deudas que tenés con {username}, en todos los eventos.",
   "balancesBreakdown": "DETALLE POR EVENTO",
-  "balancesNoDebtsWith": "No tenés deudas pendientes con {nombre}",
+  "balancesNoDebtsWith": "No tenés deudas pendientes con {username}",
   "balancesCompensationHint": "Compensado: debés ${debo} y te deben ${meDeben}",
   "@balancesSettleAllConfirm": {
     "placeholders": {
-      "nombre": {
+      "username": {
         "type": "String"
       }
     }
   },
   "@balancesSettleAllConfirmMulti": {
     "placeholders": {
-      "nombre": {
+      "username": {
         "type": "String"
       },
       "count": {
@@ -371,7 +385,7 @@
   },
   "@balancesNoDebtsWith": {
     "placeholders": {
-      "nombre": {
+      "username": {
         "type": "String"
       }
     }

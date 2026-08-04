@@ -18,7 +18,7 @@ export type AmistadEstado = 'pendiente' | 'aceptada';
 
 export interface Usuario {
   id: string;
-  nombre: string;
+  username: string;
   email: string;
   passwordHash: string;
   avatarUrl: string | null;
@@ -52,6 +52,8 @@ export interface Evento {
   rangoFin: Date;
   /** Cuántas veces se extendió `rangoFin` automáticamente (tope 1, ver ADR 0001). */
   extensionesRango: number;
+  /** Item 5 — fin del rango horario confirmado (ver docs/adrs/0002-rango-horario-evento.md). */
+  fechaHoraFin: Date | null;
   creadoPor: string;
   createdAt: Date;
 }
@@ -60,7 +62,7 @@ export interface Participante {
   id: string;
   eventoId: string;
   usuarioId: string | null;
-  nombreDisplay: string;
+  username: string;
   esAnonimo: boolean;
   esOrganizador: boolean;
   tokenSesion: string | null;
@@ -144,14 +146,14 @@ export interface Amistad {
 /** Referencia liviana a una persona, para mostrar en listas. */
 export interface PersonaRef {
   id: string;
-  nombre: string;
+  username: string;
 }
 
 /**
- * Item 3 (Fase 4) — resultado de buscar gente para agregar de amiga. Lleva
- * el email además del nombre porque el nombre no es único: la pantalla de
- * Amigos lo muestra en gris debajo para desambiguar entre resultados
- * parecidos, sin necesidad de un campo "username" separado.
+ * Resultado de buscar gente para agregar de amiga. Lleva el email además
+ * del username: aunque el username ya es único, el email lo hace más fácil
+ * de reconocer para alguien que no se acuerda el username exacto de la
+ * persona que busca.
  */
 export interface PersonaBusqueda extends PersonaRef {
   email: string;

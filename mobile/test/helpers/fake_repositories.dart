@@ -27,24 +27,24 @@ class FakeAuthRepository implements AuthRepository {
     return const SesionOrganizadorDto(
       token: 'token-test',
       usuarioId: 'usr-1',
-      nombre: 'Julieta Iglesias',
+      username: 'julieta_iglesias',
     );
   }
 
   @override
-  Future<SesionOrganizadorDto> register(String nombre, String email, String password) async {
+  Future<SesionOrganizadorDto> register(String username, String email, String password) async {
     llamadas.add('register:$email');
     if (fallaLogin) throw Exception('No se pudo registrar');
-    return SesionOrganizadorDto(token: 'token-test', usuarioId: 'usr-1', nombre: nombre);
+    return SesionOrganizadorDto(token: 'token-test', usuarioId: 'usr-1', username: username);
   }
 
   @override
   Future<SesionAnonimaDto> unirseComoAnonimo({
     required String eventoId,
-    required String nombreDisplay,
+    required String username,
   }) async {
-    llamadas.add('anonimo:$eventoId:$nombreDisplay');
-    return const SesionAnonimaDto(participanteId: 'part-1', tokenSesion: 'tok-anon');
+    llamadas.add('anonimo:$eventoId:$username');
+    return SesionAnonimaDto(participanteId: 'part-1', tokenSesion: 'tok-anon', username: username);
   }
 
   @override
@@ -84,6 +84,7 @@ class FakeEventsRepository implements EventsRepository {
     DateTime? rangoInicio,
     DateTime? rangoFin,
     bool necesitaDecisionRango = false,
+    DateTime? fechaHoraFin,
   }) =>
       DetalleEvento(
         id: 'evt-1',
@@ -95,17 +96,18 @@ class FakeEventsRepository implements EventsRepository {
         rangoInicio: rangoInicio ?? DateTime(2026, 8, 1),
         rangoFin: rangoFin ?? DateTime(2026, 8, 20),
         necesitaDecisionRango: necesitaDecisionRango,
+        fechaHoraFin: fechaHoraFin,
         miParticipanteId: 'part-1',
         soyOrganizador: soyOrganizador ?? conOrganizador,
         participantes: [
           if (conOrganizador)
             Participante(
               id: 'part-1',
-              nombreDisplay: 'Marcos',
+              username: 'Marcos',
               esOrganizador: true,
               estadoAsistencia: miEstadoAsistencia,
             ),
-          const Participante(id: 'part-2', nombreDisplay: 'Sofía', esAnonimo: true),
+          const Participante(id: 'part-2', username: 'Sofía', esAnonimo: true),
         ],
         tareas: tareas,
       );
@@ -152,10 +154,13 @@ class FakeAvailabilityRepository implements AvailabilityRepository {
   FakeAvailabilityRepository({
     this.slots = const [],
     this.misSlots = const [],
+    this.enRango = (disponibles: 0, total: 0),
   });
 
   List<HeatmapSlot> slots;
   List<({int diaSemana, int bloqueHora})> misSlots;
+  // Item 5 — resultado fijo que devuelve disponiblesEnRango en los tests.
+  ({int disponibles, int total}) enRango;
   final List<String> llamadas = [];
 
   @override
@@ -174,11 +179,25 @@ class FakeAvailabilityRepository implements AvailabilityRepository {
   Future<List<HeatmapSlot>> heatmap(String eventoId) async => slots;
 
   @override
+  Future<({int disponibles, int total})> disponiblesEnRango({
+    required String eventoId,
+    required int diaSemana,
+    required int horaInicio,
+    required int horaFin,
+  }) async {
+    llamadas.add('disponiblesEnRango:$diaSemana:$horaInicio:$horaFin');
+    return enRango;
+  }
+
+  @override
   Future<void> confirmarHorario({
     required String eventoId,
     required DateTime fechaHoraInicio,
+    required DateTime fechaHoraFin,
   }) async {
-    llamadas.add('confirmar:${fechaHoraInicio.toIso8601String()}');
+    llamadas.add(
+      'confirmar:${fechaHoraInicio.toIso8601String()}:${fechaHoraFin.toIso8601String()}',
+    );
   }
 }
 
@@ -263,7 +282,7 @@ class FakeBalancesRepository implements BalancesRepository {
   /// me deben $300 en el cine, así que quedan $200 a pagar.
   static DetalleConPersona detalleDeEjemplo() => const DetalleConPersona(
         personaId: 'usr-marcos',
-        nombre: 'Marcos',
+        username: 'Marcos',
         monto: '200.00',
         estado: 'pagar',
         totalQueDebo: '500.00',

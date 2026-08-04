@@ -12,7 +12,7 @@ export const decimalToString = (valor: Prisma.Decimal): string => valor.toString
 
 export function toUsuario(row: {
   id: string;
-  nombre: string;
+  username: string;
   email: string;
   passwordHash: string;
   avatarUrl: string | null;
@@ -39,7 +39,7 @@ export function toParticipante(row: {
   id: string;
   eventoId: string;
   usuarioId: string | null;
-  nombreDisplay: string;
+  username: string;
   esAnonimo: boolean;
   esOrganizador: boolean;
   tokenSesion: string | null;

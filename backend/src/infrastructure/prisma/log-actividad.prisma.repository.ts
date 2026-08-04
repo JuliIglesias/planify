@@ -27,12 +27,12 @@ export class PrismaLogActividadRepository implements LogActividadRepository {
     const rows = await this.prisma.logActividad.findMany({
       where: { eventoId },
       orderBy: { createdAt: 'desc' },
-      include: { actor: { select: { id: true, nombreDisplay: true } } },
+      include: { actor: { select: { id: true, username: true } } },
     });
 
     return rows.map((row) => ({
       ...toLogActividad(row),
-      actor: { id: row.actor.id, nombre: row.actor.nombreDisplay },
+      actor: { id: row.actor.id, username: row.actor.username },
     }));
   }
 
@@ -47,14 +47,14 @@ export class PrismaLogActividadRepository implements LogActividadRepository {
       orderBy: { createdAt: 'desc' },
       take: limite,
       include: {
-        actor: { select: { id: true, nombreDisplay: true } },
+        actor: { select: { id: true, username: true } },
         evento: { select: { nombre: true } },
       },
     });
 
     return rows.map((row) => ({
       ...toLogActividad(row),
-      actor: { id: row.actor.id, nombre: row.actor.nombreDisplay },
+      actor: { id: row.actor.id, username: row.actor.username },
       eventoNombre: row.evento.nombre,
     }));
   }

@@ -50,8 +50,8 @@ class _DetallePersonaSheetState extends ConsumerState<_DetallePersonaSheet> {
         title: Text(l10n.balancesSettleAll),
         content: Text(
           detalle.deudas.length > 1
-              ? l10n.balancesSettleAllConfirmMulti(detalle.nombre, detalle.deudas.length)
-              : l10n.balancesSettleAllConfirm(detalle.nombre),
+              ? l10n.balancesSettleAllConfirmMulti(detalle.username, detalle.deudas.length)
+              : l10n.balancesSettleAllConfirm(detalle.username),
         ),
         actions: [
           TextButton(
@@ -151,10 +151,10 @@ class _Contenido extends StatelessWidget {
           ),
           child: Column(
             children: [
-              AvatarStack(nombres: [detalle.nombre], radius: 28),
+              AvatarStack(nombres: [detalle.username], radius: 28),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                detalle.nombre,
+                detalle.username,
                 style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: AppSpacing.xs),
@@ -217,7 +217,7 @@ class _Contenido extends StatelessWidget {
               ? Padding(
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   child: Text(
-                    l10n.balancesNoDebtsWith(detalle.nombre),
+                    l10n.balancesNoDebtsWith(detalle.username),
                     style: theme.textTheme.bodyMedium,
                   ),
                 )

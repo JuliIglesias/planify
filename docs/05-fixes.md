@@ -704,3 +704,106 @@ introducir un color nuevo que rompiera la paleta ya definida.
   confirmar no muestra ninguna. Se agregó `fechaHoraInicio` como parámetro
   de `FakeEventsRepository.detalleDeEjemplo` para poder armar el caso.
 - Mobile 60→64, `flutter analyze` limpio.
+
+# Fase 5 — Username único para logueados y anónimos
+
+## Username único: reemplaza a "nombre" en toda la app, con auto-sufijo para anónimos
+
+**Origen: una pregunta destapó un hueco.** El usuario preguntó si el
+anónimo y el usuario logueado terminaban con un username único. La
+respuesta honesta era que no: `Usuario.nombre` no tenía ninguna
+restricción de unicidad (solo `email` la tenía) y
+`Participante.nombreDisplay` (el nombre del anónimo) no se validaba contra
+nada, ni siquiera contra otros anónimos del mismo evento — una decisión
+tomada a propósito en el Item 3 de la Fase 4 ("no hace falta un `username`
+único", ver esa entrada más arriba), que quedó obsoleta con este pedido.
+
+**Pedido del usuario:** que tanto los logueados como los anónimos tengan
+`username` en vez de `nombre`, y que sea único entre todos — ningún
+logueado ni anónimo puede repetir el de otro. Si validar que un anónimo no
+choque con un logueado resultaba complicado, la alternativa que el mismo
+usuario propuso era dejar que el anónimo elija cualquier username y
+agregarle un sufijo numérico (o "(anónimo)") automáticamente si ya está
+tomado, "lo que sea mejor" — decisión de mecanismo delegada.
+
+**Dos preguntas resueltas con el usuario antes de tocar código:**
+1. ¿El username reemplaza al nombre en todos lados, o queda un "nombre
+   para mostrar" aparte? → **Reemplaza en todos lados.** Es más simple y
+   evita mantener dos identidades por persona.
+2. ¿Cómo consigue un username la cuenta semilla (organizador) que ya
+   existe? → **Se autogenera** a partir del email/nombre existente, con
+   deduplicación, editable después desde Perfil.
+
+**Decisión de diseño — dos políticas de colisión distintas a propósito:**
+- **Registro (`AuthService.register`, cuenta real):** **rechaza** si el
+  username ya lo tiene otro `Usuario` o cualquier `Participante` anónimo
+  (de cualquier evento). Mutarle en silencio el username elegido a una
+  cuenta real sería sorprendente — mejor decirle "ya está en uso" y que
+  elija otro.
+- **Unirse como anónimo (`ParticipantsService.unirseComoAnonimo`):**
+  **nunca rechaza.** Si el username pedido ya lo tiene un `Usuario` o
+  otro anónimo (de cualquier evento), le agrega un sufijo numérico
+  (`Sofía` → `Sofía2` → `Sofía3`...) hasta encontrar uno libre. Un
+  anónimo es alguien que solo quiere sumarse a una juntada — bloquearlo
+  por un choque de nombre sería fricción injustificada. La respuesta del
+  endpoint devuelve el username final (`SesionAnonima.username`) para que
+  la UI pueda avisar si cambió.
+- Ambas comparaciones son **case-insensitive** (`MARCOS` choca con
+  `marcos`).
+
+**Fix (backend):**
+- `schema.prisma`: `Usuario.nombre` → `Usuario.username @unique`.
+  `Participante.nombreDisplay` → `Participante.username`, **sin**
+  `@@unique` a nivel de tabla (un usuario registrado participa de varios
+  eventos y repite legítimamente su username en cada fila; Prisma tampoco
+  soporta declarar un índice único parcial `WHERE es_anonimo = true` en el
+  schema — la unicidad real se valida en la aplicación).
+- Migración `20260804000000_username_unico`: renombra las columnas,
+  normaliza (minúsculas, espacios→guion bajo) y desambigua con un sufijo
+  numérico a cualquier `Usuario.username` que quede duplicado antes de
+  poder agregar la constraint única — los usuarios ya existentes tenían
+  `nombre` completamente libre.
+- `UsuarioRepository.findByUsername` (nuevo) y
+  `ParticipanteRepository.existsUsernameAnonimo` (nuevo, case-insensitive,
+  global a todos los eventos) — las dos consultas que arman ambas
+  políticas de colisión.
+- `AuthService.login` ahora acepta **username o email** como
+  identificador (detecta el formato y consulta el repositorio que
+  corresponde).
+- `AuthService.register` valida formato de username
+  (`^[a-z0-9_]{3,30}$`, normalizado a minúsculas) antes de chequear las
+  dos colisiones.
+- `prisma/seed.ts`: la cuenta organizadora semilla pasa a
+  `username: 'organizador_planify'`.
+- Renombrado mecánico de `nombre`→`username` en todos los DTOs, mappers y
+  repositorios Prisma que representan a una **persona** (`PersonaRef`,
+  `PersonaBusqueda`, `SaldoPorPersona`, `DetalleConPersona`, actor de
+  actividad, asignado de tarea, deudor/acreedor). Deliberadamente **sin
+  tocar** los `nombre` que son de una **cosa** (`Grupo.nombre`,
+  `Evento.nombre`) — se hizo caso por caso guiado por los errores de
+  `tsc`, no con un reemplazo global, porque un `sed` ciego habría
+  corrompido esos campos.
+
+**Fix (mobile):** mismo renombrado mecánico guiado por `flutter analyze`,
+en modelos (`Participante`, `SaldoPorPersona`, `DeudaEvento`,
+`DetalleConPersona`, `ActividadLog`, `Tarea`, `Persona`), `AuthRepository`
+(login por username o email, registro y unión anónima con `username`),
+`SessionController` y las pantallas que lo muestran (Login, Registro,
+Perfil, Home, Balances, detalle de evento, feed de actividad). Los
+labels de la UI (`profileName`, `registerName`,
+`loginAnonymousNameLabel`, `friendsSearchHint`, `homeGreeting`) se
+actualizaron en `app_es.arb`/`app_en.arb` para decir "username" en vez de
+"nombre", y se regeneraron con `flutter gen-l10n`.
+
+**Validación:**
+- Backend: `participants.service.test.ts` (nuevo, 8 tests) — cubre las
+  dos políticas de colisión (rechazo duro en registro, auto-sufijo en
+  anónimo), que la comparación es case-insensitive, que sigue sumando el
+  sufijo hasta encontrar uno libre, que la colisión es global entre
+  eventos, y que la respuesta trae el username final. `scrum14.test.ts`
+  ampliado con login por username, rechazo de username duplicado (contra
+  `Usuario` y contra anónimo) y rechazo de un `PATCH /me/profile` a un
+  username ya tomado. Backend 102→110, `tsc` y `eslint .` limpios.
+- Mobile: `register_screen_test.dart` (nuevo — la pantalla no tenía
+  ningún test) — el registro envía username/email/password y muestra el
+  error si falla. Mobile 64→66, `flutter analyze` limpio.

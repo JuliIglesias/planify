@@ -31,7 +31,7 @@ export interface ResumenGrupo {
   id: string;
   nombre: string;
   avatarUrl: string | null;
-  miembros: { id: string; nombre: string }[];
+  miembros: { id: string; username: string }[];
   noLeidos: number;
   tieneEventoNuevo: boolean;
   /**
@@ -153,7 +153,7 @@ export class GroupsService {
     // Duda #12.2: sumar un amigo al grupo le da visibilidad de todos sus
     // eventos. Se materializa como participante de cada evento aún activo, para
     // que aparezca al asignar gastos/tareas y pueda confirmar asistencia (H-01).
-    await this.materializarParticipantesActivos(grupoId, nuevoUsuarioId, nuevo.nombre);
+    await this.materializarParticipantesActivos(grupoId, nuevoUsuarioId, nuevo.username);
   }
 
   /**
@@ -177,14 +177,14 @@ export class GroupsService {
     const yaEsMiembro = await this.grupos.esMiembro(evento.grupoId, usuarioId);
     if (!yaEsMiembro) {
       await this.grupos.agregarMiembro(evento.grupoId, usuarioId);
-      await this.materializarParticipantesActivos(evento.grupoId, usuarioId, usuario.nombre);
+      await this.materializarParticipantesActivos(evento.grupoId, usuarioId, usuario.username);
     } else {
       // Reutilizó un link de un grupo del que ya es miembro: igual asegura
       // que quede participante de ESTE evento puntual (idempotente, H-01).
       await this.participantes.createParaUsuario({
         eventoId: evento.id,
         usuarioId,
-        nombreDisplay: usuario.nombre,
+        username: usuario.username,
       });
     }
 
@@ -194,7 +194,7 @@ export class GroupsService {
   private async materializarParticipantesActivos(
     grupoId: string,
     usuarioId: string,
-    nombreDisplay: string,
+    username: string,
   ): Promise<void> {
     const eventos = await this.eventos.listByGrupo(grupoId);
     const activos = eventos.filter(
@@ -204,7 +204,7 @@ export class GroupsService {
       await this.participantes.createParaUsuario({
         eventoId: evento.id,
         usuarioId,
-        nombreDisplay,
+        username,
       });
     }
   }

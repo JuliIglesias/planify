@@ -27,24 +27,24 @@ class FakeAuthRepository implements AuthRepository {
     return const SesionOrganizadorDto(
       token: 'token-test',
       usuarioId: 'usr-1',
-      nombre: 'Julieta Iglesias',
+      username: 'julieta_iglesias',
     );
   }
 
   @override
-  Future<SesionOrganizadorDto> register(String nombre, String email, String password) async {
+  Future<SesionOrganizadorDto> register(String username, String email, String password) async {
     llamadas.add('register:$email');
     if (fallaLogin) throw Exception('No se pudo registrar');
-    return SesionOrganizadorDto(token: 'token-test', usuarioId: 'usr-1', nombre: nombre);
+    return SesionOrganizadorDto(token: 'token-test', usuarioId: 'usr-1', username: username);
   }
 
   @override
   Future<SesionAnonimaDto> unirseComoAnonimo({
     required String eventoId,
-    required String nombreDisplay,
+    required String username,
   }) async {
-    llamadas.add('anonimo:$eventoId:$nombreDisplay');
-    return const SesionAnonimaDto(participanteId: 'part-1', tokenSesion: 'tok-anon');
+    llamadas.add('anonimo:$eventoId:$username');
+    return SesionAnonimaDto(participanteId: 'part-1', tokenSesion: 'tok-anon', username: username);
   }
 
   @override
@@ -94,11 +94,11 @@ class FakeEventsRepository implements EventsRepository {
           if (conOrganizador)
             Participante(
               id: 'part-1',
-              nombreDisplay: 'Marcos',
+              username: 'Marcos',
               esOrganizador: true,
               estadoAsistencia: miEstadoAsistencia,
             ),
-          const Participante(id: 'part-2', nombreDisplay: 'Sofía', esAnonimo: true),
+          const Participante(id: 'part-2', username: 'Sofía', esAnonimo: true),
         ],
         tareas: tareas,
       );
@@ -254,7 +254,7 @@ class FakeBalancesRepository implements BalancesRepository {
   /// me deben $300 en el cine, así que quedan $200 a pagar.
   static DetalleConPersona detalleDeEjemplo() => const DetalleConPersona(
         personaId: 'usr-marcos',
-        nombre: 'Marcos',
+        username: 'Marcos',
         monto: '200.00',
         estado: 'pagar',
         totalQueDebo: '500.00',

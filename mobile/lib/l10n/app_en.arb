@@ -14,17 +14,17 @@
   "loginError": "We couldn't sign you in. Check your details.",
   "loginAnonymousHint": "To join as a guest you need an event invitation link.",
   "loginAnonymousLinkLabel": "Invitation link",
-  "loginAnonymousNameLabel": "Your name",
+  "loginAnonymousNameLabel": "Your username",
   "loginAnonymousNameHint": "e.g. Sofía",
   "loginPendingInvitation": "You've been invited to an event. Sign in, create an account, or continue as a guest to join.",
   "navHome": "Home",
   "navGroups": "Groups",
   "navBalances": "Balances",
   "navProfile": "Profile",
-  "homeGreeting": "Hi, {nombre}!",
+  "homeGreeting": "Hi, {username}!",
   "@homeGreeting": {
     "placeholders": {
-      "nombre": {
+      "username": {
         "type": "String"
       }
     }
@@ -302,18 +302,18 @@
     }
   },
   "friendsTitle": "My friends",
-  "friendsSearchHint": "Search by name or email",
+  "friendsSearchHint": "Search by username or email",
   "friendsAdd": "Add",
   "friendsRequests": "Requests",
   "friendsAccept": "Accept",
   "friendsRequestSent": "Request sent",
   "friendsNoResults": "No results",
   "profileEdit": "Edit profile",
-  "profileName": "Name",
+  "profileName": "Username",
   "profileLanguage": "Language",
   "profileSave": "Save",
   "registerTitle": "Create account",
-  "registerName": "Name",
+  "registerName": "Username",
   "registerEmail": "Email",
   "registerPassword": "Password",
   "registerSubmit": "Sign up",
@@ -337,21 +337,21 @@
   },
   "homeNoActivity": "No activity yet",
   "balancesSettleAll": "Settle all",
-  "balancesSettleAllConfirm": "Your debt with {nombre} will be marked as settled.",
-  "balancesSettleAllConfirmMulti": "This will settle all {count} debts you have with {nombre}, across every event.",
+  "balancesSettleAllConfirm": "Your debt with {username} will be marked as settled.",
+  "balancesSettleAllConfirmMulti": "This will settle all {count} debts you have with {username}, across every event.",
   "balancesBreakdown": "BREAKDOWN BY EVENT",
-  "balancesNoDebtsWith": "You have no pending debts with {nombre}",
+  "balancesNoDebtsWith": "You have no pending debts with {username}",
   "balancesCompensationHint": "Offset: you owe ${debo} and you are owed ${meDeben}",
   "@balancesSettleAllConfirm": {
     "placeholders": {
-      "nombre": {
+      "username": {
         "type": "String"
       }
     }
   },
   "@balancesSettleAllConfirmMulti": {
     "placeholders": {
-      "nombre": {
+      "username": {
         "type": "String"
       },
       "count": {
@@ -361,7 +361,7 @@
   },
   "@balancesNoDebtsWith": {
     "placeholders": {
-      "nombre": {
+      "username": {
         "type": "String"
       }
     }

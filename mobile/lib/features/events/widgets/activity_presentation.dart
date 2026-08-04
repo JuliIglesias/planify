@@ -33,7 +33,7 @@ Color colorDeActividad(String tipo) => switch (tipo) {
     };
 
 String textoActividad(AppLocalizations l10n, ActividadLog entrada) {
-  final actor = entrada.actorNombre;
+  final actor = entrada.actorUsername;
   return switch (entrada.tipo) {
     'evento_creado' => l10n.activityEventCreated(actor),
     'horario_confirmado' => l10n.activityScheduleConfirmed(actor),
@@ -85,7 +85,7 @@ List<ActividadAgrupada> agruparActividades(List<ActividadLog> entradas, {int lim
   for (final entrada in entradas) {
     if (resultado.isNotEmpty) {
       final ultimo = resultado.last;
-      if (ultimo.entrada.actorNombre == entrada.actorNombre &&
+      if (ultimo.entrada.actorUsername == entrada.actorUsername &&
           ultimo.entrada.tipo == entrada.tipo &&
           ultimo.entrada.eventoId == entrada.eventoId) {
         resultado[resultado.length - 1] =
@@ -128,7 +128,7 @@ List<ActividadLogAgrupada> agruparLogDeEvento(List<ActividadLog> entradas) {
     if (esSaldado && resultado.isNotEmpty) {
       final ultimo = resultado.last;
       if (ultimo.entrada.tipo == 'deuda_saldada' &&
-          ultimo.entrada.actorNombre == entrada.actorNombre) {
+          ultimo.entrada.actorUsername == entrada.actorUsername) {
         resultado[resultado.length - 1] = ActividadLogAgrupada(
           entrada: ultimo.entrada,
           contrapartes: [
@@ -153,7 +153,7 @@ List<ActividadLogAgrupada> agruparLogDeEvento(List<ActividadLog> entradas) {
 String textoActividadLogAgrupada(AppLocalizations l10n, ActividadLogAgrupada grupo) {
   if (grupo.entrada.tipo == 'deuda_saldada' && grupo.contrapartes.length > 1) {
     return l10n.activityDebtSettledWith(
-      grupo.entrada.actorNombre,
+      grupo.entrada.actorUsername,
       _formatearNombres(grupo.contrapartes),
     );
   }

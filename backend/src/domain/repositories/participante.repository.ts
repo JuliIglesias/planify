@@ -2,14 +2,14 @@ import { AsistenciaEstado, Participante } from '../entities';
 
 export interface CrearParticipanteAnonimoData {
   eventoId: string;
-  nombreDisplay: string;
+  username: string;
   tokenSesion: string;
 }
 
 export interface CrearParticipanteRegistradoData {
   eventoId: string;
   usuarioId: string;
-  nombreDisplay: string;
+  username: string;
 }
 
 export interface ParticipanteRepository {
@@ -26,6 +26,14 @@ export interface ParticipanteRepository {
   listByUsuario(usuarioId: string): Promise<Participante[]>;
 
   createAnonimo(data: CrearParticipanteAnonimoData): Promise<Participante>;
+
+  /**
+   * Username único — HU-01/HU-27. Chequea contra TODOS los eventos (no solo
+   * uno): un participante anónimo puede aparecer en varios eventos, pero acá
+   * se busca si ALGUNA fila anónima ya usa ese username, para no chocar con
+   * una cuenta registrada que se quiera crear con el mismo. Case-insensitive.
+   */
+  existsUsernameAnonimo(username: string): Promise<boolean>;
 
   /**
    * Materializa a un miembro registrado del grupo como participante del evento.

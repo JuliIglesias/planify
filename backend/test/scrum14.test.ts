@@ -112,12 +112,20 @@ describe('SCRUM-14 — amigos (HU-31)', () => {
     expect(await friends.listar(ana.id)).toHaveLength(0);
     const solicitudes = await friends.solicitudesPendientes(bruno.id);
     expect(solicitudes).toHaveLength(1);
+    // Item 3 (Fase 5) — el email de quien envió la solicitud también viaja.
+    expect(solicitudes[0].de.email).toBe('ana@mail.com');
 
     await friends.aceptar(bruno.id, solicitudes[0].amistadId);
 
-    // Ahora son amigos, en ambos sentidos.
-    expect((await friends.listar(ana.id)).map((p) => p.username)).toEqual(['Bruno']);
-    expect((await friends.listar(bruno.id)).map((p) => p.username)).toEqual(['Ana']);
+    // Ahora son amigos, en ambos sentidos, y con email (Item 3, Fase 5): ya
+    // no hace falta pasar por buscar() para verlo.
+    const amigosDeAna = await friends.listar(ana.id);
+    expect(amigosDeAna.map((p) => p.username)).toEqual(['Bruno']);
+    expect(amigosDeAna[0].email).toBe('bruno@mail.com');
+
+    const amigosDeBruno = await friends.listar(bruno.id);
+    expect(amigosDeBruno.map((p) => p.username)).toEqual(['Ana']);
+    expect(amigosDeBruno[0].email).toBe('ana@mail.com');
   });
 
   it('no permite agregarse a uno mismo ni duplicar la solicitud', async () => {

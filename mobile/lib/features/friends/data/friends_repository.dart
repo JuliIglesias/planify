@@ -9,10 +9,10 @@ class Persona {
   const Persona({required this.id, required this.username, this.email});
   final String id;
   final String username;
-  /// Item 3 (Fase 4) — solo viaja en los resultados de búsqueda (no en la
-  /// lista de amigos ni en solicitudes pendientes). El username ahora sí es
-  /// único (ver docs/05-fixes.md), pero el email se deja igual para no
-  /// perder la desambiguación visual ya existente en la pantalla de Amigos.
+  /// El username ya es único, pero el email se sigue mostrando en gris
+  /// debajo (como una sola unidad visual) porque ayuda a reconocer a la
+  /// persona sin acordarse el username exacto — en búsqueda, en la lista
+  /// de amigos y en solicitudes pendientes por igual.
   final String? email;
 
   factory Persona.fromJson(Map<String, dynamic> json) => Persona(

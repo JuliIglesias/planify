@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { Amistad, PersonaRef } from '../../domain/entities';
+import { Amistad, PersonaBusqueda } from '../../domain/entities';
 import { AmistadRepository, SolicitudAmistad } from '../../domain/repositories';
 
 function toAmistad(row: {
@@ -53,31 +53,31 @@ export class PrismaAmistadRepository implements AmistadRepository {
     return toAmistad(row);
   }
 
-  async listAmigos(usuarioId: string): Promise<PersonaRef[]> {
+  async listAmigos(usuarioId: string): Promise<PersonaBusqueda[]> {
     const rows = await this.prisma.amistad.findMany({
       where: {
         estado: 'aceptada',
         OR: [{ usuarioId1: usuarioId }, { usuarioId2: usuarioId }],
       },
       include: {
-        usuario1: { select: { id: true, username: true } },
-        usuario2: { select: { id: true, username: true } },
+        usuario1: { select: { id: true, username: true, email: true } },
+        usuario2: { select: { id: true, username: true, email: true } },
       },
     });
     return rows.map((a) => {
       const otro = a.usuarioId1 === usuarioId ? a.usuario2 : a.usuario1;
-      return { id: otro.id, username: otro.username };
+      return { id: otro.id, username: otro.username, email: otro.email };
     });
   }
 
   async listSolicitudesRecibidas(usuarioId: string): Promise<SolicitudAmistad[]> {
     const rows = await this.prisma.amistad.findMany({
       where: { estado: 'pendiente', usuarioId2: usuarioId },
-      include: { usuario1: { select: { id: true, username: true } } },
+      include: { usuario1: { select: { id: true, username: true, email: true } } },
     });
     return rows.map((a) => ({
       amistadId: a.id,
-      de: { id: a.usuario1.id, username: a.usuario1.username },
+      de: { id: a.usuario1.id, username: a.usuario1.username, email: a.usuario1.email },
     }));
   }
 }

@@ -140,6 +140,10 @@ export class FakeAmistadRepository implements R.AmistadRepository {
     return this.usuarios?.usuarios.find((u) => u.id === usuarioId)?.username ?? usuarioId;
   }
 
+  private emailDe(usuarioId: string): string {
+    return this.usuarios?.usuarios.find((u) => u.id === usuarioId)?.email ?? '';
+  }
+
   async crear(solicitanteId: string, receptorId: string): Promise<D.Amistad> {
     const amistad: D.Amistad = {
       id: nuevoId('ami'),
@@ -172,7 +176,7 @@ export class FakeAmistadRepository implements R.AmistadRepository {
     return amistad;
   }
 
-  async listAmigos(usuarioId: string): Promise<D.PersonaRef[]> {
+  async listAmigos(usuarioId: string): Promise<D.PersonaBusqueda[]> {
     return this.amistades
       .filter(
         (a) =>
@@ -181,14 +185,21 @@ export class FakeAmistadRepository implements R.AmistadRepository {
       )
       .map((a) => {
         const otro = a.usuarioId1 === usuarioId ? a.usuarioId2 : a.usuarioId1;
-        return { id: otro, username: this.usernameDe(otro) };
+        return { id: otro, username: this.usernameDe(otro), email: this.emailDe(otro) };
       });
   }
 
   async listSolicitudesRecibidas(usuarioId: string): Promise<R.SolicitudAmistad[]> {
     return this.amistades
       .filter((a) => a.estado === 'pendiente' && a.usuarioId2 === usuarioId)
-      .map((a) => ({ amistadId: a.id, de: { id: a.usuarioId1, username: this.usernameDe(a.usuarioId1) } }));
+      .map((a) => ({
+        amistadId: a.id,
+        de: {
+          id: a.usuarioId1,
+          username: this.usernameDe(a.usuarioId1),
+          email: this.emailDe(a.usuarioId1),
+        },
+      }));
   }
 }
 

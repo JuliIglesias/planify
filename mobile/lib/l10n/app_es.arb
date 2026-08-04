@@ -77,6 +77,8 @@
   "balancesStateSettled": "Saldado",
   "balancesOweYou": "Te debe",
   "balancesYouOwe": "Le debés",
+  "expensesPickEventTitle": "¿A qué evento pertenece?",
+  "expensesNoEventsToPick": "Todavía no tenés eventos activos para agregarle un gasto",
   "profileTitle": "Perfil",
   "profileWeeklyAvailability": "Disponibilidad Semanal",
   "profileAvailabilityHint": "Tocá los bloques para marcar tus ratos libres",

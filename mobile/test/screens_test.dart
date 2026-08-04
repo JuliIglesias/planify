@@ -10,6 +10,7 @@ import 'package:planify/features/groups/data/groups_repository.dart';
 import 'package:planify/features/groups/group_availability_screen.dart';
 import 'package:planify/features/groups/group_manage_sheet.dart';
 import 'package:planify/features/groups/groups_screen.dart';
+import 'package:planify/features/home/app_shell.dart';
 import 'package:planify/features/home/home_screen.dart';
 import 'package:planify/features/history/history_screen.dart';
 import 'package:planify/features/profile/profile_screen.dart';
@@ -73,6 +74,39 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(r'$-500,00'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Item 4 (Tanda 6) — las cards de resumen tienen ícono, y el toggle '
+        'en píldora filtra la lista', (tester) async {
+      final balances = FakeBalancesRepository(
+        balance: const Balance(
+          balanceNeto: '1000.00',
+          meDeben: '1500.00',
+          debo: '500.00',
+          saldos: [
+            SaldoPorPersona(id: 'u1', username: 'Sofía', monto: '1500.00', estado: 'pendiente'),
+            SaldoPorPersona(id: 'u2', username: 'Marcos', monto: '500.00', estado: 'pagar'),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(appDePrueba(const BalancesScreen(), balances: balances));
+      await tester.pumpAndSettle();
+
+      // Cards de resumen: mismos íconos que en el feed de actividad.
+      expect(find.byIcon(Icons.price_check), findsOneWidget); // "Me deben"
+      expect(find.byIcon(Icons.receipt_long), findsOneWidget); // "Debo"
+
+      // Arranca mostrando ambos.
+      expect(find.text('Sofía'), findsOneWidget);
+      expect(find.text('Marcos'), findsOneWidget);
+
+      await tester.tap(find.text(l10n.balancesIOwe).last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Marcos'), findsOneWidget);
+      expect(find.text('Sofía'), findsNothing);
     });
   });
 
@@ -685,6 +719,38 @@ void main() {
       );
       // No queda una línea individual por cada una.
       expect(find.text(l10n.activityDebtSettled('Marcos')), findsNothing);
+    });
+  });
+
+  group('AppShell (Tanda 6, Item 4 — FAB contextual)', () {
+    testWidgets('en Home, el FAB abre "Crear evento"', (tester) async {
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(appDePrueba(const AppShell()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.eventCreateTitle), findsOneWidget);
+    });
+
+    testWidgets(
+        'en Gastos (Saldos), el FAB arranca "nuevo gasto", no "crear evento"',
+        (tester) async {
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(appDePrueba(const AppShell()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.navBalances));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      // Sin eventos activos (fake vacío por default): el flujo de gasto
+      // avisa que no hay dónde cargarlo, en vez de abrir "Crear evento".
+      expect(find.text(l10n.expensesNoEventsToPick), findsOneWidget);
+      expect(find.text(l10n.eventCreateTitle), findsNothing);
     });
   });
 

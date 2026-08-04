@@ -167,6 +167,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get balancesYouOwe => 'You owe';
 
   @override
+  String get expensesPickEventTitle => 'Which event is this for?';
+
+  @override
+  String get expensesNoEventsToPick =>
+      'You don\'t have any active events to add an expense to yet';
+
+  @override
   String get profileTitle => 'Profile';
 
   @override

@@ -166,6 +166,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get balancesYouOwe => 'Le debés';
 
   @override
+  String get expensesPickEventTitle => '¿A qué evento pertenece?';
+
+  @override
+  String get expensesNoEventsToPick =>
+      'Todavía no tenés eventos activos para agregarle un gasto';
+
+  @override
   String get profileTitle => 'Perfil';
 
   @override

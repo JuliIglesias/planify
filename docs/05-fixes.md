@@ -34,6 +34,34 @@ layout, para que esta regresión no vuelva.
   overflow en una pantalla angosta (320px), colores correctos por selección,
   y que tocar un tab dispara `onTap` con el índice correcto.
 
+## Item 4: Gastos (Saldos) — FAB contextual, toggle y cards de resumen
+
+- **FAB contextual (`app_shell.dart`):** el FAB global creaba siempre un
+  evento. Ahora es contextual por índice de tab: en Gastos (`_index == 2`,
+  la pantalla "Saldos"/`BalancesScreen`) llama a
+  `iniciarCrearGastoRapido(context, ref)`; en el resto sigue abriendo
+  `CreateEventScreen`.
+- **`quick_expense_sheet.dart` (nuevo):** como "nuevo gasto" no tiene un
+  evento implícito (a diferencia de crearlo desde el detalle de un evento),
+  primero muestra una hoja para elegir a cuál de los eventos activos del
+  usuario pertenece (`upcomingEventsProvider`), y recién ahí reutiliza el
+  mismo diálogo de siempre (`pedirDatosGasto`) con los participantes de ese
+  evento. Si no hay eventos activos, avisa en vez de abrir un diálogo vacío.
+- **Toggle (`PillToggle`, nuevo en `core/widgets/pill_toggle.dart`):** widget
+  genérico con la misma estructura visual que la Navbar del Item 1 (blanco
+  translúcido, opción no seleccionada en `AppColors.inactiveBlue`, la
+  seleccionada con chip blanco + texto `AppColors.primary`). Reemplaza el
+  `SegmentedButton` de Material en `balances_screen.dart`.
+- **Cards de resumen (`_MiniResumen` en `balances_screen.dart`):** ahora
+  llevan un `CircleAvatar` con ícono y color, reusando literalmente
+  `iconoDeActividad`/`colorDeActividad` de `activity_presentation.dart`:
+  "Me deben" toma el ícono/color de `deuda_saldada` (`Icons.price_check`,
+  verde) y "Debo" el de `gasto_agregado` (`Icons.receipt_long`, rojo) — el
+  mismo lenguaje visual que ya usa el feed de actividad de los eventos.
+- **Tests:** `screens_test.dart` — cards con los íconos esperados y el
+  toggle filtrando la lista; `AppShell` con el FAB abriendo "Crear evento"
+  en Home pero arrancando el flujo de gasto (no un evento) en Gastos.
+
 ## Item 5: Foto de grupo nativa + limpieza de "Disponibilidad entre amigos"
 
 **Contexto de la duda planteada:** se encontraron dos features distintas

@@ -392,6 +392,18 @@ abstract class AppLocalizations {
   /// **'Le debés'**
   String get balancesYouOwe;
 
+  /// No description provided for @expensesPickEventTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿A qué evento pertenece?'**
+  String get expensesPickEventTitle;
+
+  /// No description provided for @expensesNoEventsToPick.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no tenés eventos activos para agregarle un gasto'**
+  String get expensesNoEventsToPick;
+
   /// No description provided for @profileTitle.
   ///
   /// In es, this message translates to:

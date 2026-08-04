@@ -77,6 +77,8 @@
   "balancesStateSettled": "Settled",
   "balancesOweYou": "Owes you",
   "balancesYouOwe": "You owe",
+  "expensesPickEventTitle": "Which event is this for?",
+  "expensesNoEventsToPick": "You don't have any active events to add an expense to yet",
   "profileTitle": "Profile",
   "profileWeeklyAvailability": "Weekly Availability",
   "profileAvailabilityHint": "Tap the blocks to mark your free time",

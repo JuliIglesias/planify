@@ -6,8 +6,10 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/utils/money_format.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/event_card.dart';
+import '../../core/widgets/pill_toggle.dart';
 import '../../core/widgets/status_badge.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../events/widgets/activity_presentation.dart';
 import '../home/home_providers.dart';
 import 'person_detail_sheet.dart';
 
@@ -90,7 +92,10 @@ class BalancesScreen extends ConsumerWidget {
                           child: _MiniResumen(
                             label: l10n.balancesOwedToMe,
                             monto: b.meDeben,
-                            color: AppColors.success,
+                            // Item 4 — mismo ícono/color que "deuda saldada"
+                            // en el feed de actividad (plata a favor).
+                            color: colorDeActividad('deuda_saldada'),
+                            icono: iconoDeActividad('deuda_saldada'),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
@@ -98,7 +103,10 @@ class BalancesScreen extends ConsumerWidget {
                           child: _MiniResumen(
                             label: l10n.balancesIOwe,
                             monto: b.debo,
-                            color: AppColors.danger,
+                            // Item 4 — mismo ícono/color que "gasto agregado"
+                            // en el feed de actividad (plata en contra).
+                            color: colorDeActividad('gasto_agregado'),
+                            icono: iconoDeActividad('gasto_agregado'),
                           ),
                         ),
                       ],
@@ -107,21 +115,14 @@ class BalancesScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: SegmentedButton<_Filtro>(
-                        segments: [
-                          ButtonSegment(value: _Filtro.todo, label: Text(l10n.balancesAll)),
-                          ButtonSegment(
-                            value: _Filtro.meDeben,
-                            label: Text(l10n.balancesOwedToMe),
-                          ),
-                          ButtonSegment(value: _Filtro.debo, label: Text(l10n.balancesIOwe)),
-                        ],
-                        selected: {filtro},
-                        onSelectionChanged: (s) =>
-                            ref.read(_filtroBalanceProvider.notifier).set(s.first),
-                      ),
+                    child: PillToggle<_Filtro>(
+                      options: [
+                        (value: _Filtro.todo, label: l10n.balancesAll),
+                        (value: _Filtro.meDeben, label: l10n.balancesOwedToMe),
+                        (value: _Filtro.debo, label: l10n.balancesIOwe),
+                      ],
+                      selected: filtro,
+                      onChanged: (f) => ref.read(_filtroBalanceProvider.notifier).set(f),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -181,12 +182,21 @@ class BalancesScreen extends ConsumerWidget {
   }
 }
 
+/// Item 4 (Tanda 6) — cards de resumen con ícono + color, reusando los
+/// mismos que ya identifican a "gasto agregado"/"deuda saldada" en el feed
+/// de actividad, para que un mismo concepto se vea igual en toda la app.
 class _MiniResumen extends StatelessWidget {
-  const _MiniResumen({required this.label, required this.monto, required this.color});
+  const _MiniResumen({
+    required this.label,
+    required this.monto,
+    required this.color,
+    required this.icono,
+  });
 
   final String label;
   final String monto;
   final Color color;
+  final IconData icono;
 
   @override
   Widget build(BuildContext context) {
@@ -194,15 +204,28 @@ class _MiniResumen extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Column(
+        child: Row(
           children: [
-            Text(label, style: Theme.of(context).textTheme.labelSmall),
-            Text(
-              '\$${MoneyFormat.format(monto)}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: color.withValues(alpha: 0.15),
+              child: Icon(icono, color: color, size: 18),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: Theme.of(context).textTheme.labelSmall),
+                  Text(
+                    '\$${MoneyFormat.format(monto)}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
                   ),
+                ],
+              ),
             ),
           ],
         ),

@@ -1,5 +1,39 @@
 # Tanda 6 - Rediseño de navegación y limpieza de features
 
+## Item 1: Navbar — estilos, textos siempre visibles y bug de layout
+
+**Causa raíz del corte (confirmada antes de tocar CSS):** no era un ancho
+fijo hardcodeado. `AppBottomNav` armaba un `Row` con
+`mainAxisAlignment.spaceEvenly` cuyos 4 `_NavItem` NO eran flexibles: cada uno
+se dimensionaba por su contenido intrínseco (ícono + padding, y el texto solo
+aparecía si estaba seleccionado). Con el texto oculto la mayoría del tiempo,
+el ancho combinado entraba de casualidad; apenas el texto pasa a estar
+siempre visible (este mismo item), el ancho combinado de los 4 ítems supera
+el ancho disponible y Flutter overflowea el `Row` sin wrappear ni encoger
+nada — se ve como la barra cortada, sin poder hacer scroll para verla
+completa. Se agregó un test (`app_bottom_nav_test.dart`) que renderiza la
+navbar en una pantalla de 320px de ancho y falla si hay una excepción de
+layout, para que esta regresión no vuelva.
+
+- **`mobile/lib/core/widgets/app_scaffold.dart` (`AppBottomNav`):**
+  - Se sacó el `BackdropFilter`/blur (glassmorphism): ahora es un contenedor
+    con `AppColors.surface.withValues(alpha: 0.92)` — blanco fijo, translúcido
+    pero sin desenfoque.
+  - Cada `_NavItem` ahora va envuelto en `Expanded` (el fix del bug) y es una
+    `Column` (ícono arriba, texto siempre debajo, antes era un `Row` que solo
+    mostraba el texto si estaba seleccionado).
+  - Colores: ítems no seleccionados usan el nuevo token `AppColors.inactiveBlue`
+    ("celestito"), el seleccionado usa `AppColors.primary`.
+  - El ítem seleccionado tiene un "pill" de fondo blanco (`AppColors.surface`,
+    opaco) con una sombra sutil para diferenciarse del contenedor
+    translúcido de fondo.
+- **`AppColors.inactiveBlue`** (`core/theme/app_colors.dart`) — token nuevo,
+  reusado también por el toggle de Gastos (Item 4) para que ambos componentes
+  compartan la misma línea visual.
+- **Tests:** `app_bottom_nav_test.dart` — los 4 textos siempre visibles, sin
+  overflow en una pantalla angosta (320px), colores correctos por selección,
+  y que tocar un tab dispara `onTap` con el índice correcto.
+
 ## Item 5: Foto de grupo nativa + limpieza de "Disponibilidad entre amigos"
 
 **Contexto de la duda planteada:** se encontraron dos features distintas

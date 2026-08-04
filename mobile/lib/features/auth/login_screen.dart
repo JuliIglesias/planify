@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_text_field.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'data/auth_repository.dart';
 import 'pending_invitation_provider.dart';
@@ -67,7 +68,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(height: AppSpacing.md),
             Text(l10n.loginAnonymousLinkLabel),
             const SizedBox(height: AppSpacing.xs),
-            TextField(
+            AppTextField(
               controller: tokenController,
               autofocus: true,
               decoration: const InputDecoration(
@@ -77,7 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(height: AppSpacing.sm),
             Text(l10n.loginAnonymousNameLabel),
             const SizedBox(height: AppSpacing.xs),
-            TextField(
+            AppTextField(
               controller: nombreController,
               decoration: InputDecoration(hintText: l10n.loginAnonymousNameHint),
             ),
@@ -208,20 +209,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ],
                 const SizedBox(height: AppSpacing.xl),
-                TextField(
+                AppTextField(
+                  variant: AppTextFieldVariant.email,
                   controller: _emailController,
                   enabled: !cargando,
-                  keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     hintText: l10n.loginUserOrEmail,
                     prefixIcon: const Icon(Icons.person_outline),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                TextField(
+                AppTextField(
+                  variant: AppTextFieldVariant.password,
                   controller: _passwordController,
                   enabled: !cargando,
-                  obscureText: true,
                   onSubmitted: (_) => _ingresar(),
                   decoration: InputDecoration(
                     hintText: l10n.loginPassword,

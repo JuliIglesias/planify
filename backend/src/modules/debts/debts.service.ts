@@ -141,8 +141,6 @@ export class DebtsService {
 
     const deudas = await this.deudas.listByParticipantes([...misIds]);
 
-    let meDebenCents = 0;
-    let deboCents = 0;
     const porPersona = new Map<string, { nombre: string; netoCents: number }>();
 
     for (const deuda of deudas) {
@@ -156,9 +154,6 @@ export class DebtsService {
       // participante, porque su identidad no sobrevive al evento (Duda #5).
       const clave = otro.usuarioId ?? otro.id;
 
-      if (soyDeudor) deboCents += montoCents;
-      else meDebenCents += montoCents;
-
       const actual = porPersona.get(clave) ?? { nombre: otro.nombre, netoCents: 0 };
       actual.netoCents += soyDeudor ? -montoCents : montoCents;
       porPersona.set(clave, actual);
@@ -170,6 +165,18 @@ export class DebtsService {
       monto: fromCents(Math.abs(valor.netoCents)),
       estado: valor.netoCents === 0 ? 'saldado' : valor.netoCents < 0 ? 'pagar' : 'pendiente',
     }));
+
+    // BUGFIX (tanda-4 / Item 7): meDeben y debo se calculan a partir de los
+    // saldos ya NETEADOS por persona, no de la suma bruta de deudas
+    // individuales.  Así, si juli me debe $2667 en un evento y yo le debo
+    // $2500 en otro, el cuadro "Debo" muestra $0 (ya cancelado por el neto
+    // de $167) en lugar de seguir mostrando los $2500 originales.
+    let meDebenCents = 0;
+    let deboCents = 0;
+    for (const { netoCents } of porPersona.values()) {
+      if (netoCents > 0) meDebenCents += netoCents;
+      else if (netoCents < 0) deboCents += -netoCents;
+    }
 
     return {
       balanceNeto: fromCents(meDebenCents - deboCents),

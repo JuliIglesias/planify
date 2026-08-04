@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_text_field.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'session_controller.dart';
 
@@ -57,7 +58,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             children: [
-              TextField(
+              AppTextField(
                 controller: _nombre,
                 enabled: !cargando,
                 decoration: InputDecoration(
@@ -66,20 +67,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              TextField(
+              AppTextField(
+                variant: AppTextFieldVariant.email,
                 controller: _email,
                 enabled: !cargando,
-                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: l10n.registerEmail,
                   prefixIcon: const Icon(Icons.mail_outline),
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              TextField(
+              AppTextField(
+                variant: AppTextFieldVariant.password,
                 controller: _password,
                 enabled: !cargando,
-                obscureText: true,
                 onSubmitted: (_) => _registrar(),
                 decoration: InputDecoration(
                   labelText: l10n.registerPassword,

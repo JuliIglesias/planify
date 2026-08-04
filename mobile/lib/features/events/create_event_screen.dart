@@ -6,6 +6,7 @@ import 'data/events_repository.dart';
 import 'data/tasks_repository.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_text_field.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../friends/data/friends_repository.dart';
 import '../friends/friend_picker.dart';
@@ -101,7 +102,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l10n.eventAiTitle),
-        content: TextField(
+        content: AppTextField(
           controller: ctrl,
           autofocus: true,
           maxLines: 3,
@@ -226,7 +227,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l10n.eventSavePlace),
-        content: TextField(
+        content: AppTextField(
           controller: ctrl,
           autofocus: true,
           decoration: InputDecoration(hintText: l10n.eventPlaceLabelHint),
@@ -309,7 +310,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          TextField(
+                          AppTextField(
                             controller: _nombre,
                             autofocus: true,
                             onChanged: (_) => setState(() {}),
@@ -319,7 +320,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          TextField(
+                          AppTextField(
                             controller: _lugar,
                             onChanged: (_) => setState(() {}),
                             decoration: InputDecoration(
@@ -385,7 +386,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                           const Divider(height: AppSpacing.xl),
                           Text(l10n.eventNewGroup, style: theme.textTheme.titleSmall),
                           const SizedBox(height: AppSpacing.sm),
-                          TextField(
+                          AppTextField(
                             controller: _nuevoGrupo,
                             onChanged: (_) => setState(() {
                               if (_nuevoGrupo.text.isNotEmpty) {

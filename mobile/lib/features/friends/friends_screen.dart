@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_text_field.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'data/friends_repository.dart';
 
@@ -68,7 +69,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          TextField(
+          AppTextField(
             controller: _busquedaCtrl,
             onChanged: _buscar,
             decoration: InputDecoration(

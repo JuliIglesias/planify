@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_text_field.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
 /// Un aporte de un pagador dentro de un gasto (soporta varios — FR7).
@@ -127,15 +128,15 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
+            AppTextField(
               controller: _descripcionController,
               autofocus: true,
               decoration: InputDecoration(hintText: l10n.eventDetailExpenseDescription),
             ),
             const SizedBox(height: AppSpacing.sm),
-            TextField(
+            AppTextField(
+              variant: AppTextFieldVariant.money,
               controller: _montoController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 hintText: l10n.eventDetailExpenseAmount,
                 prefixText: r'$ ',
@@ -307,9 +308,9 @@ class _FilaAcreedor extends StatelessWidget {
         if (mostrarMonto)
           SizedBox(
             width: 90,
-            child: TextField(
+            child: AppTextField(
+              variant: AppTextFieldVariant.money,
               controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.end,
               decoration: const InputDecoration(prefixText: r'$ ', isDense: true),
               onChanged: (_) => onMonto(),

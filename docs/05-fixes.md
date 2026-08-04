@@ -704,3 +704,33 @@ introducir un color nuevo que rompiera la paleta ya definida.
   confirmar no muestra ninguna. Se agregó `fechaHoraInicio` como parámetro
   de `FakeEventsRepository.detalleDeEjemplo` para poder armar el caso.
 - Mobile 60→64, `flutter analyze` limpio.
+
+---
+
+# Tanda 4 — 7 correcciones (UI/UX y Saldos)
+
+> Items implementados secuencialmente según el plan: 7 → 1 → 3 → 2 → 4 → 5 → 6.
+
+## Item 7 — Bug: Cálculo real de saldos no neteaba entre eventos cruzados (Bloqueante)
+
+**Causa raíz:** `DebtsService.balanceDe()` sumaba los totales de "Me deben" y "Debo" recorriendo la lista cruda de deudas *antes* de agruparlas (netearlas) por persona. Si el usuario le debía $500 a Marcos por un Asado, y Marcos le debía $300 por el Cine, la UI agrupaba bien a la persona (neto $200 a favor de Marcos) pero el total general sumaba $300 a "Me deben" y $500 a "Debo". Peor aún, si la otra persona aparecía en un evento como anónimo (cruzando por `participanteId`) y en otro como registrado (cruzando por `usuarioId`), generaban filas separadas en la lista de saldos y no se cancelaban.
+
+**Fix:**
+- Los acumuladores `meDebenCents` y `deboCents` se calcularon de nuevo *después* del bucle `porPersona.values()`. Ahora suman estrictamente el saldo neto a favor o en contra con cada persona.
+- Si el saldo neto es a mi favor, va a "Me deben", si es en mi contra, a "Debo", sin arrastrar las deudas brutas individuales.
+
+**Validación:**
+- `debts-cross-event.test.ts` — 2 tests nuevos que verifican que si la persona queda debiendo neto (ej. debe $500 y le deben $300), `debo` da 200 y `meDeben` da 0. Backend 100→102 tests.
+
+## Item 1 — Todos los inputs unificados: primera letra mayúscula (UI/UX)
+
+**Causa raíz:** los inputs de texto estaban sueltos (usando `TextField` o `TextFormField`) y todo lo ingresado quedaba en minúscula, lo que se veía feo en nombres o lugares. Faltaba una convención reutilizable.
+
+**Fix:**
+- `AppTextField` (nuevo, `core/widgets/`): un widget base que envuelve a `TextField`. Por defecto, escucha los cambios y capitaliza la primera letra (usando variante `text`).
+- Variantes explícitas: `email` (teclado email, sin mayúsculas), `password` (`obscureText`), `money` (teclado decimal).
+- Se reemplazaron todas las instancias de `TextField` y `TextFormField` sueltas en la app (`login_screen.dart`, `register_screen.dart`, `create_event_screen.dart`, `expense_dialog.dart`, `task_dialogs.dart`, `friends_screen.dart`, `group_manage_sheet.dart`).
+- Se manejaron casos particulares (ej. `group_manage_sheet.dart` y `task_dialogs.dart` necesitaban un `TextEditingController` temporal en vez de un simple `initialValue` porque ahora es un widget propio).
+
+**Validación:**
+- `flutter analyze` 100% limpio en los archivos modificados.

@@ -89,6 +89,49 @@ describe('Balances — compensación cruzada entre eventos (FR9)', () => {
     expect(balance.balanceNeto).toBe('-200.00');
   });
 
+  /**
+   * BUGFIX Item 7 (tanda-4) — los cuadros "Me deben" y "Debo" de la pantalla
+   * Balances deben reflejar los saldos YA NETEADOS por persona, no la suma
+   * bruta de deudas individuales.
+   *
+   * Escenario: Julieta le debe $500 a Marcos (Asado) y Marcos le debe $300
+   * a Julieta (Cine). El neto es que Julieta le debe $200 a Marcos.
+   *
+   * ANTES del fix: meDeben = $300 (bruto), debo = $500 (bruto).
+   * DESPUÉS del fix: meDeben = $0, debo = $200 (solo el neto, porque Marcos
+   *   no le debe nada a Julieta neto — es Julieta quien queda debiendo $200).
+   */
+  it('[Item7] meDeben y debo reflejan saldos neteados, no sumas brutas', async () => {
+    const { service } = armarEscenario();
+
+    const balance = await service.balanceDe('usr-juli');
+
+    // Julieta termina debiendo $200 neto → debo = $200, meDeben = $0.
+    // Antes del fix: meDeben era $300 y debo era $500 (brutos sin netear).
+    expect(balance.debo).toBe('200.00');
+    expect(balance.meDeben).toBe('0.00');
+    expect(balance.balanceNeto).toBe('-200.00');
+  });
+
+  /**
+   * BUGFIX Item 7 — caso inverso: cuando el neto favorece al usuario, el
+   * cuadro "Debo" debe mostrar $0.00, no la deuda bruta que queda cancelada
+   * por lo que la otra persona le debe en otro evento.
+   *
+   * Escenario: el mismo par, visto desde Marcos.
+   * Marcos le debe $300 a Juli (Cine) pero Juli le debe $500 (Asado).
+   * Neto: Juli le debe $200 a Marcos → meDeben = $200, debo = $0.
+   */
+  it('[Item7] cuando el neto es acreedor, debo queda en cero', async () => {
+    const { service } = armarEscenario();
+
+    const balance = await service.balanceDe('usr-marcos');
+
+    expect(balance.meDeben).toBe('200.00');
+    expect(balance.debo).toBe('0.00');
+    expect(balance.balanceNeto).toBe('200.00');
+  });
+
   it('el detalle muestra el desglose por evento y el neto', async () => {
     const { service, asado, cine } = armarEscenario();
 

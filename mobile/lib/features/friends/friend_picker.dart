@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'data/friends_repository.dart';
@@ -80,8 +81,16 @@ class _FriendPickerSheetState extends ConsumerState<_FriendPickerSheet> {
                     children: [
                       for (final amigo in visibles)
                         if (widget.multiple)
+                          // Item 3 — `CheckboxListTile` ya hace clickeable
+                          // toda la fila por defecto (no solo el checkbox);
+                          // acá se suma el email como una sola unidad
+                          // visual con el username.
                           CheckboxListTile(
                             title: Text(amigo.username),
+                            subtitle: amigo.email != null
+                                ? Text(amigo.email!,
+                                    style: const TextStyle(color: AppColors.textSecondary))
+                                : null,
                             value: _seleccionados.containsKey(amigo.id),
                             onChanged: (v) => setState(() {
                               if (v == true) {
@@ -95,6 +104,10 @@ class _FriendPickerSheetState extends ConsumerState<_FriendPickerSheet> {
                           ListTile(
                             leading: const Icon(Icons.person_outline),
                             title: Text(amigo.username),
+                            subtitle: amigo.email != null
+                                ? Text(amigo.email!,
+                                    style: const TextStyle(color: AppColors.textSecondary))
+                                : null,
                             onTap: () => Navigator.pop(context, [amigo]),
                           ),
                     ],

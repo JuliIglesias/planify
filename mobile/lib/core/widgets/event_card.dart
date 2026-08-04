@@ -5,6 +5,20 @@ import '../theme/app_spacing.dart';
 import 'avatar_stack.dart';
 import 'status_badge.dart';
 
+class EventCardPill {
+  const EventCardPill({
+    required this.label,
+    required this.icon,
+    required this.backgroundColor,
+    required this.foregroundColor,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color backgroundColor;
+  final Color foregroundColor;
+}
+
 /// Card de evento reutilizada en Home, Groups e Historial
 /// (docs/00-ui-entendimiento.md §5 — componente compartido #1).
 class EventCard extends StatelessWidget {
@@ -18,6 +32,7 @@ class EventCard extends StatelessWidget {
     this.monto,
     this.montoColor,
     this.chips = const [],
+    this.pills,
     this.width,
     this.topBadge,
     this.trailing,
@@ -32,6 +47,7 @@ class EventCard extends StatelessWidget {
   final String? monto;
   final Color? montoColor;
   final List<String> chips;
+  final List<EventCardPill>? pills;
   final double? width;
   final Widget? topBadge;
   final Widget? trailing;
@@ -100,7 +116,44 @@ class EventCard extends StatelessWidget {
                   ),
                 ),
               ],
-              if (chips.isNotEmpty) ...[
+              if (pills != null && pills!.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    for (final pill in pills!)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: pill.backgroundColor,
+                          borderRadius: BorderRadius.circular(AppSpacing.pillRadius),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              pill.icon,
+                              size: 14,
+                              color: pill.foregroundColor,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              pill.label,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: pill.foregroundColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ] else if (chips.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Wrap(
                   spacing: AppSpacing.xs,

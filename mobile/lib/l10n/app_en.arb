@@ -332,6 +332,20 @@
   "friendsAccept": "Accept",
   "friendsRequestSent": "Request sent",
   "friendsNoResults": "No results",
+  "friendProfileAvailability": "Compared availability",
+  "friendProfileLegendBoth": "We match",
+  "friendProfileLegendMeOnly": "Only you",
+  "friendProfileLegendFriendOnly": "Only {username}",
+  "@friendProfileLegendFriendOnly": {
+    "placeholders": {
+      "username": { "type": "String" }
+    }
+  },
+  "friendProfileLegendNeither": "Neither free",
+  "friendProfileEventsInCommon": "Events in common",
+  "friendProfileNoEvents": "No shared events yet",
+  "friendProfileGroupsInCommon": "Groups in common",
+  "friendProfileNoGroups": "No shared groups yet",
   "profileEdit": "Edit profile",
   "profileName": "Username",
   "profileLanguage": "Language",

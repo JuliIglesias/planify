@@ -6,6 +6,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'data/friends_repository.dart';
+import 'friend_profile_screen.dart';
 
 final _requestsProvider = FutureProvider<List<SolicitudAmistad>>(
   (ref) => ref.watch(friendsRepositoryProvider).solicitudesPendientes(),
@@ -170,6 +171,13 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                     children: [
                       for (final p in lista)
                         ListTile(
+                          // Item 4 — toca cualquier parte de la fila para
+                          // ver el perfil de solo lectura de ese amigo.
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => FriendProfileScreen(usuarioId: p.id),
+                            ),
+                          ),
                           leading: const Icon(Icons.person, color: AppColors.primary),
                           title: Text(p.username),
                           // Item 3 — email en gris debajo del username, como

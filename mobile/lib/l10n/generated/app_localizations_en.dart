@@ -125,6 +125,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String unreadActivities(int count) {
+    return '$count mensajes nuevos';
+  }
+
+  @override
+  String get eventUrgentDecision => 'Decisión pendiente';
+
+  @override
   String get groupsNoUpcoming => 'No upcoming events';
 
   @override
@@ -589,6 +597,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get friendsNoResults => 'No results';
+
+  @override
+  String get friendProfileAvailability => 'Compared availability';
+
+  @override
+  String get friendProfileLegendBoth => 'We match';
+
+  @override
+  String get friendProfileLegendMeOnly => 'Only you';
+
+  @override
+  String friendProfileLegendFriendOnly(String username) {
+    return 'Only $username';
+  }
+
+  @override
+  String get friendProfileLegendNeither => 'Neither free';
+
+  @override
+  String get friendProfileEventsInCommon => 'Events in common';
+
+  @override
+  String get friendProfileNoEvents => 'No shared events yet';
+
+  @override
+  String get friendProfileGroupsInCommon => 'Groups in common';
+
+  @override
+  String get friendProfileNoGroups => 'No shared groups yet';
 
   @override
   String get profileEdit => 'Edit profile';

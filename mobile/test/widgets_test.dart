@@ -53,6 +53,25 @@ void main() {
       expect(find.text('4 confirmados'), findsOneWidget);
       expect(find.text(r'$1.200'), findsOneWidget);
     });
+
+    testWidgets('muestra pills con iconos y colores', (tester) async {
+      await tester.pumpWidget(
+        _wrap(const EventCard(
+          titulo: 'Asado en lo de Marcos',
+          pills: [
+            EventCardPill(
+              label: '3 confirmados',
+              icon: Icons.people_outline,
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+          ],
+        )),
+      );
+
+      expect(find.text('3 confirmados'), findsOneWidget);
+      expect(find.byIcon(Icons.people_outline), findsOneWidget);
+    });
   });
 
   group('CollapsibleSection (Item 3)', () {

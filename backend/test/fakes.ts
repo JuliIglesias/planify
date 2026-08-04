@@ -276,6 +276,7 @@ export class FakeEventoRepository implements R.EventoRepository {
       lugarTexto: data.lugarTexto,
       estado: 'planificacion',
       fechaHoraInicio: null,
+      fechaHoraFin: null,
       creadoPor: '',
       createdAt: new Date('2026-07-28T10:00:00Z'),
     };
@@ -309,10 +310,11 @@ export class FakeEventoRepository implements R.EventoRepository {
     return evento;
   }
 
-  async confirmarHorario(id: string, fechaHoraInicio: Date) {
+  async confirmarHorario(id: string, fechaHoraInicio: Date, fechaHoraFin: Date) {
     const evento = this.eventos.find((e) => e.id === id)!;
     evento.estado = 'confirmado';
     evento.fechaHoraInicio = fechaHoraInicio;
+    evento.fechaHoraFin = fechaHoraFin;
     return evento;
   }
 
@@ -375,6 +377,7 @@ export class FakeEventoRepository implements R.EventoRepository {
       lugarTexto: 'Casa de Juli',
       estado: 'planificacion',
       fechaHoraInicio: null,
+      fechaHoraFin: null,
       creadoPor: 'part-1',
       createdAt: new Date('2026-07-28T10:00:00Z'),
       ...parcial,
@@ -780,6 +783,42 @@ export class FakeDisponibilidadRepository implements R.DisponibilidadRepository 
     return this.slots
       .filter((s) => s.eventoId === eventoId && s.participanteId === participanteId)
       .map((s) => ({ diaSemana: s.diaSemana, bloqueHora: s.bloqueHora }));
+  }
+
+  async disponiblesEnRango(
+    eventoId: string,
+    diaSemana: number,
+    bloqueHoraInicio: number,
+    bloqueHoraFin: number,
+  ): Promise<R.DisponibilidadEnRango> {
+    const bloquesPorParticipante = new Map<string, Set<number>>();
+    for (const s of this.slots.filter(
+      (x) =>
+        x.eventoId === eventoId &&
+        x.diaSemana === diaSemana &&
+        x.bloqueHora >= bloqueHoraInicio &&
+        x.bloqueHora < bloqueHoraFin,
+    )) {
+      const participante = this.participantes?.participantes.find(
+        (p) => p.id === s.participanteId,
+      );
+      if (participante?.estadoAsistencia === 'rechazado') continue;
+
+      const bloques = bloquesPorParticipante.get(s.participanteId) ?? new Set<number>();
+      bloques.add(s.bloqueHora);
+      bloquesPorParticipante.set(s.participanteId, bloques);
+    }
+
+    const bloquesNecesarios = bloqueHoraFin - bloqueHoraInicio;
+    const disponibles = [...bloquesPorParticipante.values()].filter(
+      (bloques) => bloques.size >= bloquesNecesarios,
+    ).length;
+
+    const total = (this.participantes?.participantes ?? []).filter(
+      (p) => p.eventoId === eventoId && p.estadoAsistencia !== 'rechazado',
+    ).length;
+
+    return { disponibles, total };
   }
 }
 

@@ -311,18 +311,37 @@ export function createRoutes(c: Container): Router {
     }),
   );
 
+  // Item 5 — cuánta gente está libre en TODO un rango horario propuesto (no
+  // en un bloque suelto), para que el organizador elija el fin con esa info.
+  router.get(
+    '/events/:id/availability/range',
+    soloParticipante,
+    asyncHandler(async (req: Request, res: Response) => {
+      const { diaSemana, horaInicio, horaFin } = req.query;
+      res.json(
+        await c.availability.disponiblesEnRango(
+          String(req.params.id),
+          Number(diaSemana),
+          Number(horaInicio),
+          Number(horaFin),
+        ),
+      );
+    }),
+  );
 
   router.patch(
     '/events/:id/confirm',
     soloOrganizador,
     asyncHandler(async (req: OrganizerRequest, res: Response) => {
-      const { fechaHoraInicio } = req.body ?? {};
+      const { fechaHoraInicio, fechaHoraFin } = req.body ?? {};
       if (!fechaHoraInicio) throw new BadRequestError('fechaHoraInicio es requerido');
+      if (!fechaHoraFin) throw new BadRequestError('fechaHoraFin es requerido');
       res.json(
         await c.availability.confirmarHorario(
           exigirUsuario(req),
           String(req.params.id),
           new Date(fechaHoraInicio),
+          new Date(fechaHoraFin),
         ),
       );
     }),

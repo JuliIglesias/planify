@@ -32,7 +32,8 @@ export interface EventoRepository {
   createWithOrganizer(data: CrearEventoData): Promise<{ evento: Evento; organizador: Participante }>;
 
   updateEstado(id: string, estado: EventoEstado): Promise<Evento>;
-  confirmarHorario(id: string, fechaHoraInicio: Date): Promise<Evento>;
+  /** Item 5 — el horario confirmado es un rango: inicio y fin. */
+  confirmarHorario(id: string, fechaHoraInicio: Date, fechaHoraFin: Date): Promise<Evento>;
 
   /**
    * Próximos: en planificación (sin fecha aún) o confirmados cuya fecha todavía

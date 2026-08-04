@@ -447,6 +447,19 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tocá un bloque del mapa para confirmar el horario';
 
   @override
+  String get eventDetailPickEndTime => '¿Hasta qué hora?';
+
+  @override
+  String eventDetailStartTimeLabel(String hora) {
+    return 'El evento empieza a las $hora';
+  }
+
+  @override
+  String eventDetailAvailableForRange(int disponibles, int total) {
+    return '$disponibles de $total están libres en todo este rango';
+  }
+
+  @override
   String get eventDetailWhoPaid => '¿Quién pagó?';
 
   @override

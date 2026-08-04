@@ -890,6 +890,24 @@ abstract class AppLocalizations {
   /// **'Tocá un bloque del mapa para confirmar el horario'**
   String get eventDetailTapToConfirm;
 
+  /// No description provided for @eventDetailPickEndTime.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Hasta qué hora?'**
+  String get eventDetailPickEndTime;
+
+  /// No description provided for @eventDetailStartTimeLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'El evento empieza a las {hora}'**
+  String eventDetailStartTimeLabel(String hora);
+
+  /// No description provided for @eventDetailAvailableForRange.
+  ///
+  /// In es, this message translates to:
+  /// **'{disponibles} de {total} están libres en todo este rango'**
+  String eventDetailAvailableForRange(int disponibles, int total);
+
   /// No description provided for @eventDetailWhoPaid.
   ///
   /// In es, this message translates to:

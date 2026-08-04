@@ -80,6 +80,7 @@ class FakeEventsRepository implements EventsRepository {
     String miEstadoAsistencia = 'confirmado',
     // Item 5 — para testear el horario ya fijado por el organizador.
     DateTime? fechaHoraInicio,
+    DateTime? fechaHoraFin,
   }) =>
       DetalleEvento(
         id: 'evt-1',
@@ -88,6 +89,7 @@ class FakeEventsRepository implements EventsRepository {
         lugarTexto: 'Casa de Nacho',
         estado: estado,
         fechaHoraInicio: fechaHoraInicio,
+        fechaHoraFin: fechaHoraFin,
         miParticipanteId: 'part-1',
         soyOrganizador: soyOrganizador ?? conOrganizador,
         participantes: [
@@ -143,10 +145,13 @@ class FakeAvailabilityRepository implements AvailabilityRepository {
   FakeAvailabilityRepository({
     this.slots = const [],
     this.misSlots = const [],
+    this.enRango = (disponibles: 0, total: 0),
   });
 
   List<HeatmapSlot> slots;
   List<({int diaSemana, int bloqueHora})> misSlots;
+  // Item 5 — resultado fijo que devuelve disponiblesEnRango en los tests.
+  ({int disponibles, int total}) enRango;
   final List<String> llamadas = [];
 
   @override
@@ -165,11 +170,25 @@ class FakeAvailabilityRepository implements AvailabilityRepository {
   Future<List<HeatmapSlot>> heatmap(String eventoId) async => slots;
 
   @override
+  Future<({int disponibles, int total})> disponiblesEnRango({
+    required String eventoId,
+    required int diaSemana,
+    required int horaInicio,
+    required int horaFin,
+  }) async {
+    llamadas.add('disponiblesEnRango:$diaSemana:$horaInicio:$horaFin');
+    return enRango;
+  }
+
+  @override
   Future<void> confirmarHorario({
     required String eventoId,
     required DateTime fechaHoraInicio,
+    required DateTime fechaHoraFin,
   }) async {
-    llamadas.add('confirmar:${fechaHoraInicio.toIso8601String()}');
+    llamadas.add(
+      'confirmar:${fechaHoraInicio.toIso8601String()}:${fechaHoraFin.toIso8601String()}',
+    );
   }
 }
 

@@ -91,6 +91,9 @@ model Evento {
   lugarTexto     String       @map("lugar_texto")
   estado         EventoEstado @default(planificacion)
   fechaHoraInicio DateTime?   @map("fecha_hora_inicio")
+  // Item 5 (Fase 5): el horario confirmado es un RANGO, no un instante — el
+  // organizador fija inicio y fin (ver docs/adrs/0002-rango-horario-evento.md).
+  fechaHoraFin    DateTime?   @map("fecha_hora_fin")
   creadoPor      String       @map("creado_por") // participante_id del organizador
   createdAt      DateTime     @default(now()) @map("created_at")
 

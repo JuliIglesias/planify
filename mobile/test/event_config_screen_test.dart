@@ -161,4 +161,110 @@ void main() {
 
     expect(find.byIcon(Icons.star), findsNothing);
   });
+
+  testWidgets(
+      'un rango horario fijado marca TODOS sus bloques con estrella, no solo el primero (Item 5)',
+      (tester) async {
+    final confirmado = FakeEventsRepository(
+      detalleEvento: FakeEventsRepository.detalleDeEjemplo(
+        estado: 'confirmado',
+        fechaHoraInicio: DateTime(2026, 8, 3, 19), // lunes 19:00
+        fechaHoraFin: DateTime(2026, 8, 3, 23), // hasta las 23:00 → 4 bloques
+      ),
+    );
+
+    usarPantallaAlta(tester, alto: 4000);
+    await tester.pumpWidget(
+      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), events: confirmado),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.star), findsNWidgets(4));
+  });
+
+  testWidgets(
+      'tocar un bloque del heatmap abre el selector de hora de fin, con la '
+      'disponibilidad del rango elegido (Item 5)', (tester) async {
+    final availability = FakeAvailabilityRepository(
+      enRango: (disponibles: 3, total: 5),
+    );
+
+    usarPantallaAlta(tester, alto: 4000);
+    await tester.pumpWidget(
+      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), availability: availability),
+    );
+    await tester.pumpAndSettle();
+
+    // La segunda grilla es el heatmap de solo lectura (la primera es "Mi
+    // disponibilidad", editable). Tocar su primera celda = lunes 00h.
+    final celdaHeatmap = find
+        .descendant(
+          of: find.byType(WeeklyAvailabilityGrid).at(1),
+          matching: find.byType(GestureDetector),
+        )
+        .first;
+
+    await tester.tap(celdaHeatmap);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.eventDetailPickEndTime), findsOneWidget);
+    expect(find.text(l10n.eventDetailStartTimeLabel('00:00')), findsOneWidget);
+    expect(find.text(l10n.eventDetailAvailableForRange(3, 5)), findsOneWidget);
+    expect(availability.llamadas, contains('disponiblesEnRango:0:0:2'));
+  });
+
+  testWidgets('confirmar en el selector de fin llama a confirmarHorario con inicio Y fin (Item 5)',
+      (tester) async {
+    final availability = FakeAvailabilityRepository();
+
+    usarPantallaAlta(tester, alto: 4000);
+    await tester.pumpWidget(
+      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), availability: availability),
+    );
+    await tester.pumpAndSettle();
+
+    final celdaHeatmap = find
+        .descendant(
+          of: find.byType(WeeklyAvailabilityGrid).at(1),
+          matching: find.byType(GestureDetector),
+        )
+        .first;
+
+    await tester.tap(celdaHeatmap);
+    await tester.pumpAndSettle();
+
+    // Default: hora de fin = inicio + 2 (00h → 02h), sin tocar el dropdown.
+    await tester.tap(find.text(l10n.commonConfirm));
+    await tester.pumpAndSettle();
+
+    final llamada = availability.llamadas.firstWhere((l) => l.startsWith('confirmar:'));
+    expect(llamada, contains('T00:00:00.000'));
+    expect(llamada, contains('T02:00:00.000'));
+  });
+
+  testWidgets('cancelar el selector de fin no confirma ningún horario (Item 5)',
+      (tester) async {
+    final availability = FakeAvailabilityRepository();
+
+    usarPantallaAlta(tester, alto: 4000);
+    await tester.pumpWidget(
+      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), availability: availability),
+    );
+    await tester.pumpAndSettle();
+
+    final celdaHeatmap = find
+        .descendant(
+          of: find.byType(WeeklyAvailabilityGrid).at(1),
+          matching: find.byType(GestureDetector),
+        )
+        .first;
+
+    await tester.tap(celdaHeatmap);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.commonCancel));
+    await tester.pumpAndSettle();
+
+    expect(availability.llamadas.where((l) => l.startsWith('confirmar:')), isEmpty);
+  });
 }

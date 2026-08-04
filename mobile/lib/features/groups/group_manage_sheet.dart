@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_dialog.dart';
+import '../../core/widgets/app_text_field.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../friends/friend_picker.dart';
 import '../home/home_providers.dart';
@@ -132,7 +134,7 @@ class _GestionGrupoSheetState extends ConsumerState<_GestionGrupoSheet> {
               onTap: () async {
                 final confirmado = await showDialog<bool>(
                   context: context,
-                  builder: (ctx) => AlertDialog(
+                  builder: (ctx) => AppDialog(
                     title: Text(l10n.groupsLeave),
                     content: Text(l10n.groupsLeaveConfirm),
                     actions: [
@@ -167,7 +169,7 @@ Future<String?> _pedirTexto(
   String? inicial,
 }) async {
   final l10n = AppLocalizations.of(context)!;
-  var valor = inicial ?? '';
+  final ctrl = TextEditingController(text: inicial ?? '');
 
   void cerrar(BuildContext dialogContext, String? resultado) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -178,24 +180,25 @@ Future<String?> _pedirTexto(
 
   final resultado = await showDialog<String>(
     context: context,
-    builder: (ctx) => AlertDialog(
+    builder: (ctx) => AppDialog(
       title: Text(titulo),
-      content: TextFormField(
+      content: AppTextField(
+        controller: ctrl,
         autofocus: true,
-        initialValue: valor,
         decoration: InputDecoration(labelText: label),
-        onChanged: (texto) => valor = texto,
-        onFieldSubmitted: (_) => cerrar(ctx, valor),
+        onSubmitted: (_) => cerrar(ctx, ctrl.text),
       ),
       actions: [
         TextButton(onPressed: () => cerrar(ctx, null), child: Text(l10n.commonCancel)),
         FilledButton(
-          onPressed: () => cerrar(ctx, valor),
+          onPressed: () => cerrar(ctx, ctrl.text),
           child: Text(l10n.commonSave),
         ),
       ],
     ),
   );
+  // El diálogo ya se cerró; liberamos el controller en el siguiente frame.
+  WidgetsBinding.instance.addPostFrameCallback((_) => ctrl.dispose());
   final limpio = resultado?.trim();
   return (limpio == null || limpio.isEmpty) ? null : limpio;
 }

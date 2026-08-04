@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/app_dialog.dart';
+import '../../../core/widgets/app_text_field.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
 /// HU-20 — pide el título de una tarea nueva.
@@ -27,12 +29,24 @@ class _TaskTitleDialog extends StatefulWidget {
 }
 
 class _TaskTitleDialogState extends State<_TaskTitleDialog> {
-  String _titulo = '';
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   void _submit() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      Navigator.pop(context, _titulo);
+      Navigator.pop(context, _ctrl.text);
     });
   }
 
@@ -40,14 +54,13 @@ class _TaskTitleDialogState extends State<_TaskTitleDialog> {
   Widget build(BuildContext context) {
     final l10n = widget.l10n;
 
-    return AlertDialog(
+    return AppDialog(
       title: Text(l10n.eventDetailAddTask),
-      content: TextFormField(
+      content: AppTextField(
+        controller: _ctrl,
         autofocus: true,
-        initialValue: _titulo,
         decoration: InputDecoration(hintText: l10n.eventDetailTaskTitle),
-        onChanged: (valor) => _titulo = valor,
-        onFieldSubmitted: (_) => _submit(),
+        onSubmitted: (_) => _submit(),
       ),
       actions: [
         TextButton(

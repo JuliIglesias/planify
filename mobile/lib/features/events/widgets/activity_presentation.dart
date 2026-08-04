@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/models/models.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/money_format.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
 /// Cómo se muestra cada tipo de actividad.
@@ -61,11 +62,12 @@ String textoActividad(AppLocalizations l10n, ActividadLog entrada) {
 String? montoDeActividad(ActividadLog entrada) {
   final monto = entrada.payload?['monto'];
   if (monto == null) return null;
+  final montoFormat = MoneyFormat.format(monto.toString());
 
   return switch (entrada.tipo) {
-    'gasto_agregado' => '-\$$monto',
-    'deuda_saldada' => '+\$$monto',
-    _ => '\$$monto',
+    'gasto_agregado' => '-\$$montoFormat',
+    'deuda_saldada' => '+\$$montoFormat',
+    _ => '\$$montoFormat',
   };
 }
 

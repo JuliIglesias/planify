@@ -11,5 +11,7 @@ export interface TareaRepository {
 
   create(eventoId: string, titulo: string, creadoPor: string): Promise<Tarea>;
   asignar(id: string, asignadoA: string): Promise<TareaConAsignado>;
+  desasignar(id: string): Promise<TareaConAsignado>;
   cambiarEstado(id: string, estado: TareaEstado): Promise<Tarea>;
+  eliminar(id: string): Promise<void>;
 }

@@ -34,7 +34,7 @@ class WeeklyAvailabilityGrid extends StatelessWidget {
     this.totalParticipantes = 0,
     this.onToggle,
     this.onSlotTap,
-    this.slotFijado,
+    this.slotsFijados = const {},
   });
 
   /// Primera franja mostrada, en horas (ej. 8 = 08:00).
@@ -49,11 +49,12 @@ class WeeklyAvailabilityGrid extends StatelessWidget {
   final ValueChanged<AvailabilitySlot>? onToggle;
   final ValueChanged<AvailabilitySlot>? onSlotTap;
 
-  /// Item 5 — el horario que el organizador ya fijó para el evento (HU-09).
-  /// Se distingue del resto del heatmap con otro color + una estrella, para
+  /// Item 5 — el RANGO horario que el organizador ya fijó para el evento
+  /// (HU-09): un slot por cada hora entre el inicio y el fin, no uno solo.
+  /// Se distinguen del resto del heatmap con otro color + una estrella, para
   /// que se note que es EL horario elegido y no solo un bloque con buena
   /// disponibilidad.
-  final AvailabilitySlot? slotFijado;
+  final Set<AvailabilitySlot> slotsFijados;
 
   bool get _esHeatmap => onToggle == null;
 
@@ -108,7 +109,7 @@ class WeeklyAvailabilityGrid extends StatelessWidget {
                       disponibles: heatmap[AvailabilitySlot(dia, horaInicio + fila)] ?? 0,
                       totalParticipantes: totalParticipantes,
                       esHeatmap: _esHeatmap,
-                      esFijado: slotFijado == AvailabilitySlot(dia, horaInicio + fila),
+                      esFijado: slotsFijados.contains(AvailabilitySlot(dia, horaInicio + fila)),
                       onTap: () {
                         final slot = AvailabilitySlot(dia, horaInicio + fila);
                         onToggle?.call(slot);

@@ -15,13 +15,13 @@ class RegisterScreen extends ConsumerStatefulWidget {
 }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
-  final _nombre = TextEditingController();
+  final _username = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
 
   @override
   void dispose() {
-    _nombre.dispose();
+    _username.dispose();
     _email.dispose();
     _password.dispose();
     super.dispose();
@@ -31,7 +31,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     await ref.read(sessionControllerProvider.notifier).registrar(
-          _nombre.text.trim(),
+          _username.text.trim(),
           _email.text.trim(),
           _password.text,
         );
@@ -58,7 +58,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: Column(
             children: [
               TextField(
-                controller: _nombre,
+                controller: _username,
                 enabled: !cargando,
                 decoration: InputDecoration(
                   labelText: l10n.registerName,

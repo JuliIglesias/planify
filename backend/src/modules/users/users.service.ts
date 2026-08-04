@@ -3,14 +3,14 @@ import { UsuarioRepository } from '../../domain/repositories';
 
 export interface PerfilPublico {
   id: string;
-  nombre: string;
+  username: string;
   email: string;
   avatarUrl: string | null;
   idiomaPreferido: string;
 }
 
 export interface ActualizarPerfilInput {
-  nombre?: string;
+  username?: string;
   avatarUrl?: string | null;
   idiomaPreferido?: string;
 }
@@ -26,16 +26,23 @@ export class UsersService {
   }
 
   async actualizar(usuarioId: string, input: ActualizarPerfilInput): Promise<PerfilPublico> {
-    const nombre = input.nombre?.trim();
-    if (input.nombre !== undefined && !nombre) {
-      throw new BadRequestError('El nombre no puede quedar vacío');
+    const username = input.username?.trim();
+    if (input.username !== undefined && !username) {
+      throw new BadRequestError('El username no puede quedar vacío');
     }
     if (input.idiomaPreferido !== undefined && !['es', 'en'].includes(input.idiomaPreferido)) {
       throw new BadRequestError('Idioma no soportado (es | en)');
     }
 
+    if (username !== undefined) {
+      const existente = await this.usuarios.findByUsername(username);
+      if (existente && existente.id !== usuarioId) {
+        throw new BadRequestError('Ese username ya está en uso');
+      }
+    }
+
     const actualizado = await this.usuarios.updateProfile(usuarioId, {
-      ...(nombre !== undefined ? { nombre } : {}),
+      ...(username !== undefined ? { username } : {}),
       ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {}),
       ...(input.idiomaPreferido !== undefined ? { idiomaPreferido: input.idiomaPreferido } : {}),
     });
@@ -44,14 +51,14 @@ export class UsersService {
 
   private aPublico(u: {
     id: string;
-    nombre: string;
+    username: string;
     email: string;
     avatarUrl: string | null;
     idiomaPreferido: string;
   }): PerfilPublico {
     return {
       id: u.id,
-      nombre: u.nombre,
+      username: u.username,
       email: u.email,
       avatarUrl: u.avatarUrl,
       idiomaPreferido: u.idiomaPreferido,

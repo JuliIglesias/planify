@@ -32,7 +32,7 @@ void main() {
           saldos: [
             SaldoPorPersona(
               id: 'u1',
-              nombre: 'Sofía',
+              username: 'Sofía',
               monto: '2250.00',
               estado: 'pendiente',
             ),
@@ -104,7 +104,7 @@ void main() {
           ActividadLog(
             id: 'a1',
             tipo: 'deuda_saldada',
-            actorNombre: 'Mati',
+            actorUsername: 'Mati',
             createdAt: DateTime(2026, 7, 28, 20, 30),
             eventoNombre: 'Asado en lo de Marcos',
             payload: const {'monto': '450.00'},
@@ -138,7 +138,7 @@ void main() {
             ActividadLog(
               id: 'a$i',
               tipo: 'deuda_saldada',
-              actorNombre: 'Mati',
+              actorUsername: 'Mati',
               createdAt: DateTime(2026, 7, 28, 20, 30 - i),
               eventoId: 'evt-1',
               eventoNombre: 'Asado en lo de Marcos',
@@ -147,7 +147,7 @@ void main() {
           ActividadLog(
             id: 'a-otro',
             tipo: 'tarea_creada',
-            actorNombre: 'Sofía',
+            actorUsername: 'Sofía',
             createdAt: DateTime(2026, 7, 28, 20, 0),
             eventoId: 'evt-1',
             eventoNombre: 'Asado en lo de Marcos',
@@ -275,7 +275,7 @@ void main() {
           saldos: [
             SaldoPorPersona(
               id: 'usr-marcos',
-              nombre: 'Marcos',
+              username: 'Marcos',
               monto: '200.00',
               estado: 'pagar',
             ),
@@ -310,7 +310,7 @@ void main() {
           saldos: [
             SaldoPorPersona(
               id: 'usr-marcos',
-              nombre: 'Marcos',
+              username: 'Marcos',
               monto: '200.00',
               estado: 'pagar',
             ),
@@ -484,7 +484,7 @@ void main() {
           'elegir un amigo guardado lo agrega directo al grupo del evento, '
           'sin pedirle aceptación', (tester) async {
         final friends = FakeFriendsRepository(
-          amigos: const [Persona(id: 'u1', nombre: 'Bruno')],
+          amigos: const [Persona(id: 'u1', username: 'Bruno')],
         );
         final groups = FakeGroupsRepository();
 
@@ -553,7 +553,7 @@ void main() {
             id: 't1',
             titulo: 'Comprar hielo',
             estado: 'completado',
-            asignadoNombre: 'Sofía',
+            asignadoUsername: 'Sofía',
           ),
         ],
       );
@@ -613,13 +613,13 @@ void main() {
           ActividadLog(
             id: 'a1',
             tipo: 'gasto_agregado',
-            actorNombre: 'Marcos',
+            actorUsername: 'Marcos',
             createdAt: DateTime(2026, 7, 28, 20, 30),
           ),
           ActividadLog(
             id: 'a2',
             tipo: 'horario_confirmado',
-            actorNombre: 'Julieta',
+            actorUsername: 'Julieta',
             createdAt: DateTime(2026, 7, 28, 19, 0),
           ),
         ],
@@ -646,14 +646,14 @@ void main() {
           ActividadLog(
             id: 'a1',
             tipo: 'deuda_saldada',
-            actorNombre: 'Marcos',
+            actorUsername: 'Marcos',
             createdAt: DateTime(2026, 7, 28, 20, 30),
             payload: const {'contraparteNombre': 'Sofía'},
           ),
           ActividadLog(
             id: 'a2',
             tipo: 'deuda_saldada',
-            actorNombre: 'Marcos',
+            actorUsername: 'Marcos',
             createdAt: DateTime(2026, 7, 28, 20, 29),
             payload: const {'contraparteNombre': 'Juan'},
           ),

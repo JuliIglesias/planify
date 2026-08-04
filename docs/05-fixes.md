@@ -753,3 +753,227 @@ los datos más importantes de la pantalla.
 muestra en un `Text` con `maxLines: 2` y `overflow: ellipsis` (no se corta
 a una sola línea como en el `AppBar`); lugar y fecha se ven con sus íconos
 correspondientes. Mobile 64→66, `flutter analyze` limpio.
+
+## Item 1 — Rango de fechas calendario del evento
+
+**Modelo de datos, ver [ADR 0001](adrs/0001-rango-fechas-evento.md).**
+`Evento` gana `rangoInicio`/`rangoFin` (obligatorios) y `extensionesRango`
+(contador). Migración `20260804090000_evento_rango_fechas` con backfill
+para los eventos ya existentes (`rangoInicio = createdAt`,
+`rangoFin = createdAt + 14 días`).
+
+**Fix (backend):**
+- `EventsService.crear` ahora exige `rangoInicio`/`rangoFin` (HU-06):
+  valida que sean fechas válidas, que `rangoInicio <= rangoFin` y que
+  `rangoFin` no esté en el pasado. Pasa a depender de `Clock` (antes no lo
+  necesitaba).
+- `EventsService.chequearExtensionRango(eventoId)` (nuevo): si el evento
+  sigue en `planificacion` y `ahora > rangoFin`, extiende `rangoFin` 14
+  días (`extenderRango`, nuevo en `EventoRepository`) y registra actividad
+  `rango_extendido` (nuevo `ActivityType`, notifica a los participantes vía
+  el mismo `ActivityLogService`/`NotificationsService` de siempre — sin
+  infraestructura nueva). **Tope de 1 extensión automática** (confirmado
+  con el usuario): alcanzado el tope, no extiende más.
+- Se llama de forma lazy desde `GET /events/:id` (mismo patrón que
+  `listUpcoming/listPast` con `ahora: Date`, H-09) — no hay cron.
+- `EventsQueryService.detalle` agrega `necesitaDecisionRango: boolean`
+  (derivado, no persistido): true cuando el rango venció y ya se usó la
+  única extensión, para que la UI avise que el organizador tiene que
+  decidir a mano. No hace falta un flujo nuevo para "decidir": confirmar un
+  horario o cancelar el evento ya eran posibles con los controles
+  existentes.
+
+**Fix (mobile):**
+- `CreateEventScreen`: el paso 1 (nombre + lugar) gana un selector de rango
+  de fechas (`showDateRangePicker`), con default hoy→hoy+14 días editable
+  — sigue siendo "2 pasos" (NFR#3), no se agregó un paso nuevo.
+- `DetalleEvento` gana `rangoInicio`/`rangoFin`/`necesitaDecisionRango`.
+  `EventConfigScreen` muestra "Buscando horario entre X e Y" mientras el
+  evento está en planificación, y un banner de aviso cuando
+  `necesitaDecisionRango` es true.
+- `activity_presentation.dart`: nuevo caso `rango_extendido` (ícono
+  calendario, texto sin nombrar actor porque lo dispara el sistema, no una
+  persona).
+
+**Decisiones confirmadas con el usuario antes de implementar:** sí
+notificar al extender (reutilizando el sistema de actividad/push
+existente); tope de **1** extensión automática (no 3, no ilimitado); la
+disponibilidad semanal del perfil se proyecta día por día sobre cada fecha
+calendario dentro del rango del evento — sin cambiar el modelo de
+`DisponibilidadSlot` (sigue siendo día-de-semana + hora, no fecha exacta).
+
+**Validación:**
+- Backend: `events.service.test.ts` — nuevo describe "extensión automática
+  del rango": no toca el rango si no venció; extiende 14 días y notifica
+  si venció; no extiende un evento ya confirmado; deja de extender después
+  del tope. Más un test de rango inválido (`rangoInicio > rangoFin`,
+  `rangoFin` en el pasado). Se actualizaron los tests existentes de
+  creación de evento (`events.service.test.ts`, `audit-regression.test.ts`,
+  `api.test.ts`) para pasar un rango válido. Backend 100→105,
+  `tsc --noEmit` y `eslint .` limpios.
+- Mobile: `create_event_screen_test.dart` (nuevo) — el rango por defecto es
+  visible en el paso 1; crear el evento manda el rango elegido al
+  repositorio. `event_config_screen_test.dart` — 2 tests nuevos: un evento
+  en planificación muestra su rango vigente; un evento con
+  `necesitaDecisionRango` muestra el banner de aviso. Mobile 64→68,
+  `flutter analyze` limpio.
+>
+> Cada item vive en su propia branch, arrancada desde `main` de forma
+> independiente (mismo patrón de fases anteriores) — así que el Item 5
+> puede fusionarse antes o después del Item 1 sin bloquearse entre sí; el
+> único acople real (documentado en el ADR de cada uno) es conceptual, no
+> de código compartido en la misma rama.
+
+## Item 5 — Horario del evento como RANGO, no como slot único
+
+**Modelo de datos, ver [ADR 0002](adrs/0002-rango-horario-evento.md).**
+`Evento` gana `fechaHoraFin` (nullable — los eventos confirmados antes de
+este cambio se leen como si tuvieran un rango de una hora, sin backfill).
+Migración `20260804093000_evento_horario_rango`.
+
+**Confirmado con el usuario antes de implementar:** "disponible para el
+evento" = libre en TODO el rango horario, no en un bloque suelto. No se
+construye un motor de recomendación automática de horario — en cambio, el
+organizador ve en vivo cuánta gente está libre para el rango completo
+mientras elige la hora de fin, y decide con esa información.
+
+**Fix (backend):**
+- `AvailabilityService.confirmarHorario` ahora pide `fechaHoraInicio` Y
+  `fechaHoraFin` (HU-09), valida `fechaHoraFin > fechaHoraInicio`.
+  `EventoRepository.confirmarHorario` guarda ambos.
+- `DisponibilidadRepository.disponiblesEnRango(eventoId, diaSemana,
+  bloqueHoraInicio, bloqueHoraFin)` (nuevo): cuenta participantes libres en
+  **todos** los bloques del rango (intersección, no solo el primero),
+  mismo criterio de exclusión que el heatmap normal (Item 4 — "No voy" no
+  cuenta). Expuesto en `GET
+  /events/:id/availability/range?diaSemana=&horaInicio=&horaFin=`.
+- No se validó el horario confirmado contra el rango de fechas del evento
+  (Item 1) — decisión explicada en el ADR, para no acoplar dos features
+  que se piden y se implementan por separado.
+
+**Fix (mobile):**
+- `WeeklyAvailabilityGrid.slotFijado` (un slot) → `slotsFijados` (un
+  `Set<AvailabilitySlot>`): pinta con estrella **cada** bloque del rango
+  confirmado, no solo el de inicio.
+- `EventConfigScreen`: tocar un bloque del heatmap ya no confirma directo
+  — abre un diálogo "¿Hasta qué hora?" con un dropdown de horas de fin y,
+  en vivo, cuánta gente está libre para el rango elegido
+  (`disponiblesEnRango`, vía `FutureBuilder` que se recalcula al cambiar la
+  hora de fin). Confirmar llama a `confirmarHorario` con ambas fechas.
+
+**Validación:**
+- Backend: `availability.service.test.ts` — nuevo describe "horario como
+  rango": guarda inicio Y fin; rechaza fin ≤ inicio; `disponiblesEnRango`
+  cuenta solo a quien está libre en TODOS los bloques (caso con alguien
+  libre parcial, que no debe contar); excluye "No voy"; rechaza un rango
+  horario inválido. Se actualizó el test de integración existente
+  (`api.test.ts`, `/events/:id/confirm`) para mandar `fechaHoraFin`.
+  Backend 100→105, `tsc --noEmit` y `eslint .` limpios.
+- Mobile: `widgets_test.dart` — el rango fijado pinta estrella en cada uno
+  de sus bloques, no solo el primero. `event_config_screen_test.dart` — 4
+  tests nuevos: un rango de 4 horas marca 4 estrellas; tocar el heatmap
+  abre el selector con la disponibilidad en vivo; confirmar llama al
+  repositorio con inicio y fin; cancelar no confirma nada. Mobile 65→69,
+  `flutter analyze` limpio.
+# Fase 5 — Username único para logueados y anónimos
+
+## Username único: reemplaza a "nombre" en toda la app, con auto-sufijo para anónimos
+
+**Origen: una pregunta destapó un hueco.** El usuario preguntó si el
+anónimo y el usuario logueado terminaban con un username único. La
+respuesta honesta era que no: `Usuario.nombre` no tenía ninguna
+restricción de unicidad (solo `email` la tenía) y
+`Participante.nombreDisplay` (el nombre del anónimo) no se validaba contra
+nada, ni siquiera contra otros anónimos del mismo evento — una decisión
+tomada a propósito en el Item 3 de la Fase 4 ("no hace falta un `username`
+único", ver esa entrada más arriba), que quedó obsoleta con este pedido.
+
+**Pedido del usuario:** que tanto los logueados como los anónimos tengan
+`username` en vez de `nombre`, y que sea único entre todos — ningún
+logueado ni anónimo puede repetir el de otro. Si validar que un anónimo no
+choque con un logueado resultaba complicado, la alternativa que el mismo
+usuario propuso era dejar que el anónimo elija cualquier username y
+agregarle un sufijo numérico (o "(anónimo)") automáticamente si ya está
+tomado, "lo que sea mejor" — decisión de mecanismo delegada.
+
+**Dos preguntas resueltas con el usuario antes de tocar código:**
+1. ¿El username reemplaza al nombre en todos lados, o queda un "nombre
+   para mostrar" aparte? → **Reemplaza en todos lados.** Es más simple y
+   evita mantener dos identidades por persona.
+2. ¿Cómo consigue un username la cuenta semilla (organizador) que ya
+   existe? → **Se autogenera** a partir del email/nombre existente, con
+   deduplicación, editable después desde Perfil.
+
+**Decisión de diseño — dos políticas de colisión distintas a propósito:**
+- **Registro (`AuthService.register`, cuenta real):** **rechaza** si el
+  username ya lo tiene otro `Usuario` o cualquier `Participante` anónimo
+  (de cualquier evento). Mutarle en silencio el username elegido a una
+  cuenta real sería sorprendente — mejor decirle "ya está en uso" y que
+  elija otro.
+- **Unirse como anónimo (`ParticipantsService.unirseComoAnonimo`):**
+  **nunca rechaza.** Si el username pedido ya lo tiene un `Usuario` o
+  otro anónimo (de cualquier evento), le agrega un sufijo numérico
+  (`Sofía` → `Sofía2` → `Sofía3`...) hasta encontrar uno libre. Un
+  anónimo es alguien que solo quiere sumarse a una juntada — bloquearlo
+  por un choque de nombre sería fricción injustificada. La respuesta del
+  endpoint devuelve el username final (`SesionAnonima.username`) para que
+  la UI pueda avisar si cambió.
+- Ambas comparaciones son **case-insensitive** (`MARCOS` choca con
+  `marcos`).
+
+**Fix (backend):**
+- `schema.prisma`: `Usuario.nombre` → `Usuario.username @unique`.
+  `Participante.nombreDisplay` → `Participante.username`, **sin**
+  `@@unique` a nivel de tabla (un usuario registrado participa de varios
+  eventos y repite legítimamente su username en cada fila; Prisma tampoco
+  soporta declarar un índice único parcial `WHERE es_anonimo = true` en el
+  schema — la unicidad real se valida en la aplicación).
+- Migración `20260804000000_username_unico`: renombra las columnas,
+  normaliza (minúsculas, espacios→guion bajo) y desambigua con un sufijo
+  numérico a cualquier `Usuario.username` que quede duplicado antes de
+  poder agregar la constraint única — los usuarios ya existentes tenían
+  `nombre` completamente libre.
+- `UsuarioRepository.findByUsername` (nuevo) y
+  `ParticipanteRepository.existsUsernameAnonimo` (nuevo, case-insensitive,
+  global a todos los eventos) — las dos consultas que arman ambas
+  políticas de colisión.
+- `AuthService.login` ahora acepta **username o email** como
+  identificador (detecta el formato y consulta el repositorio que
+  corresponde).
+- `AuthService.register` valida formato de username
+  (`^[a-z0-9_]{3,30}$`, normalizado a minúsculas) antes de chequear las
+  dos colisiones.
+- `prisma/seed.ts`: la cuenta organizadora semilla pasa a
+  `username: 'organizador_planify'`.
+- Renombrado mecánico de `nombre`→`username` en todos los DTOs, mappers y
+  repositorios Prisma que representan a una **persona** (`PersonaRef`,
+  `PersonaBusqueda`, `SaldoPorPersona`, `DetalleConPersona`, actor de
+  actividad, asignado de tarea, deudor/acreedor). Deliberadamente **sin
+  tocar** los `nombre` que son de una **cosa** (`Grupo.nombre`,
+  `Evento.nombre`) — se hizo caso por caso guiado por los errores de
+  `tsc`, no con un reemplazo global, porque un `sed` ciego habría
+  corrompido esos campos.
+
+**Fix (mobile):** mismo renombrado mecánico guiado por `flutter analyze`,
+en modelos (`Participante`, `SaldoPorPersona`, `DeudaEvento`,
+`DetalleConPersona`, `ActividadLog`, `Tarea`, `Persona`), `AuthRepository`
+(login por username o email, registro y unión anónima con `username`),
+`SessionController` y las pantallas que lo muestran (Login, Registro,
+Perfil, Home, Balances, detalle de evento, feed de actividad). Los
+labels de la UI (`profileName`, `registerName`,
+`loginAnonymousNameLabel`, `friendsSearchHint`, `homeGreeting`) se
+actualizaron en `app_es.arb`/`app_en.arb` para decir "username" en vez de
+"nombre", y se regeneraron con `flutter gen-l10n`.
+
+**Validación:**
+- Backend: `participants.service.test.ts` (nuevo, 8 tests) — cubre las
+  dos políticas de colisión (rechazo duro en registro, auto-sufijo en
+  anónimo), que la comparación es case-insensitive, que sigue sumando el
+  sufijo hasta encontrar uno libre, que la colisión es global entre
+  eventos, y que la respuesta trae el username final. `scrum14.test.ts`
+  ampliado con login por username, rechazo de username duplicado (contra
+  `Usuario` y contra anónimo) y rechazo de un `PATCH /me/profile` a un
+  username ya tomado. Backend 102→110, `tsc` y `eslint .` limpios.
+- Mobile: `register_screen_test.dart` (nuevo — la pantalla no tenía
+  ningún test) — el registro envía username/email/password y muestra el
+  error si falla. Mobile 64→66, `flutter analyze` limpio.

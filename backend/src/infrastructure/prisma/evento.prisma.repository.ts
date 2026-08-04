@@ -10,7 +10,7 @@ import { toEvento, toParticipante } from './mappers';
 const RESUMEN_INCLUDE = {
   grupo: { select: { nombre: true } },
   participantes: {
-    select: { id: true, nombreDisplay: true, estadoAsistencia: true },
+    select: { id: true, username: true, estadoAsistencia: true },
   },
 } as const;
 
@@ -33,6 +33,8 @@ export class PrismaEventoRepository implements EventoRepository {
           grupoId: data.grupoId,
           nombre: data.nombre,
           lugarTexto: data.lugarTexto,
+          rangoInicio: data.rangoInicio,
+          rangoFin: data.rangoFin,
           creadoPor: '', // se completa abajo, cuando existe el participante
         },
       });
@@ -41,7 +43,7 @@ export class PrismaEventoRepository implements EventoRepository {
         data: {
           eventoId: creado.id,
           usuarioId: data.organizadorUsuarioId,
-          nombreDisplay: data.organizadorNombre,
+          username: data.organizadorUsername,
           esOrganizador: true,
           estadoAsistencia: 'confirmado',
         },
@@ -57,7 +59,7 @@ export class PrismaEventoRepository implements EventoRepository {
           data: otros.map((m) => ({
             eventoId: creado.id,
             usuarioId: m.usuarioId,
-            nombreDisplay: m.nombre,
+            username: m.username,
             esAnonimo: false,
             esOrganizador: false,
           })),
@@ -78,10 +80,18 @@ export class PrismaEventoRepository implements EventoRepository {
     return toEvento(row);
   }
 
-  async confirmarHorario(id: string, fechaHoraInicio: Date): Promise<Evento> {
+  async confirmarHorario(id: string, fechaHoraInicio: Date, fechaHoraFin: Date): Promise<Evento> {
     const row = await this.prisma.evento.update({
       where: { id },
-      data: { estado: 'confirmado', fechaHoraInicio },
+      data: { estado: 'confirmado', fechaHoraInicio, fechaHoraFin },
+    });
+    return toEvento(row);
+  }
+
+  async extenderRango(id: string, nuevoRangoFin: Date): Promise<Evento> {
+    const row = await this.prisma.evento.update({
+      where: { id },
+      data: { rangoFin: nuevoRangoFin, extensionesRango: { increment: 1 } },
     });
     return toEvento(row);
   }
@@ -137,16 +147,20 @@ export class PrismaEventoRepository implements EventoRepository {
     lugarTexto: string;
     estado: string;
     fechaHoraInicio: Date | null;
+    rangoInicio: Date;
+    rangoFin: Date;
+    extensionesRango: number;
+    fechaHoraFin: Date | null;
     creadoPor: string;
     createdAt: Date;
     grupo: { nombre: string };
-    participantes: { id: string; nombreDisplay: string; estadoAsistencia: string }[];
+    participantes: { id: string; username: string; estadoAsistencia: string }[];
   }): EventoConResumen => ({
     ...toEvento(row),
     grupoNombre: row.grupo.nombre,
     participantes: row.participantes.map((p) => ({
       id: p.id,
-      nombreDisplay: p.nombreDisplay,
+      username: p.username,
       estadoAsistencia: p.estadoAsistencia as AsistenciaEstado,
     })),
     confirmados: row.participantes.filter((p) => p.estadoAsistencia === 'confirmado').length,

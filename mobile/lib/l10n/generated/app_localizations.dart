@@ -185,7 +185,7 @@ abstract class AppLocalizations {
   /// No description provided for @loginAnonymousNameLabel.
   ///
   /// In es, this message translates to:
-  /// **'Tu nombre'**
+  /// **'Tu username'**
   String get loginAnonymousNameLabel;
 
   /// No description provided for @loginAnonymousNameHint.
@@ -227,8 +227,8 @@ abstract class AppLocalizations {
   /// No description provided for @homeGreeting.
   ///
   /// In es, this message translates to:
-  /// **'¡Hola, {nombre}!'**
-  String homeGreeting(String nombre);
+  /// **'¡Hola, {username}!'**
+  String homeGreeting(String username);
 
   /// No description provided for @homeOwedToMe.
   ///
@@ -533,8 +533,26 @@ abstract class AppLocalizations {
   /// No description provided for @eventDateComesLater.
   ///
   /// In es, this message translates to:
-  /// **'La fecha se define después, cuando todos carguen su disponibilidad'**
+  /// **'El horario exacto se define después, cuando todos carguen su disponibilidad dentro del rango elegido'**
   String get eventDateComesLater;
+
+  /// No description provided for @eventDateRangeLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Rango de fechas'**
+  String get eventDateRangeLabel;
+
+  /// No description provided for @eventDateRangeExpiredBanner.
+  ///
+  /// In es, this message translates to:
+  /// **'El rango de fechas venció y ya se extendió una vez. Elegí un horario para confirmar el evento, o cancelalo desde el feed.'**
+  String get eventDateRangeExpiredBanner;
+
+  /// No description provided for @eventDateRangeShowing.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscando horario entre {inicio} y {fin}'**
+  String eventDateRangeShowing(String inicio, String fin);
 
   /// No description provided for @eventAiButton.
   ///
@@ -800,6 +818,12 @@ abstract class AppLocalizations {
   /// **'{actor} canceló el evento'**
   String activityCancelled(String actor);
 
+  /// No description provided for @activityRangeExtended.
+  ///
+  /// In es, this message translates to:
+  /// **'El rango de fechas del evento se extendió'**
+  String get activityRangeExtended;
+
   /// No description provided for @commonSave.
   ///
   /// In es, this message translates to:
@@ -889,6 +913,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Tocá un bloque del mapa para confirmar el horario'**
   String get eventDetailTapToConfirm;
+
+  /// No description provided for @eventDetailPickEndTime.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Hasta qué hora?'**
+  String get eventDetailPickEndTime;
+
+  /// No description provided for @eventDetailStartTimeLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'El evento empieza a las {hora}'**
+  String eventDetailStartTimeLabel(String hora);
+
+  /// No description provided for @eventDetailAvailableForRange.
+  ///
+  /// In es, this message translates to:
+  /// **'{disponibles} de {total} están libres en todo este rango'**
+  String eventDetailAvailableForRange(int disponibles, int total);
 
   /// No description provided for @eventDetailWhoPaid.
   ///
@@ -1055,7 +1097,7 @@ abstract class AppLocalizations {
   /// No description provided for @friendsSearchHint.
   ///
   /// In es, this message translates to:
-  /// **'Buscar por nombre o email'**
+  /// **'Buscar por username o email'**
   String get friendsSearchHint;
 
   /// No description provided for @friendsAdd.
@@ -1097,7 +1139,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileName.
   ///
   /// In es, this message translates to:
-  /// **'Nombre'**
+  /// **'Username'**
   String get profileName;
 
   /// No description provided for @profileLanguage.
@@ -1121,7 +1163,7 @@ abstract class AppLocalizations {
   /// No description provided for @registerName.
   ///
   /// In es, this message translates to:
-  /// **'Nombre'**
+  /// **'Username'**
   String get registerName;
 
   /// No description provided for @registerEmail.
@@ -1181,14 +1223,14 @@ abstract class AppLocalizations {
   /// No description provided for @balancesSettleAllConfirm.
   ///
   /// In es, this message translates to:
-  /// **'Se va a marcar como saldada tu deuda con {nombre}.'**
-  String balancesSettleAllConfirm(String nombre);
+  /// **'Se va a marcar como saldada tu deuda con {username}.'**
+  String balancesSettleAllConfirm(String username);
 
   /// No description provided for @balancesSettleAllConfirmMulti.
   ///
   /// In es, this message translates to:
-  /// **'Se van a saldar las {count} deudas que tenés con {nombre}, en todos los eventos.'**
-  String balancesSettleAllConfirmMulti(String nombre, int count);
+  /// **'Se van a saldar las {count} deudas que tenés con {username}, en todos los eventos.'**
+  String balancesSettleAllConfirmMulti(String username, int count);
 
   /// No description provided for @balancesBreakdown.
   ///
@@ -1199,8 +1241,8 @@ abstract class AppLocalizations {
   /// No description provided for @balancesNoDebtsWith.
   ///
   /// In es, this message translates to:
-  /// **'No tenés deudas pendientes con {nombre}'**
-  String balancesNoDebtsWith(String nombre);
+  /// **'No tenés deudas pendientes con {username}'**
+  String balancesNoDebtsWith(String username);
 
   /// No description provided for @balancesCompensationHint.
   ///

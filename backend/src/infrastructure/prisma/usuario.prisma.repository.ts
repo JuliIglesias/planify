@@ -20,6 +20,11 @@ export class PrismaUsuarioRepository implements UsuarioRepository {
     return row ? toUsuario(row) : null;
   }
 
+  async findByUsername(username: string): Promise<Usuario | null> {
+    const row = await this.prisma.usuario.findUnique({ where: { username } });
+    return row ? toUsuario(row) : null;
+  }
+
   async findManyByIds(ids: string[]): Promise<Usuario[]> {
     const rows = await this.prisma.usuario.findMany({ where: { id: { in: ids } } });
     return rows.map(toUsuario);
@@ -27,7 +32,7 @@ export class PrismaUsuarioRepository implements UsuarioRepository {
 
   async create(data: CrearUsuarioData): Promise<Usuario> {
     const row = await this.prisma.usuario.create({
-      data: { nombre: data.nombre, email: data.email, passwordHash: data.passwordHash },
+      data: { username: data.username, email: data.email, passwordHash: data.passwordHash },
     });
     return toUsuario(row);
   }
@@ -36,7 +41,7 @@ export class PrismaUsuarioRepository implements UsuarioRepository {
     const row = await this.prisma.usuario.update({
       where: { id },
       data: {
-        ...(data.nombre !== undefined ? { nombre: data.nombre } : {}),
+        ...(data.username !== undefined ? { username: data.username } : {}),
         ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl } : {}),
         ...(data.idiomaPreferido !== undefined ? { idiomaPreferido: data.idiomaPreferido } : {}),
       },
@@ -53,14 +58,14 @@ export class PrismaUsuarioRepository implements UsuarioRepository {
       where: {
         id: { not: exceptoUsuarioId },
         OR: [
-          { nombre: { contains: query, mode: 'insensitive' } },
+          { username: { contains: query, mode: 'insensitive' } },
           { email: { contains: query, mode: 'insensitive' } },
         ],
       },
-      select: { id: true, nombre: true, email: true },
+      select: { id: true, username: true, email: true },
       take: 20,
-      orderBy: { nombre: 'asc' },
+      orderBy: { username: 'asc' },
     });
-    return rows.map((u) => ({ id: u.id, nombre: u.nombre, email: u.email }));
+    return rows.map((u) => ({ id: u.id, username: u.username, email: u.email }));
   }
 }

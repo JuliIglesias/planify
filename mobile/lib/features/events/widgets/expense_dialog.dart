@@ -164,7 +164,7 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
             ),
             for (final p in widget.participantes)
               _FilaAcreedor(
-                nombre: p.nombreDisplay,
+                nombre: p.username,
                 seleccionado: _acreedores.contains(p.id),
                 mostrarMonto: !_unSoloPagador && _acreedores.contains(p.id),
                 controller: _montoPorAcreedor[p.id]!,
@@ -202,7 +202,7 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
               CheckboxListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                title: Text(p.nombreDisplay),
+                title: Text(p.username),
                 value: _deudoresSeleccionados.contains(p.id),
                 onChanged: (checked) {
                   setState(() {

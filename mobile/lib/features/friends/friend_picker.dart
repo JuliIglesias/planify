@@ -81,7 +81,7 @@ class _FriendPickerSheetState extends ConsumerState<_FriendPickerSheet> {
                       for (final amigo in visibles)
                         if (widget.multiple)
                           CheckboxListTile(
-                            title: Text(amigo.nombre),
+                            title: Text(amigo.username),
                             value: _seleccionados.containsKey(amigo.id),
                             onChanged: (v) => setState(() {
                               if (v == true) {
@@ -94,7 +94,7 @@ class _FriendPickerSheetState extends ConsumerState<_FriendPickerSheet> {
                         else
                           ListTile(
                             leading: const Icon(Icons.person_outline),
-                            title: Text(amigo.nombre),
+                            title: Text(amigo.username),
                             onTap: () => Navigator.pop(context, [amigo]),
                           ),
                     ],

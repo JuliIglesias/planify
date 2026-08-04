@@ -1,6 +1,7 @@
 import { BadRequestError, NotFoundError } from '../../common/errors';
 import { Evento } from '../../domain/entities';
 import {
+  DisponibilidadEnRango,
   DisponibilidadRepository,
   EventoRepository,
   SlotDisponibilidad,
@@ -66,6 +67,43 @@ export class AvailabilityService {
     return this.disponibilidad.heatmapForEvento(eventoId);
   }
 
+  /**
+   * Item 5 — cuántos participantes están libres en TODO un rango horario
+   * propuesto (no en un bloque suelto). Se usa mientras el organizador
+   * elige la hora de fin, para que decida con esa información y no a ciegas.
+   */
+  async disponiblesEnRango(
+    eventoId: string,
+    diaSemana: number,
+    bloqueHoraInicio: number,
+    bloqueHoraFin: number,
+  ): Promise<DisponibilidadEnRango> {
+    if (!Number.isInteger(diaSemana) || diaSemana < 0 || diaSemana >= DIAS_SEMANA) {
+      throw new BadRequestError(`diaSemana inválido: ${diaSemana} (esperado 0..6)`);
+    }
+    if (
+      !Number.isInteger(bloqueHoraInicio) ||
+      !Number.isInteger(bloqueHoraFin) ||
+      bloqueHoraInicio < 0 ||
+      bloqueHoraFin > BLOQUES_POR_DIA ||
+      bloqueHoraInicio >= bloqueHoraFin
+    ) {
+      throw new BadRequestError(
+        `rango horario inválido: ${bloqueHoraInicio}-${bloqueHoraFin} (esperado 0..24, inicio < fin)`,
+      );
+    }
+
+    const evento = await this.eventos.findById(eventoId);
+    if (!evento) throw new NotFoundError('Evento no encontrado');
+
+    return this.disponibilidad.disponiblesEnRango(
+      eventoId,
+      diaSemana,
+      bloqueHoraInicio,
+      bloqueHoraFin,
+    );
+  }
+
   /** Obtiene los bloques de disponibilidad guardados por un participante en un evento. */
   async obtenerDeParticipante(
     eventoId: string,
@@ -77,14 +115,25 @@ export class AvailabilityService {
   }
 
 
-  /** HU-09 — el organizador fija el horario a partir del heatmap. */
+  /**
+   * HU-09 — el organizador fija el horario a partir del heatmap. Item 5: el
+   * horario es un RANGO (inicio y fin), no un instante — el evento suele
+   * durar varias horas, no una sola.
+   */
   async confirmarHorario(
     usuarioId: string,
     eventoId: string,
     fechaHoraInicio: Date,
+    fechaHoraFin: Date,
   ): Promise<Evento> {
     if (Number.isNaN(fechaHoraInicio.getTime())) {
       throw new BadRequestError('fechaHoraInicio inválida');
+    }
+    if (Number.isNaN(fechaHoraFin.getTime())) {
+      throw new BadRequestError('fechaHoraFin inválida');
+    }
+    if (fechaHoraFin <= fechaHoraInicio) {
+      throw new BadRequestError('fechaHoraFin debe ser posterior a fechaHoraInicio');
     }
 
     const evento = await this.eventos.findById(eventoId);
@@ -93,13 +142,16 @@ export class AvailabilityService {
 
     const organizador = await this.events.exigirOrganizador(eventoId, usuarioId);
 
-    const confirmado = await this.eventos.confirmarHorario(eventoId, fechaHoraInicio);
+    const confirmado = await this.eventos.confirmarHorario(eventoId, fechaHoraInicio, fechaHoraFin);
 
     await this.log.registrar({
       eventoId,
       tipo: ActivityType.horarioConfirmado,
       actorParticipanteId: organizador.id,
-      payload: { fechaHoraInicio: fechaHoraInicio.toISOString() },
+      payload: {
+        fechaHoraInicio: fechaHoraInicio.toISOString(),
+        fechaHoraFin: fechaHoraFin.toISOString(),
+      },
     });
 
     return confirmado;

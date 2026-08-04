@@ -6,6 +6,9 @@ export interface CrearEventoData {
   lugarTexto: string;
   organizadorUsuarioId: string;
   organizadorNombre: string;
+  /** Rango de fechas calendario del evento (Item 1). */
+  rangoInicio: Date;
+  rangoFin: Date;
   /**
    * Los demás miembros registrados del grupo, que se materializan como
    * `Participante` del evento en la misma transacción. Sin esto, un miembro del
@@ -33,6 +36,9 @@ export interface EventoRepository {
 
   updateEstado(id: string, estado: EventoEstado): Promise<Evento>;
   confirmarHorario(id: string, fechaHoraInicio: Date): Promise<Evento>;
+
+  /** Item 1 — extiende `rangoFin` 2 semanas más y suma una extensión usada. */
+  extenderRango(id: string, nuevoRangoFin: Date): Promise<Evento>;
 
   /**
    * Próximos: en planificación (sin fecha aún) o confirmados cuya fecha todavía

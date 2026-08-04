@@ -22,6 +22,12 @@ import {
   FakeUsuarioRepository,
 } from './fakes';
 
+// FakeClock arranca en 2026-07-28 — este rango siempre cae después de "ahora".
+const RANGO = {
+  rangoInicio: new Date('2026-08-01T00:00:00Z'),
+  rangoFin: new Date('2026-12-31T00:00:00Z'),
+};
+
 function armar() {
   const usuarios = new FakeUsuarioRepository();
   const participantes = new FakeParticipanteRepository();
@@ -36,7 +42,7 @@ function armar() {
   const ids = new FakeIdGenerator();
   const log = new ActivityLogService(logs, participantes, clock);
 
-  const events = new EventsService(eventos, grupos, participantes, usuarios, log);
+  const events = new EventsService(eventos, grupos, participantes, usuarios, log, clock);
   const eventsQuery = new EventsQueryService(eventos, participantes, deudas, tareas, gastos, clock);
   const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
   const groups = new GroupsService(
@@ -76,6 +82,7 @@ describe('H-01 — los miembros del grupo se vuelven participantes del evento', 
       nombre: 'Asado',
       lugarTexto: 'Casa',
       grupoId: grupo.id,
+      ...RANGO,
     });
 
     const enEvento = await participantes.listByEvento(evento.id);
@@ -99,6 +106,7 @@ describe('H-01 — los miembros del grupo se vuelven participantes del evento', 
       lugarTexto: 'Shopping',
       nuevoGrupoNombre: 'Salidas',
       miembroUsuarioIds: [luis.id],
+      ...RANGO,
     });
 
     const nombres = (await participantes.listByEvento(evento.id))
@@ -116,6 +124,7 @@ describe('H-01 — los miembros del grupo se vuelven participantes del evento', 
       nombre: 'Juntada',
       lugarTexto: 'Casa',
       nuevoGrupoNombre: 'G',
+      ...RANGO,
     });
 
     // Antes de agregarlo, Bruno no participa.
@@ -157,6 +166,7 @@ describe('H-04 — soyOrganizador se decide por quién mira, no por la lista', (
       nombre: 'Asado',
       lugarTexto: 'Casa',
       nuevoGrupoNombre: 'G',
+      ...RANGO,
     });
     const anonimo = participantes.agregar({
       eventoId: evento.id,
@@ -183,6 +193,7 @@ describe('H-09 — Próximos/Historial se parten por fecha, no solo por estado',
       nombre: 'Asado de julio',
       lugarTexto: 'X',
       nuevoGrupoNombre: 'G1',
+      ...RANGO,
     });
     await eventos.confirmarHorario(pasado.id, new Date('2026-07-01T20:00:00Z'));
 
@@ -190,6 +201,7 @@ describe('H-09 — Próximos/Historial se parten por fecha, no solo por estado',
       nombre: 'Asado de agosto',
       lugarTexto: 'Y',
       nuevoGrupoNombre: 'G2',
+      ...RANGO,
     });
     await eventos.confirmarHorario(futuro.id, new Date('2026-08-15T20:00:00Z'));
 
@@ -198,6 +210,7 @@ describe('H-09 — Próximos/Historial se parten por fecha, no solo por estado',
       nombre: 'Sin fecha',
       lugarTexto: 'Z',
       nuevoGrupoNombre: 'G3',
+      ...RANGO,
     });
 
     const proximos = (await eventsQuery.proximosDe(orga.id)).map((e) => e.nombre).sort();

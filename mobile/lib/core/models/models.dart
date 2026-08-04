@@ -37,10 +37,13 @@ class DetalleEvento {
     required this.estado,
     required this.participantes,
     required this.tareas,
+    required this.rangoInicio,
+    required this.rangoFin,
     this.fechaHoraInicio,
     this.gastos = 0,
     this.miParticipanteId,
     this.soyOrganizador = false,
+    this.necesitaDecisionRango = false,
   });
 
   final String id;
@@ -55,6 +58,13 @@ class DetalleEvento {
   final List<Tarea> tareas;
   final DateTime? fechaHoraInicio;
   final int gastos;
+  /// Item 1 — rango de fechas calendario dentro del cual se busca el
+  /// horario. El heatmap de disponibilidad solo tiene sentido dentro de él.
+  final DateTime rangoInicio;
+  final DateTime rangoFin;
+  /// Item 1 — el rango venció y ya se usó la única extensión automática: el
+  /// organizador tiene que decidir a mano (confirmar un horario o cancelar).
+  final bool necesitaDecisionRango;
 
   /// Id del participante que representa a quien mira (el "yo" de la pantalla).
   final String? miParticipanteId;
@@ -78,6 +88,11 @@ class DetalleEvento {
         gastos: json['gastos'] as int? ?? 0,
         miParticipanteId: json['miParticipanteId'] as String?,
         soyOrganizador: json['soyOrganizador'] as bool? ?? false,
+        rangoInicio: DateTime.tryParse(json['rangoInicio'] as String? ?? '') ??
+            DateTime.now(),
+        rangoFin: DateTime.tryParse(json['rangoFin'] as String? ?? '') ??
+            DateTime.now().add(const Duration(days: 14)),
+        necesitaDecisionRango: json['necesitaDecisionRango'] as bool? ?? false,
         participantes: ((json['participantes'] as List<dynamic>?) ?? [])
             .map((p) => Participante.fromJson(p as Map<String, dynamic>))
             .toList(),

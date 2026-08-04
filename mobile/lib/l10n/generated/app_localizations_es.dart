@@ -237,7 +237,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventDateComesLater =>
-      'La fecha se define después, cuando todos carguen su disponibilidad';
+      'El horario exacto se define después, cuando todos carguen su disponibilidad dentro del rango elegido';
+
+  @override
+  String get eventDateRangeLabel => 'Rango de fechas';
+
+  @override
+  String get eventDateRangeExpiredBanner =>
+      'El rango de fechas venció y ya se extendió una vez. Elegí un horario para confirmar el evento, o cancelalo desde el feed.';
+
+  @override
+  String eventDateRangeShowing(String inicio, String fin) {
+    return 'Buscando horario entre $inicio y $fin';
+  }
 
   @override
   String get eventAiButton => 'Generar con IA';
@@ -398,6 +410,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String activityCancelled(String actor) {
     return '$actor canceló el evento';
   }
+
+  @override
+  String get activityRangeExtended =>
+      'El rango de fechas del evento se extendió';
 
   @override
   String get commonSave => 'Guardar';

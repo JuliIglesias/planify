@@ -80,6 +80,10 @@ class FakeEventsRepository implements EventsRepository {
     String miEstadoAsistencia = 'confirmado',
     // Item 5 — para testear el horario ya fijado por el organizador.
     DateTime? fechaHoraInicio,
+    // Item 1 — rango de fechas calendario del evento.
+    DateTime? rangoInicio,
+    DateTime? rangoFin,
+    bool necesitaDecisionRango = false,
   }) =>
       DetalleEvento(
         id: 'evt-1',
@@ -88,6 +92,9 @@ class FakeEventsRepository implements EventsRepository {
         lugarTexto: 'Casa de Nacho',
         estado: estado,
         fechaHoraInicio: fechaHoraInicio,
+        rangoInicio: rangoInicio ?? DateTime(2026, 8, 1),
+        rangoFin: rangoFin ?? DateTime(2026, 8, 20),
+        necesitaDecisionRango: necesitaDecisionRango,
         miParticipanteId: 'part-1',
         soyOrganizador: soyOrganizador ?? conOrganizador,
         participantes: [
@@ -116,6 +123,8 @@ class FakeEventsRepository implements EventsRepository {
   Future<String> crear({
     required String nombre,
     required String lugarTexto,
+    required DateTime rangoInicio,
+    required DateTime rangoFin,
     String? grupoId,
     String? nuevoGrupoNombre,
     List<String>? miembroUsuarioIds,

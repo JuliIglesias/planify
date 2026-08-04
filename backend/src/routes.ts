@@ -251,6 +251,9 @@ export function createRoutes(c: Container): Router {
     '/events/:id',
     soloParticipante,
     asyncHandler(async (req: ParticipantRequest, res: Response) => {
+      // Item 1: chequea (y extiende si corresponde) el rango de fechas antes
+      // de armar la vista, así el detalle siempre refleja el rango vigente.
+      await c.events.chequearExtensionRango(String(req.params.id));
       res.json(await c.eventsQuery.detalle(String(req.params.id), req.participanteId));
     }),
   );

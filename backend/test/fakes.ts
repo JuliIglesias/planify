@@ -276,6 +276,9 @@ export class FakeEventoRepository implements R.EventoRepository {
       lugarTexto: data.lugarTexto,
       estado: 'planificacion',
       fechaHoraInicio: null,
+      rangoInicio: data.rangoInicio,
+      rangoFin: data.rangoFin,
+      extensionesRango: 0,
       creadoPor: '',
       createdAt: new Date('2026-07-28T10:00:00Z'),
     };
@@ -313,6 +316,13 @@ export class FakeEventoRepository implements R.EventoRepository {
     const evento = this.eventos.find((e) => e.id === id)!;
     evento.estado = 'confirmado';
     evento.fechaHoraInicio = fechaHoraInicio;
+    return evento;
+  }
+
+  async extenderRango(id: string, nuevoRangoFin: Date) {
+    const evento = this.eventos.find((e) => e.id === id)!;
+    evento.rangoFin = nuevoRangoFin;
+    evento.extensionesRango += 1;
     return evento;
   }
 
@@ -375,6 +385,9 @@ export class FakeEventoRepository implements R.EventoRepository {
       lugarTexto: 'Casa de Juli',
       estado: 'planificacion',
       fechaHoraInicio: null,
+      rangoInicio: new Date('2026-07-28T10:00:00Z'),
+      rangoFin: new Date('2026-08-11T10:00:00Z'),
+      extensionesRango: 0,
       creadoPor: 'part-1',
       createdAt: new Date('2026-07-28T10:00:00Z'),
       ...parcial,

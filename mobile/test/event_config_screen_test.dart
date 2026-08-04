@@ -161,4 +161,39 @@ void main() {
 
     expect(find.byIcon(Icons.star), findsNothing);
   });
+
+  testWidgets('un evento en planificación muestra el rango de fechas vigente (Item 1)',
+      (tester) async {
+    final events = FakeEventsRepository(
+      detalleEvento: FakeEventsRepository.detalleDeEjemplo(
+        rangoInicio: DateTime(2026, 8, 1),
+        rangoFin: DateTime(2026, 8, 20),
+      ),
+    );
+
+    usarPantallaAlta(tester, alto: 4000);
+    await tester.pumpWidget(
+      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), events: events),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.eventDateRangeShowing('1 ago', '20 ago')), findsOneWidget);
+    expect(find.text(l10n.eventDateRangeExpiredBanner), findsNothing);
+  });
+
+  testWidgets(
+      'si el rango venció y ya se usó la única extensión, avisa que hay que decidir manualmente (Item 1)',
+      (tester) async {
+    final events = FakeEventsRepository(
+      detalleEvento: FakeEventsRepository.detalleDeEjemplo(necesitaDecisionRango: true),
+    );
+
+    usarPantallaAlta(tester, alto: 4000);
+    await tester.pumpWidget(
+      appDePrueba(const EventConfigScreen(eventoId: 'evt-1'), events: events),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.eventDateRangeExpiredBanner), findsOneWidget);
+  });
 }

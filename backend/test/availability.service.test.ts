@@ -26,7 +26,7 @@ function armar() {
   const logs = new FakeLogActividadRepository();
   const clock = new FakeClock();
   const log = new ActivityLogService(logs, participantes, clock);
-  const events = new EventsService(eventos, grupos, participantes, usuarios, log);
+  const events = new EventsService(eventos, grupos, participantes, usuarios, log, clock);
   const availability = new AvailabilityService(disponibilidad, eventos, events, log);
 
   return { availability, events, eventos, participantes, disponibilidad, clock };

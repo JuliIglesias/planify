@@ -533,8 +533,26 @@ abstract class AppLocalizations {
   /// No description provided for @eventDateComesLater.
   ///
   /// In es, this message translates to:
-  /// **'La fecha se define después, cuando todos carguen su disponibilidad'**
+  /// **'El horario exacto se define después, cuando todos carguen su disponibilidad dentro del rango elegido'**
   String get eventDateComesLater;
+
+  /// No description provided for @eventDateRangeLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Rango de fechas'**
+  String get eventDateRangeLabel;
+
+  /// No description provided for @eventDateRangeExpiredBanner.
+  ///
+  /// In es, this message translates to:
+  /// **'El rango de fechas venció y ya se extendió una vez. Elegí un horario para confirmar el evento, o cancelalo desde el feed.'**
+  String get eventDateRangeExpiredBanner;
+
+  /// No description provided for @eventDateRangeShowing.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscando horario entre {inicio} y {fin}'**
+  String eventDateRangeShowing(String inicio, String fin);
 
   /// No description provided for @eventAiButton.
   ///
@@ -799,6 +817,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{actor} canceló el evento'**
   String activityCancelled(String actor);
+
+  /// No description provided for @activityRangeExtended.
+  ///
+  /// In es, this message translates to:
+  /// **'El rango de fechas del evento se extendió'**
+  String get activityRangeExtended;
 
   /// No description provided for @commonSave.
   ///

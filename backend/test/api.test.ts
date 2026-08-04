@@ -92,7 +92,13 @@ describe('POST /events (HU-06)', () => {
     const res = await request(app)
       .post('/events')
       .set('Authorization', tokenDe(usuario.id))
-      .send({ nombre: 'Asado', lugarTexto: 'Casa de Nacho', grupoId: grupo.id });
+      .send({
+        nombre: 'Asado',
+        lugarTexto: 'Casa de Nacho',
+        grupoId: grupo.id,
+        rangoInicio: '2026-08-01T00:00:00Z',
+        rangoFin: '2026-08-20T00:00:00Z',
+      });
 
     expect(res.status).toBe(201);
     expect(res.body.evento.nombre).toBe('Asado');
@@ -158,7 +164,13 @@ describe('Flujo completo del MVP', () => {
     const creado = await request(app)
       .post('/events')
       .set('Authorization', auth)
-      .send({ nombre: 'Asado', lugarTexto: 'Casa de Nacho', grupoId: grupo.id });
+      .send({
+        nombre: 'Asado',
+        lugarTexto: 'Casa de Nacho',
+        grupoId: grupo.id,
+        rangoInicio: '2026-08-01T00:00:00Z',
+        rangoFin: '2026-08-20T00:00:00Z',
+      });
     const eventoId = creado.body.evento.id;
 
     // 2. Genera el link de invitación (HU-02)
@@ -218,7 +230,13 @@ describe('Flujo completo del MVP', () => {
     const creado = await request(app)
       .post('/events')
       .set('Authorization', auth)
-      .send({ nombre: 'Asado', lugarTexto: 'Casa', grupoId: grupo.id });
+      .send({
+        nombre: 'Asado',
+        lugarTexto: 'Casa',
+        grupoId: grupo.id,
+        rangoInicio: '2026-08-01T00:00:00Z',
+        rangoFin: '2026-08-20T00:00:00Z',
+      });
     const eventoId = creado.body.evento.id;
     const marcosId = creado.body.organizador.id;
 
@@ -274,7 +292,13 @@ describe('Flujo completo del MVP', () => {
     const creado = await request(app)
       .post('/events')
       .set('Authorization', auth)
-      .send({ nombre: 'Juntada', lugarTexto: 'Casa', grupoId: grupo.id });
+      .send({
+        nombre: 'Juntada',
+        lugarTexto: 'Casa',
+        grupoId: grupo.id,
+        rangoInicio: '2026-08-01T00:00:00Z',
+        rangoFin: '2026-08-20T00:00:00Z',
+      });
     const eventoId = creado.body.evento.id;
     const marcosId = creado.body.organizador.id;
 
@@ -320,7 +344,13 @@ describe('SCRUM-15 · notificaciones (HU-35)', () => {
     const creado = await request(app)
       .post('/events')
       .set('Authorization', auth)
-      .send({ nombre: 'Asado', lugarTexto: 'Casa', grupoId: grupo.id });
+      .send({
+        nombre: 'Asado',
+        lugarTexto: 'Casa',
+        grupoId: grupo.id,
+        rangoInicio: '2026-08-01T00:00:00Z',
+        rangoFin: '2026-08-20T00:00:00Z',
+      });
     const eventoId = creado.body.evento.id;
 
     // El organizador registra su device.

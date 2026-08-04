@@ -33,6 +33,8 @@ export class PrismaEventoRepository implements EventoRepository {
           grupoId: data.grupoId,
           nombre: data.nombre,
           lugarTexto: data.lugarTexto,
+          rangoInicio: data.rangoInicio,
+          rangoFin: data.rangoFin,
           creadoPor: '', // se completa abajo, cuando existe el participante
         },
       });
@@ -82,6 +84,14 @@ export class PrismaEventoRepository implements EventoRepository {
     const row = await this.prisma.evento.update({
       where: { id },
       data: { estado: 'confirmado', fechaHoraInicio },
+    });
+    return toEvento(row);
+  }
+
+  async extenderRango(id: string, nuevoRangoFin: Date): Promise<Evento> {
+    const row = await this.prisma.evento.update({
+      where: { id },
+      data: { rangoFin: nuevoRangoFin, extensionesRango: { increment: 1 } },
     });
     return toEvento(row);
   }
@@ -137,6 +147,9 @@ export class PrismaEventoRepository implements EventoRepository {
     lugarTexto: string;
     estado: string;
     fechaHoraInicio: Date | null;
+    rangoInicio: Date;
+    rangoFin: Date;
+    extensionesRango: number;
     creadoPor: string;
     createdAt: Date;
     grupo: { nombre: string };

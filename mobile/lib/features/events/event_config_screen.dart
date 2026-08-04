@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
@@ -94,6 +95,50 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: [
+              // ── Rango de fechas del evento (Item 1) ──────────────────────
+              if (evento.necesitaDecisionRango) ...[
+                Card(
+                  color: AppColors.warning.withValues(alpha: 0.12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded,
+                            color: AppColors.warning),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            l10n.eventDateRangeExpiredBanner,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ] else if (evento.estado == 'planificacion')
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.date_range_outlined,
+                          size: 16, color: AppColors.textSecondary),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          l10n.eventDateRangeShowing(
+                            DateFormat('d MMM', 'es').format(evento.rangoInicio),
+                            DateFormat('d MMM', 'es').format(evento.rangoFin),
+                          ),
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // ── Asistencia (HU-10) ──────────────────────────────────────
               // El botón elegido queda resaltado — antes los dos se veían
               // siempre igual sin importar qué habías respondido (Item 4:

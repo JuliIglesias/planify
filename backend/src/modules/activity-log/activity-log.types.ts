@@ -19,6 +19,8 @@ export const ActivityType = {
   tareaCompletada: 'tarea_completada',
   participanteSeUnio: 'participante_se_unio',
   gastosCerrados: 'gastos_cerrados',
+  /** Item 1 (Fase 5) — el rango de fechas se extendió solo por no confirmarse horario. */
+  rangoExtendido: 'rango_extendido',
 } as const;
 
 export type ActivityTypeValue = (typeof ActivityType)[keyof typeof ActivityType];

@@ -16,9 +16,13 @@ abstract interface class EventsRepository {
   Future<DetalleEvento> detalle(String eventoId);
 
   /// HU-06 — creación en 2 pasos. Devuelve el id del evento creado.
+  /// Item 1 — el rango de fechas calendario se elige junto al nombre/lugar,
+  /// en el mismo paso 1 (NFR#3 sigue siendo 2 pasos).
   Future<String> crear({
     required String nombre,
     required String lugarTexto,
+    required DateTime rangoInicio,
+    required DateTime rangoFin,
     String? grupoId,
     String? nuevoGrupoNombre,
     List<String>? miembroUsuarioIds,
@@ -65,6 +69,8 @@ class EventsRepositoryHttp implements EventsRepository {
   Future<String> crear({
     required String nombre,
     required String lugarTexto,
+    required DateTime rangoInicio,
+    required DateTime rangoFin,
     String? grupoId,
     String? nuevoGrupoNombre,
     List<String>? miembroUsuarioIds,
@@ -75,6 +81,8 @@ class EventsRepositoryHttp implements EventsRepository {
           data: {
             'nombre': nombre,
             'lugarTexto': lugarTexto,
+            'rangoInicio': rangoInicio.toIso8601String(),
+            'rangoFin': rangoFin.toIso8601String(),
             if (grupoId != null) 'grupoId': grupoId,
             if (nuevoGrupoNombre != null) 'nuevoGrupoNombre': nuevoGrupoNombre,
             if (miembroUsuarioIds != null) 'miembroUsuarioIds': miembroUsuarioIds,

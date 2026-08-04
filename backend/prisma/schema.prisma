@@ -91,6 +91,14 @@ model Evento {
   lugarTexto     String       @map("lugar_texto")
   estado         EventoEstado @default(planificacion)
   fechaHoraInicio DateTime?   @map("fecha_hora_inicio")
+  // Item 1 (Fase 5): rango de fechas calendario dentro del cual se busca el
+  // horario. El heatmap semanal se recorta a este rango, no es indefinido.
+  rangoInicio      DateTime @map("rango_inicio")
+  rangoFin         DateTime @map("rango_fin")
+  // Cuántas veces se extendió el rango automáticamente (2 semanas c/u) por
+  // vencer sin horario confirmado. Tope 1: a partir de ahí el organizador
+  // decide manualmente (ver docs/adrs/0001-rango-fechas-evento.md).
+  extensionesRango Int      @default(0) @map("extensiones_rango")
   creadoPor      String       @map("creado_por") // participante_id del organizador
   createdAt      DateTime     @default(now()) @map("created_at")
 

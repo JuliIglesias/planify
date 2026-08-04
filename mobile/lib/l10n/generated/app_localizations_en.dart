@@ -237,7 +237,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventDateComesLater =>
-      'The date is set later, once everyone shares their availability';
+      'The exact time is set later, once everyone shares their availability within the chosen range';
+
+  @override
+  String get eventDateRangeLabel => 'Date range';
+
+  @override
+  String get eventDateRangeExpiredBanner =>
+      'The date range expired and was already extended once. Pick a time to confirm the event, or cancel it from the feed.';
+
+  @override
+  String eventDateRangeShowing(String inicio, String fin) {
+    return 'Looking for a time between $inicio and $fin';
+  }
 
   @override
   String get eventAiButton => 'Generate with AI';
@@ -399,6 +411,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String activityCancelled(String actor) {
     return '$actor cancelled the event';
   }
+
+  @override
+  String get activityRangeExtended => 'The event\'s date range was extended';
 
   @override
   String get commonSave => 'Save';

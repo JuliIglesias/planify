@@ -714,6 +714,45 @@ introducir un color nuevo que rompiera la paleta ya definida.
 > (rango horario, depende del 1) → 2 (visual, independiente) → 3 (visual,
 > independiente) → 4 (perfil de amigo, depende de que 1 y 5 ya existan para
 > que la disponibilidad comparada tenga sentido).
+>
+> Cada item vive en su propia branch, arrancada desde `main` de forma
+> independiente — así que este orden es el de implementación, no una
+> cadena de dependencias de código entre branches.
+
+## Item 2 — Pantalla del evento: nombre completo + lugar/fecha prominentes
+
+**Mockup confirmado con el usuario antes de tocar el componente** (implica
+reordenar el header): el nombre sale del `AppBar` (que lo truncaba a una
+sola línea con "...") y pasa a ser el primer bloque del body, con la misma
+escala `headlineSmall` que ya usa "Nuevo evento" — nada nuevo fuera del
+design system. Lugar y fecha se separan en dos líneas con ícono cada una,
+en vez de ir concatenados en una sola oración chica y gris.
+
+**Causa raíz:** `AppBar.title` trunca a una línea por diseño de Flutter —
+no hay forma de que un nombre largo se vea completo ahí sin agrandar el
+`toolbarHeight` (cambio más invasivo). Lugar y fecha iban en un único
+`Text('$fecha · $lugarTexto')` sin estilo explícito (heredaba `bodyMedium`,
+14sp, sin color ni ícono) — se leían como metadata secundaria pese a ser de
+los datos más importantes de la pantalla.
+
+**Fix (`event_detail_screen.dart`, solo mobile):**
+- El `AppBar` se queda sin `title` (solo los íconos de acción, que ya
+  estaban ahí).
+- `_Contenido` arranca con el nombre (`theme.textTheme.headlineSmall`,
+  bold, `maxLines: 2`, `overflow: ellipsis`) y el badge de
+  cancelado/finalizado al costado (antes estaba pegado a la línea de
+  fecha/lugar).
+- Nuevo widget privado `_InfoRow` (ícono + texto en `bodyLarge`, color
+  `AppColors.textPrimary`): una instancia para el lugar
+  (`Icons.place_outlined`) y otra para la fecha
+  (`Icons.calendar_today_outlined`), cada una en su propia línea.
+- `FakeEventsRepository.detalleDeEjemplo` gana el parámetro `nombre` (antes
+  fijo) para poder testear un nombre largo.
+
+**Validación:** `screens_test.dart` — 2 tests nuevos: un nombre largo se
+muestra en un `Text` con `maxLines: 2` y `overflow: ellipsis` (no se corta
+a una sola línea como en el `AppBar`); lugar y fecha se ven con sus íconos
+correspondientes. Mobile 64→66, `flutter analyze` limpio.
 
 ## Item 1 — Rango de fechas calendario del evento
 

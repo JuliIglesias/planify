@@ -122,13 +122,31 @@ export class GroupsService {
     return eventos.filter((e) => e.estado === 'planificacion' || e.estado === 'confirmado');
   }
 
-  /** HU-34 — renombrar el grupo. Cualquier miembro puede. */
-  async renombrar(grupoId: string, usuarioId: string, nombre: string): Promise<Grupo> {
-    const limpio = nombre?.trim();
-    if (!limpio) throw new BadRequestError('nombre es requerido');
-
+  /** HU-34 — actualizar grupo (nombre e imagen). Cualquier miembro puede. */
+  async actualizar(
+    grupoId: string,
+    usuarioId: string,
+    datos: { nombre?: string; avatarUrl?: string | null },
+  ): Promise<Grupo> {
     await this.exigirMiembro(grupoId, usuarioId);
-    return this.grupos.rename(grupoId, limpio);
+
+    const updateData: { nombre?: string; avatarUrl?: string | null } = {};
+    if (datos.nombre !== undefined) {
+      const limpio = datos.nombre?.trim();
+      if (!limpio) throw new BadRequestError('nombre no puede estar vacío');
+      updateData.nombre = limpio;
+    }
+    if (datos.avatarUrl !== undefined) {
+      updateData.avatarUrl = datos.avatarUrl;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      const g = await this.grupos.findById(grupoId);
+      if (!g) throw new NotFoundError('Grupo no encontrado');
+      return g;
+    }
+
+    return this.grupos.actualizar(grupoId, updateData);
   }
 
   /**

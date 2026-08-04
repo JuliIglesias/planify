@@ -1034,6 +1034,18 @@ abstract class AppLocalizations {
   /// **'Cambiar nombre'**
   String get groupsRename;
 
+  /// No description provided for @groupsUpdateImage.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar imagen'**
+  String get groupsUpdateImage;
+
+  /// No description provided for @groupsImageUrl.
+  ///
+  /// In es, this message translates to:
+  /// **'URL de la imagen'**
+  String get groupsImageUrl;
+
   /// No description provided for @groupsAddMember.
   ///
   /// In es, this message translates to:

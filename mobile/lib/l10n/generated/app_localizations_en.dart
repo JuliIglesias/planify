@@ -534,6 +534,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupsRename => 'Rename';
 
   @override
+  String get groupsUpdateImage => 'Cambiar imagen';
+
+  @override
+  String get groupsImageUrl => 'URL de la imagen';
+
+  @override
   String get groupsAddMember => 'Add friend';
 
   @override

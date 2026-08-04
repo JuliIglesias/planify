@@ -157,6 +157,7 @@ class GrupoResumen {
     required this.id,
     required this.nombre,
     required this.miembros,
+    this.avatarUrl,
     this.noLeidos = 0,
     this.tieneEventoNuevo = false,
     this.eventos = const [],
@@ -165,6 +166,7 @@ class GrupoResumen {
   final String id;
   final String nombre;
   final List<String> miembros;
+  final String? avatarUrl;
   final int noLeidos;
   final bool tieneEventoNuevo;
   /// Item 1 — todos los eventos activos de ESTE grupo (no solo el próximo),
@@ -179,6 +181,7 @@ class GrupoResumen {
         miembros: ((json['miembros'] as List<dynamic>?) ?? [])
             .map((m) => (m as Map<String, dynamic>)['username'] as String? ?? '')
             .toList(),
+        avatarUrl: json['avatarUrl'] as String?,
         noLeidos: json['noLeidos'] as int? ?? 0,
         tieneEventoNuevo: json['tieneEventoNuevo'] as bool? ?? false,
         eventos: ((json['eventos'] as List<dynamic>?) ?? [])

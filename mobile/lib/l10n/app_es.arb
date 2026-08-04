@@ -311,6 +311,8 @@
   },
   "groupsManage": "Administrar grupo",
   "groupsRename": "Cambiar nombre",
+  "groupsUpdateImage": "Cambiar imagen",
+  "groupsImageUrl": "URL de la imagen",
   "groupsAddMember": "Agregar amigo",
   "groupsLeave": "Abandonar grupo",
   "groupsLeaveConfirm": "Vas a dejar de ver los eventos de este grupo.",

@@ -44,8 +44,8 @@ export class PrismaGrupoRepository implements GrupoRepository {
     });
   }
 
-  async rename(id: string, nombre: string): Promise<Grupo> {
-    return this.prisma.grupo.update({ where: { id }, data: { nombre } });
+  async actualizar(id: string, data: { nombre?: string, avatarUrl?: string | null }): Promise<Grupo> {
+    return this.prisma.grupo.update({ where: { id }, data });
   }
 
   async esMiembro(grupoId: string, usuarioId: string): Promise<boolean> {

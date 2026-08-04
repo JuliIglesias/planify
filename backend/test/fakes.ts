@@ -239,9 +239,10 @@ export class FakeGrupoRepository implements R.GrupoRepository {
     return grupo;
   }
 
-  async rename(id: string, nombre: string): Promise<D.Grupo> {
+  async actualizar(id: string, data: { nombre?: string, avatarUrl?: string | null }): Promise<D.Grupo> {
     const grupo = this.grupos.find((g) => g.id === id)!;
-    grupo.nombre = nombre;
+    if (data.nombre !== undefined) grupo.nombre = data.nombre;
+    if (data.avatarUrl !== undefined) grupo.avatarUrl = data.avatarUrl;
     return grupo;
   }
 
@@ -353,6 +354,10 @@ export class FakeEventoRepository implements R.EventoRepository {
             e.fechaHoraInicio < ahora),
       )
       .map((e) => this.toResumen(e));
+  }
+
+  async listHistoryForUsuario(usuarioId: string, finDeMesActual: Date): Promise<R.EventoConResumen[]> {
+    return this.listPastForUsuario(usuarioId, finDeMesActual);
   }
 
   private paraUsuario(usuarioId: string): D.Evento[] {

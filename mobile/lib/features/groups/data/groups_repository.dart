@@ -13,8 +13,8 @@ abstract interface class GroupsRepository {
   /// Lista simple, para elegir grupo al crear un evento (HU-05).
   Future<List<GrupoResumen>> mios();
 
-  /// HU-34 — renombrar el grupo.
-  Future<void> renombrar({required String grupoId, required String nombre});
+  /// HU-34 — actualizar grupo (nombre e imagen).
+  Future<void> actualizar({required String grupoId, String? nombre, String? avatarUrl});
 
   /// HU-32 — sumar un amigo registrado al grupo.
   Future<void> agregarMiembro({required String grupoId, required String usuarioId});
@@ -45,9 +45,12 @@ class GroupsRepositoryHttp implements GroupsRepository {
       });
 
   @override
-  Future<void> renombrar({required String grupoId, required String nombre}) =>
+  Future<void> actualizar({required String grupoId, String? nombre, String? avatarUrl}) =>
       ejecutar(() async {
-        await _dio.patch<void>('/groups/$grupoId', data: {'nombre': nombre});
+        final data = <String, dynamic>{};
+        if (nombre != null) data['nombre'] = nombre;
+        if (avatarUrl != null) data['avatarUrl'] = avatarUrl;
+        await _dio.patch<void>('/groups/$grupoId', data: data);
       });
 
   @override

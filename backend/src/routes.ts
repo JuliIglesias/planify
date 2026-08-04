@@ -375,7 +375,10 @@ export function createRoutes(c: Container): Router {
     soloOrganizador,
     asyncHandler(async (req: OrganizerRequest, res: Response) => {
       res.json(
-        await c.groups.renombrar(String(req.params.id), exigirUsuario(req), req.body?.nombre),
+        await c.groups.actualizar(String(req.params.id), exigirUsuario(req), {
+          nombre: req.body?.nombre,
+          avatarUrl: req.body?.avatarUrl,
+        }),
       );
     }),
   );

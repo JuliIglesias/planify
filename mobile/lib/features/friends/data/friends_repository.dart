@@ -11,7 +11,8 @@ class Persona {
   final String username;
   /// El username ya es único, pero el email se sigue mostrando en gris
   /// debajo (como una sola unidad visual) porque ayuda a reconocer a la
-  /// persona sin acordarse el username exacto.
+  /// persona sin acordarse el username exacto — en búsqueda, en la lista
+  /// de amigos y en solicitudes pendientes por igual.
   final String? email;
   /// Item 4 — solo viaja en el perfil de amigo (`GET /friends/:id/profile`);
   /// las demás listas de amigos no lo necesitan.

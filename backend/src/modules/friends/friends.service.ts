@@ -1,5 +1,5 @@
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../common/errors';
-import { PersonaBusqueda, PersonaRef } from '../../domain/entities';
+import { PersonaBusqueda } from '../../domain/entities';
 import {
   AmistadRepository,
   SolicitudAmistad,
@@ -54,8 +54,8 @@ export class FriendsService {
     await this.amistades.aceptar(amistadId);
   }
 
-  /** Amigos aceptados. */
-  async listar(usuarioId: string): Promise<PersonaRef[]> {
+  /** Amigos aceptados. Item 3 — con email, para desambiguar visualmente. */
+  async listar(usuarioId: string): Promise<PersonaBusqueda[]> {
     return this.amistades.listAmigos(usuarioId);
   }
 

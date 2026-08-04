@@ -91,4 +91,63 @@ void main() {
     expect(find.text('lucas@mail.com'), findsOneWidget);
     expect(friends.llamadas, contains('perfilDe:u3'));
   });
+        
+  testWidgets(
+      'tocar cualquier parte de la fila de un resultado envía la solicitud, no '
+      'solo el botón (Item 3, Fase 5)', (tester) async {
+    final friends = FakeFriendsRepository(
+      resultadosBusqueda: const [
+        Persona(id: 'u1', username: 'Bruno', email: 'bruno@mail.com'),
+      ],
+    );
+
+    await tester.pumpWidget(appDePrueba(const FriendsScreen(), friends: friends));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'bru');
+    await tester.pumpAndSettle();
+
+    // Toca el nombre, no el botón "Agregar".
+    await tester.tap(find.text('Bruno'));
+    await tester.pumpAndSettle();
+
+    expect(friends.llamadas, contains('enviarSolicitud:u1'));
+  });
+
+  testWidgets(
+      'tocar cualquier parte de la fila de una solicitud la acepta, y se ve el '
+      'email de quien la envió (Item 3, Fase 5)', (tester) async {
+    final friends = FakeFriendsRepository(
+      solicitudes: const [
+        SolicitudAmistad(
+          amistadId: 'am1',
+          de: Persona(id: 'u2', username: 'Sofía', email: 'sofia@mail.com'),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(appDePrueba(const FriendsScreen(), friends: friends));
+    await tester.pumpAndSettle();
+
+    expect(find.text('sofia@mail.com'), findsOneWidget);
+
+    // Toca el nombre, no el botón "Aceptar".
+    await tester.tap(find.text('Sofía'));
+    await tester.pumpAndSettle();
+
+    expect(friends.llamadas, contains('aceptar:am1'));
+  });
+
+  testWidgets('la lista de amigos ya agregados también muestra el email en gris (Item 3, Fase 5)',
+      (tester) async {
+    final friends = FakeFriendsRepository(
+      amigos: const [Persona(id: 'u3', username: 'Lucas', email: 'lucas@mail.com')],
+    );
+
+    await tester.pumpWidget(appDePrueba(const FriendsScreen(), friends: friends));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lucas'), findsOneWidget);
+    expect(find.text('lucas@mail.com'), findsOneWidget);
+  });
 }

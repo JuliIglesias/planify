@@ -308,6 +308,18 @@ abstract class AppLocalizations {
   /// **'{count} gastos'**
   String groupsExpenses(int count);
 
+  /// No description provided for @unreadActivities.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} mensajes nuevos'**
+  String unreadActivities(int count);
+
+  /// No description provided for @eventUrgentDecision.
+  ///
+  /// In es, this message translates to:
+  /// **'Decisión pendiente'**
+  String get eventUrgentDecision;
+
   /// No description provided for @groupsNoUpcoming.
   ///
   /// In es, this message translates to:

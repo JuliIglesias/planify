@@ -232,19 +232,53 @@ class _EventoDeGrupoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
 
     final fecha = evento.fechaHoraInicio != null
         ? DateFormat("EEEE d 'de' MMMM · HH:mm", 'es').format(evento.fechaHoraInicio!)
         : l10n.commonToBeDefined;
 
+    final pills = [
+      if (evento.necesitaDecisionRango)
+        const EventCardPill(
+          label: 'Decisión pendiente',
+          icon: Icons.warning_amber_outlined,
+          backgroundColor: Color(0xFFFFEBEE), // Light red
+          foregroundColor: Color(0xFFC62828), // Dark red
+        ),
+      if (evento.noLeidos > 0)
+        EventCardPill(
+          label: l10n.unreadActivities(evento.noLeidos),
+          icon: Icons.chat_bubble_outline,
+          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+          foregroundColor: theme.colorScheme.primary,
+        ),
+      EventCardPill(
+        label: l10n.groupsConfirmed(evento.confirmados),
+        icon: Icons.people_outline,
+        backgroundColor: const Color(0xFFE8F5E9), // Light green
+        foregroundColor: const Color(0xFF2E7D32), // Dark green
+      ),
+      if (evento.tareasPendientes > 0)
+        EventCardPill(
+          label: l10n.groupsPendingTasks(evento.tareasPendientes),
+          icon: Icons.assignment_outlined,
+          backgroundColor: const Color(0xFFFFF8E1), // Light amber
+          foregroundColor: const Color(0xFFF57F17), // Dark amber
+        ),
+      if (evento.gastos > 0)
+        EventCardPill(
+          label: l10n.groupsExpenses(evento.gastos),
+          icon: Icons.monetization_on_outlined,
+          backgroundColor: const Color(0xFFFFECEB), // Light coral/red
+          foregroundColor: const Color(0xFFD84315), // Dark coral/red
+        ),
+    ];
+
     return EventCard(
       titulo: evento.nombre,
       subtitulo: '$fecha · ${evento.lugarTexto}',
-      chips: [
-        l10n.groupsConfirmed(evento.confirmados),
-        if (evento.tareasPendientes > 0) l10n.groupsPendingTasks(evento.tareasPendientes),
-        if (evento.gastos > 0) l10n.groupsExpenses(evento.gastos),
-      ],
+      pills: pills,
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => EventDetailScreen(eventoId: evento.id),

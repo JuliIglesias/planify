@@ -123,13 +123,14 @@
   "eventSavedPlaces": "Saved places",
   "eventSavePlace": "Save this place",
   "eventPlaceLabelHint": "Label (e.g. Juli's place)",
-  "friendMatchesTitle": "Matches with friends",
-  "friendMatchesHint": "Slots where you and your friends ({count}) overlap. Darker = more people free.",
-  "@friendMatchesHint": {
+  "groupAvailabilityTitle": "Group availability",
+  "groupAvailabilityHint": "Slots where this group's members ({count}) overlap. Darker = more people free.",
+  "@groupAvailabilityHint": {
     "placeholders": {
       "count": { "type": "int" }
     }
   },
+  "groupsSeeAvailability": "See group availability",
   "eventConfigTitle": "Event settings",
   "eventDetailAvailability": "Group availability",
   "eventDetailMyAvailability": "My availability",

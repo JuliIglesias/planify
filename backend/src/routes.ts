@@ -1,8 +1,15 @@
 import { Request, Response, Router } from 'express';
+import multer from 'multer';
 import { Container } from './container';
 import { BadRequestError, UnauthorizedError } from './common/errors';
 import { asyncHandler } from './middlewares/asyncHandler';
 import { OrganizerRequest, ParticipantRequest } from './middlewares/guards';
+
+/** Item 5 (Tanda 6) — imagen de grupo: se lee en memoria, no se guarda en disco local. */
+const uploadImagen = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 /**
  * Todas las rutas de la API, agrupadas por épica de Jira.
@@ -87,7 +94,9 @@ export function createRoutes(c: Container): Router {
     }),
   );
 
-  // ── SCRUM-14 · Disponibilidad de perfil (H-14) y coincidencias (HU-B4) ───
+  // ── SCRUM-14 · Disponibilidad de perfil (H-14) ───────────────────────────
+  // La vieja "coincidencias con TODOS los amigos" (HU-B4) se eliminó de acá:
+  // ahora vive scopeada a un grupo puntual, ver `/groups/:id/availability-matches`.
   router.get(
     '/me/availability',
     soloOrganizador,
@@ -102,14 +111,6 @@ export function createRoutes(c: Container): Router {
     asyncHandler(async (req: OrganizerRequest, res: Response) => {
       await c.profileAvailability.guardar(exigirUsuario(req), req.body?.slots ?? []);
       res.status(204).send();
-    }),
-  );
-
-  router.get(
-    '/me/availability/friend-matches',
-    soloOrganizador,
-    asyncHandler(async (req: OrganizerRequest, res: Response) => {
-      res.json(await c.profileAvailability.coincidenciasConAmigos(exigirUsuario(req)));
     }),
   );
 
@@ -400,6 +401,33 @@ export function createRoutes(c: Container): Router {
     asyncHandler(async (req: OrganizerRequest, res: Response) => {
       await c.groups.abandonar(String(req.params.id), exigirUsuario(req));
       res.status(204).send();
+    }),
+  );
+
+  // Item 5 (Tanda 6) — foto de grupo desde la galería nativa (reemplaza la
+  // vieja URL de texto). Multipart, campo "imagen".
+  router.post(
+    '/groups/:id/avatar',
+    soloOrganizador,
+    uploadImagen.single('imagen'),
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      if (!req.file) throw new BadRequestError('imagen es requerida');
+      res.json(
+        await c.groups.actualizarImagen(String(req.params.id), exigirUsuario(req), {
+          buffer: req.file.buffer,
+          mimeType: req.file.mimetype,
+        }),
+      );
+    }),
+  );
+
+  // Item 5 (Tanda 6) — heatmap de disponibilidad de los miembros de ESTE
+  // grupo (reemplaza la "disponibilidad entre todos los amigos" de Perfil).
+  router.get(
+    '/groups/:id/availability-matches',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.groups.disponibilidadDeGrupo(String(req.params.id), exigirUsuario(req)));
     }),
   );
 

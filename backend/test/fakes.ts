@@ -882,6 +882,17 @@ export class FakeProfileAvailabilityRepository implements R.ProfileAvailabilityR
   }
 }
 
+/** Tanda 6, Item 5 — no sube nada de verdad, solo registra qué se "subió". */
+export class FakeImageStorageRepository implements R.ImageStorageRepository {
+  subidas: { carpeta: string; mimeType: string }[] = [];
+
+  async subir(carpeta: string, _buffer: Buffer, mimeType: string): Promise<string> {
+    this.subidas.push({ carpeta, mimeType });
+    const extension = mimeType.split('/')[1] ?? 'bin';
+    return `https://fake-bucket.local/${carpeta}/${this.subidas.length}.${extension}`;
+  }
+}
+
 export class FakeLocationRepository implements R.LocationRepository {
   ubicaciones: R.UbicacionFavorita[] = [];
 

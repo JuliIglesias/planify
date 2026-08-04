@@ -6,7 +6,10 @@ import {
   GastoRepository,
   GrupoConMiembros,
   GrupoRepository,
+  ImageStorageRepository,
   ParticipanteRepository,
+  ProfileAvailabilityRepository,
+  SlotHeatmap,
   TareaRepository,
   UsuarioRepository,
 } from '../../domain/repositories';
@@ -15,6 +18,25 @@ import { InvitationsService } from '../invitations/invitations.service';
 
 /** Cuánto tiempo un evento se muestra como "NUEVO" en la pantalla Groups. */
 const VENTANA_EVENTO_NUEVO_HS = 48;
+
+/** Un archivo ya leído en memoria (multer), listo para subir. */
+export interface ArchivoImagen {
+  buffer: Buffer;
+  mimeType: string;
+}
+
+/**
+ * Tanda 6, Item 5 — heatmap de disponibilidad scopeado a los miembros de UN
+ * grupo puntual. Reemplaza a la vieja "coincidencias con TODOS los amigos"
+ * (HU-B4, eliminada de Perfil): la disponibilidad agregada de varias personas
+ * solo tiene sentido en el contexto de un grupo específico.
+ */
+export interface CoincidenciasDeGrupo {
+  /** Cantidad de miembros del grupo considerados. */
+  totalPersonas: number;
+  /** Por bloque, cuántos de esos miembros tienen ese horario libre. */
+  slots: SlotHeatmap[];
+}
 
 export interface EventoDeGrupo {
   id: string;
@@ -58,6 +80,8 @@ export class GroupsService {
     private readonly clock: Clock,
     private readonly participantes: ParticipanteRepository,
     private readonly invitations: InvitationsService,
+    private readonly disponibilidadPerfil: ProfileAvailabilityRepository,
+    private readonly imagenes: ImageStorageRepository,
   ) {}
 
   async listarDe(usuarioId: string): Promise<GrupoConMiembros[]> {
@@ -147,6 +171,50 @@ export class GroupsService {
     }
 
     return this.grupos.actualizar(grupoId, updateData);
+  }
+
+  /**
+   * Tanda 6, Item 5 — subir una foto de grupo desde el explorador nativo del
+   * dispositivo (reemplaza el viejo diálogo de pegar una URL). El archivo ya
+   * viene leído en memoria (multer); acá solo se valida la membresía, se sube
+   * a S3/LocalStack y se persiste la URL resultante.
+   */
+  async actualizarImagen(
+    grupoId: string,
+    usuarioId: string,
+    archivo: ArchivoImagen,
+  ): Promise<Grupo> {
+    await this.exigirMiembro(grupoId, usuarioId);
+
+    const avatarUrl = await this.imagenes.subir(`grupos/${grupoId}`, archivo.buffer, archivo.mimeType);
+    return this.grupos.actualizar(grupoId, { avatarUrl });
+  }
+
+  /**
+   * Tanda 6, Item 5 — heatmap de disponibilidad de los miembros de ESTE
+   * grupo (reemplaza la vieja "disponibilidad entre todos los amigos" de
+   * Perfil, que mezclaba a todos tus amigos sin importar el grupo).
+   */
+  async disponibilidadDeGrupo(grupoId: string, usuarioId: string): Promise<CoincidenciasDeGrupo> {
+    await this.exigirMiembro(grupoId, usuarioId);
+
+    const miembros = await this.grupos.listMiembros(grupoId);
+    const ids = miembros.map((m) => m.id);
+    const slots = await this.disponibilidadPerfil.slotsDeUsuarios(ids);
+
+    const conteo = new Map<string, number>();
+    for (const s of slots) {
+      const clave = `${s.diaSemana}:${s.bloqueHora}`;
+      conteo.set(clave, (conteo.get(clave) ?? 0) + 1);
+    }
+
+    return {
+      totalPersonas: ids.length,
+      slots: [...conteo.entries()].map(([clave, disponibles]) => {
+        const [diaSemana, bloqueHora] = clave.split(':').map(Number);
+        return { diaSemana, bloqueHora, disponibles };
+      }),
+    };
   }
 
   /**

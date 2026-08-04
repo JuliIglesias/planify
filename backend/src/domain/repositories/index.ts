@@ -15,6 +15,7 @@ export * from './participante.repository';
 export * from './invitacion.repository';
 export * from './disponibilidad.repository';
 export * from './profile-availability.repository';
+export * from './image-storage.repository';
 export * from './location.repository';
 export * from './tarea.repository';
 export * from './gasto.repository';

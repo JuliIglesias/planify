@@ -10,7 +10,6 @@ import '../../core/widgets/collapsible_section.dart';
 import '../../core/widgets/weekly_availability_grid.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../auth/session_controller.dart';
-import '../friends/friend_matches_screen.dart';
 import '../friends/friends_screen.dart';
 import '../history/history_screen.dart';
 
@@ -95,15 +94,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const FriendsScreen()),
-          ),
-        ),
-        // HU-B4 — coincidencias de disponibilidad con amigos.
-        ListTile(
-          leading: const Icon(Icons.event_available_outlined),
-          title: Text(l10n.friendMatchesTitle),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => const FriendMatchesScreen()),
           ),
         ),
         // NFR#6 — cambiar idioma (H-13).

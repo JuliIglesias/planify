@@ -424,3 +424,73 @@ describe('SCRUM-17 · IA generar evento (HU-42/43/44b)', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('POST /groups/:id/avatar — foto de grupo desde galería (Tanda 6, Item 5)', () => {
+  it('sube la imagen (multipart) y devuelve el grupo con el avatarUrl nuevo', async () => {
+    const { app, repos } = armarApi();
+    const usuario = repos.usuarios.agregar({ username: 'Marcos' });
+    const grupo = await repos.grupos.create('Los Fibes', [usuario.id]);
+
+    const res = await request(app)
+      .post(`/groups/${grupo.id}/avatar`)
+      .set('Authorization', tokenDe(usuario.id))
+      .attach('imagen', Buffer.from('fake-jpg-bytes'), {
+        filename: 'foto.jpg',
+        contentType: 'image/jpeg',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.avatarUrl).toContain(`grupos/${grupo.id}`);
+  });
+
+  it('exige el archivo', async () => {
+    const { app, repos } = armarApi();
+    const usuario = repos.usuarios.agregar({ username: 'Marcos' });
+    const grupo = await repos.grupos.create('Los Fibes', [usuario.id]);
+
+    const res = await request(app)
+      .post(`/groups/${grupo.id}/avatar`)
+      .set('Authorization', tokenDe(usuario.id));
+
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('GET /groups/:id/availability-matches (Tanda 6, Item 5)', () => {
+  it('devuelve el heatmap scopeado a los miembros de ese grupo', async () => {
+    const { app, repos } = armarApi();
+    const ana = repos.usuarios.agregar({ username: 'Ana' });
+    const bruno = repos.usuarios.agregar({ username: 'Bruno' });
+    const grupo = await repos.grupos.create('Los Fibes', [ana.id, bruno.id]);
+
+    await request(app)
+      .put('/me/availability')
+      .set('Authorization', tokenDe(ana.id))
+      .send({ slots: [{ diaSemana: 0, bloqueHora: 20 }] });
+    await request(app)
+      .put('/me/availability')
+      .set('Authorization', tokenDe(bruno.id))
+      .send({ slots: [{ diaSemana: 0, bloqueHora: 20 }] });
+
+    const res = await request(app)
+      .get(`/groups/${grupo.id}/availability-matches`)
+      .set('Authorization', tokenDe(ana.id));
+
+    expect(res.status).toBe(200);
+    expect(res.body.totalPersonas).toBe(2);
+    expect(res.body.slots).toEqual([{ diaSemana: 0, bloqueHora: 20, disponibles: 2 }]);
+  });
+
+  it('alguien de afuera del grupo no puede consultarla', async () => {
+    const { app, repos } = armarApi();
+    const miembro = repos.usuarios.agregar({ username: 'Ana' });
+    const intruso = repos.usuarios.agregar({ username: 'Intruso' });
+    const grupo = await repos.grupos.create('Privado', [miembro.id]);
+
+    const res = await request(app)
+      .get(`/groups/${grupo.id}/availability-matches`)
+      .set('Authorization', tokenDe(intruso.id));
+
+    expect(res.status).toBe(403);
+  });
+});

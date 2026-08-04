@@ -43,6 +43,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_slidable: ^4.0.3
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

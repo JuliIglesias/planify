@@ -123,13 +123,14 @@
   "eventSavedPlaces": "Ubicaciones guardadas",
   "eventSavePlace": "Guardar esta ubicación",
   "eventPlaceLabelHint": "Etiqueta (ej. Casa de Juli)",
-  "friendMatchesTitle": "Coincidencias con amigos",
-  "friendMatchesHint": "Bloques donde vos y tus amigos ({count}) coinciden. Más intenso = más gente libre.",
-  "@friendMatchesHint": {
+  "groupAvailabilityTitle": "Disponibilidad del grupo",
+  "groupAvailabilityHint": "Bloques donde los miembros de este grupo ({count}) coinciden. Más intenso = más gente libre.",
+  "@groupAvailabilityHint": {
     "placeholders": {
       "count": { "type": "int" }
     }
   },
+  "groupsSeeAvailability": "Ver disponibilidad del grupo",
   "eventConfigTitle": "Configuración del evento",
   "eventDetailAvailability": "Disponibilidad del grupo",
   "eventDetailMyAvailability": "Mi disponibilidad",
@@ -312,7 +313,6 @@
   "groupsManage": "Administrar grupo",
   "groupsRename": "Cambiar nombre",
   "groupsUpdateImage": "Cambiar imagen",
-  "groupsImageUrl": "URL de la imagen",
   "groupsAddMember": "Agregar amigo",
   "groupsLeave": "Abandonar grupo",
   "groupsLeaveConfirm": "Vas a dejar de ver los eventos de este grupo.",

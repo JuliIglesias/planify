@@ -26,6 +26,7 @@ import {
   FakeClock,
   FakeDeviceRegistry,
   FakeDeudaRepository,
+  FakeImageStorageRepository,
   FakeLocationRepository,
   FakeProfileAvailabilityRepository,
   FakePushNotifier,
@@ -58,6 +59,7 @@ export interface TestContainer {
     deudas: FakeDeudaRepository;
     logs: FakeLogActividadRepository;
     push: FakePushNotifier;
+    imagenes: FakeImageStorageRepository;
   };
   clock: FakeClock;
 }
@@ -82,6 +84,7 @@ export function createTestContainer(): TestContainer {
   const invitaciones = new FakeInvitacionRepository();
   const disponibilidad = new FakeDisponibilidadRepository(participantes);
   const disponibilidadPerfil = new FakeProfileAvailabilityRepository();
+  const imagenes = new FakeImageStorageRepository();
   const ubicaciones = new FakeLocationRepository();
   const tareas = new FakeTareaRepository();
   const gastos = new FakeGastoRepository();
@@ -98,7 +101,7 @@ export function createTestContainer(): TestContainer {
   const friends = new FriendsService(amistades, usuarios);
   const users = new UsersService(usuarios);
   const aiEvents = new AiEventsService(new HeuristicEventGenerator(), amistades);
-  const profileAvailability = new ProfileAvailabilityService(disponibilidadPerfil, amistades);
+  const profileAvailability = new ProfileAvailabilityService(disponibilidadPerfil);
   const locations = new LocationsService(ubicaciones);
   const participants = new ParticipantsService(participantes, usuarios, eventos, ids, activityLog);
   const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
@@ -122,6 +125,8 @@ export function createTestContainer(): TestContainer {
     clock,
     participantes,
     invitations,
+    disponibilidadPerfil,
+    imagenes,
   );
   const tasks = new TasksService(tareas, eventos, participantes, activityLog);
   const debts = new DebtsService(deudas, gastos, participantes, eventos, activityLog, clock);
@@ -177,6 +182,7 @@ export function createTestContainer(): TestContainer {
       deudas,
       logs,
       push,
+      imagenes,
     },
   };
 }

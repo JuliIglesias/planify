@@ -279,12 +279,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventPlaceLabelHint => 'Label (e.g. Juli\'s place)';
 
   @override
-  String get friendMatchesTitle => 'Matches with friends';
+  String get groupAvailabilityTitle => 'Group availability';
 
   @override
-  String friendMatchesHint(int count) {
-    return 'Slots where you and your friends ($count) overlap. Darker = more people free.';
+  String groupAvailabilityHint(int count) {
+    return 'Slots where this group\'s members ($count) overlap. Darker = more people free.';
   }
+
+  @override
+  String get groupsSeeAvailability => 'See group availability';
 
   @override
   String get eventConfigTitle => 'Event settings';
@@ -535,9 +538,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupsUpdateImage => 'Cambiar imagen';
-
-  @override
-  String get groupsImageUrl => 'URL de la imagen';
 
   @override
   String get groupsAddMember => 'Add friend';

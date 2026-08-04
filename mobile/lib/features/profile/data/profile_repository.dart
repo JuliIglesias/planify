@@ -2,16 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/data/api_exception.dart';
-import '../../../core/models/models.dart';
 import '../../../core/network/api_client.dart';
 
 typedef SlotSimple = ({int diaSemana, int bloqueHora});
-
-class CoincidenciasAmigos {
-  const CoincidenciasAmigos({required this.totalPersonas, required this.slots});
-  final int totalPersonas;
-  final List<HeatmapSlot> slots;
-}
 
 class UbicacionFavorita {
   const UbicacionFavorita({required this.id, required this.etiqueta, required this.texto});
@@ -26,12 +19,14 @@ class UbicacionFavorita {
       );
 }
 
-/// SCRUM-14/HU-B4/HU-B5 — disponibilidad de perfil, coincidencias entre amigos
-/// y ubicaciones favoritas.
+/// SCRUM-14/HU-B5 — disponibilidad de perfil y ubicaciones favoritas.
+///
+/// La vieja "coincidencias con todos los amigos" (HU-B4) se eliminó en la
+/// Tanda 6, Item 5: el heatmap agregado ahora vive scopeado a un grupo
+/// puntual, ver `GroupsRepository.disponibilidadDeGrupo`.
 abstract interface class ProfileRepository {
   Future<List<SlotSimple>> obtenerDisponibilidad();
   Future<void> guardarDisponibilidad(List<SlotSimple> slots);
-  Future<CoincidenciasAmigos> coincidenciasConAmigos();
   Future<List<UbicacionFavorita>> listarUbicaciones();
   Future<UbicacionFavorita> crearUbicacion(String etiqueta, String texto);
   Future<void> eliminarUbicacion(String id);
@@ -57,18 +52,6 @@ class ProfileRepositoryHttp implements ProfileRepository {
         await _dio.put<void>('/me/availability', data: {
           'slots': slots.map((s) => {'diaSemana': s.diaSemana, 'bloqueHora': s.bloqueHora}).toList(),
         });
-      });
-
-  @override
-  Future<CoincidenciasAmigos> coincidenciasConAmigos() => ejecutar(() async {
-        final res = await _dio.get<Map<String, dynamic>>('/me/availability/friend-matches');
-        final data = res.data ?? {};
-        return CoincidenciasAmigos(
-          totalPersonas: data['totalPersonas'] as int? ?? 0,
-          slots: ((data['slots'] as List<dynamic>?) ?? [])
-              .map((s) => HeatmapSlot.fromJson(s as Map<String, dynamic>))
-              .toList(),
-        );
       });
 
   @override

@@ -602,17 +602,23 @@ abstract class AppLocalizations {
   /// **'Etiqueta (ej. Casa de Juli)'**
   String get eventPlaceLabelHint;
 
-  /// No description provided for @friendMatchesTitle.
+  /// No description provided for @groupAvailabilityTitle.
   ///
   /// In es, this message translates to:
-  /// **'Coincidencias con amigos'**
-  String get friendMatchesTitle;
+  /// **'Disponibilidad del grupo'**
+  String get groupAvailabilityTitle;
 
-  /// No description provided for @friendMatchesHint.
+  /// No description provided for @groupAvailabilityHint.
   ///
   /// In es, this message translates to:
-  /// **'Bloques donde vos y tus amigos ({count}) coinciden. Más intenso = más gente libre.'**
-  String friendMatchesHint(int count);
+  /// **'Bloques donde los miembros de este grupo ({count}) coinciden. Más intenso = más gente libre.'**
+  String groupAvailabilityHint(int count);
+
+  /// No description provided for @groupsSeeAvailability.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver disponibilidad del grupo'**
+  String get groupsSeeAvailability;
 
   /// No description provided for @eventConfigTitle.
   ///
@@ -1039,12 +1045,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Cambiar imagen'**
   String get groupsUpdateImage;
-
-  /// No description provided for @groupsImageUrl.
-  ///
-  /// In es, this message translates to:
-  /// **'URL de la imagen'**
-  String get groupsImageUrl;
 
   /// No description provided for @groupsAddMember.
   ///

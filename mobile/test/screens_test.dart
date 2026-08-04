@@ -6,9 +6,13 @@ import 'package:planify/core/widgets/quick_action_button.dart';
 import 'package:planify/features/balances/balances_screen.dart';
 import 'package:planify/features/events/event_detail_screen.dart';
 import 'package:planify/features/friends/data/friends_repository.dart';
+import 'package:planify/features/groups/data/groups_repository.dart';
+import 'package:planify/features/groups/group_availability_screen.dart';
+import 'package:planify/features/groups/group_manage_sheet.dart';
 import 'package:planify/features/groups/groups_screen.dart';
 import 'package:planify/features/home/home_screen.dart';
 import 'package:planify/features/history/history_screen.dart';
+import 'package:planify/features/profile/profile_screen.dart';
 import 'package:planify/l10n/generated/app_localizations.dart';
 
 import 'helpers/fake_repositories.dart';
@@ -681,6 +685,90 @@ void main() {
       );
       // No queda una línea individual por cada una.
       expect(find.text(l10n.activityDebtSettled('Marcos')), findsNothing);
+    });
+  });
+
+  group('ProfileScreen (Tanda 6, Item 5 — limpieza de disponibilidad)', () {
+    testWidgets(
+        'mantiene la disponibilidad semanal personal, pero ya no ofrece '
+        'coincidencias con todos los amigos', (tester) async {
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(appDePrueba(const ProfileScreen()));
+      await tester.pumpAndSettle();
+
+      // Se mantiene: preferencia individual (además pre-llena el evento).
+      expect(find.text(l10n.profileWeeklyAvailability), findsOneWidget);
+      // Se eliminó: agregado con TODOS los amigos, fuera de cualquier grupo.
+      expect(find.text('Coincidencias con amigos'), findsNothing);
+      // "Mis amigos" (la lista simple) sigue estando.
+      expect(find.text(l10n.friendsTitle), findsOneWidget);
+    });
+  });
+
+  group('GroupAvailabilityScreen (Tanda 6, Item 5)', () {
+    testWidgets('muestra el heatmap scopeado a los miembros de ESE grupo',
+        (tester) async {
+      final groups = FakeGroupsRepository()
+        ..disponibilidad = const DisponibilidadDeGrupo(
+          totalPersonas: 2,
+          slots: [HeatmapSlot(diaSemana: 0, bloqueHora: 20, disponibles: 2)],
+        );
+
+      await tester.pumpWidget(
+        appDePrueba(const GroupAvailabilityScreen(grupoId: 'g1'), groups: groups),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.groupAvailabilityTitle), findsOneWidget);
+      expect(find.text(l10n.groupAvailabilityHint(2)), findsOneWidget);
+      expect(groups.llamadas, contains('disponibilidadDeGrupo:g1'));
+    });
+  });
+
+  group('group_manage_sheet (Tanda 6, Item 5)', () {
+    const grupo = GrupoResumen(id: 'g1', nombre: 'Los Fibes', miembros: ['Marcos']);
+
+    testWidgets('ya no ofrece "URL de la imagen": cambiar imagen no pide texto',
+        (tester) async {
+      await tester.pumpWidget(
+        appDePrueba(
+          Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => mostrarGestionDeGrupo(context, grupo),
+              child: const Text('abrir'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('abrir'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.groupsUpdateImage), findsOneWidget);
+      // Ya no existe el diálogo de texto para pegar una URL.
+      expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets('"Ver disponibilidad del grupo" cierra la hoja y navega',
+        (tester) async {
+      await tester.pumpWidget(
+        appDePrueba(
+          Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => mostrarGestionDeGrupo(context, grupo),
+              child: const Text('abrir'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('abrir'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.groupsSeeAvailability));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.groupAvailabilityTitle), findsOneWidget);
+      // La hoja de gestión ya se cerró (no queda debajo).
+      expect(find.text(l10n.groupsUpdateImage), findsNothing);
     });
   });
 }

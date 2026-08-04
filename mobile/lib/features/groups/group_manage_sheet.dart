@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/models/models.dart';
 import '../../core/theme/app_colors.dart';
@@ -10,6 +11,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../friends/friend_picker.dart';
 import '../home/home_providers.dart';
 import 'data/groups_repository.dart';
+import 'group_availability_screen.dart';
 
 /// Gestión de miembros del grupo — HU-32/33/34 (Duda #12.2).
 /// Es una hoja inferior en vez de una pantalla completa porque son acciones
@@ -105,22 +107,42 @@ class _GestionGrupoSheetState extends ConsumerState<_GestionGrupoSheet> {
               },
             ),
 
-            // Cambiar imagen
+            // Cambiar imagen — Item 5 (Tanda 6): abre la galería nativa del
+            // dispositivo en vez de pedir una URL de texto.
             ListTile(
               leading: const Icon(Icons.image_outlined),
               title: Text(l10n.groupsUpdateImage),
               enabled: !_ocupado,
               onTap: () async {
-                final avatarUrl = await _pedirTexto(
-                  context,
-                  titulo: l10n.groupsUpdateImage,
-                  label: l10n.groupsImageUrl,
-                  inicial: widget.grupo.avatarUrl,
-                );
-                if (avatarUrl == null) return;
+                final imagen = await ImagePicker().pickImage(source: ImageSource.gallery);
+                if (imagen == null) return;
+                final bytes = await imagen.readAsBytes();
                 await _accion(
-                  () => repo.actualizar(grupoId: widget.grupo.id, avatarUrl: avatarUrl),
+                  () => repo.subirImagen(
+                    grupoId: widget.grupo.id,
+                    bytes: bytes,
+                    nombreArchivo: imagen.name,
+                  ),
                   cerrar: true,
+                );
+              },
+            ),
+
+            // Ver disponibilidad del grupo — Item 5 (Tanda 6): heatmap
+            // scopeado a los miembros de ESTE grupo (ya no "todos los
+            // amigos", eso se eliminó de Perfil).
+            ListTile(
+              leading: const Icon(Icons.event_available_outlined),
+              title: Text(l10n.groupsSeeAvailability),
+              trailing: const Icon(Icons.chevron_right),
+              enabled: !_ocupado,
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                navigator.push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => GroupAvailabilityScreen(grupoId: widget.grupo.id),
+                  ),
                 );
               },
             ),

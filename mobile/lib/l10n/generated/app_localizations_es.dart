@@ -278,12 +278,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventPlaceLabelHint => 'Etiqueta (ej. Casa de Juli)';
 
   @override
-  String get friendMatchesTitle => 'Coincidencias con amigos';
+  String get groupAvailabilityTitle => 'Disponibilidad del grupo';
 
   @override
-  String friendMatchesHint(int count) {
-    return 'Bloques donde vos y tus amigos ($count) coinciden. Más intenso = más gente libre.';
+  String groupAvailabilityHint(int count) {
+    return 'Bloques donde los miembros de este grupo ($count) coinciden. Más intenso = más gente libre.';
   }
+
+  @override
+  String get groupsSeeAvailability => 'Ver disponibilidad del grupo';
 
   @override
   String get eventConfigTitle => 'Configuración del evento';
@@ -537,9 +540,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get groupsUpdateImage => 'Cambiar imagen';
-
-  @override
-  String get groupsImageUrl => 'URL de la imagen';
 
   @override
   String get groupsAddMember => 'Agregar amigo';

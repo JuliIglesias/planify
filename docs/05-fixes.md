@@ -6,6 +6,50 @@
 > (identidad anónima por evento, **diferido** — ver nota al final de este
 > documento).
 
+## Item A1 + A2: Altura de la navbar "hug content" + safe area en las 4 pantallas raíz
+
+**Confirmado con el usuario antes de tocar layout:** la altura de
+`AppBottomNav` estaba hardcodeada (`height: 76`, sin relación con ningún
+otro contenedor) y no había ningún "contenedor de tab" con una altura fija
+comparable — las 4 pantallas raíz son `Scaffold` de altura completa. El
+componente que sí comparte la misma familia visual (pill translúcida) es
+`PillToggle` (usado en Saldos y Notificaciones), que se autodimensiona por
+contenido. El usuario pidió invertir el enfoque: en vez de un número fijo,
+que la navbar también sea "hug content" como `PillToggle` — y que, como
+lleva ícono además de texto, termine más alta que un `PillToggle` sin que
+eso se traduzca en un radio de esquina distinto (nada de `radio = alto/2`
+por separado en cada uno, que dejaría de leerse como "rectángulo
+redondeado").
+
+- **`AppSpacing.barRadius`** (`core/theme/app_spacing.dart`, nuevo) — radio
+  compartido por los contenedores "pill-bar" (24dp, fijo). Reemplaza los
+  `30` (navbar) y `24` (`PillToggle`) hardcodeados por separado, que hasta
+  ahora coincidían por casualidad más que por diseño.
+- **`AppBottomNav`** (`core/widgets/app_scaffold.dart`): se sacó
+  `height: 76` del `Container` — ahora mide lo que necesita su propio
+  contenido (ícono + texto + paddings), igual que `PillToggle`.
+- **`bottomNavHeightProvider`** (nuevo, mismo archivo): la altura real de
+  la navbar ya no es una constante — se **mide** en tiempo de ejecución
+  (`AppShell` le pone un `GlobalKey`, y en un post-frame callback lee
+  `RenderBox.size.height` y la publica acá) y se expone para que las
+  pantallas raíz sepan cuánto padding inferior necesitan. Un número fijo a
+  mano en cada pantalla se hubiera desincronizado apenas cambiara el
+  contenido de la navbar — exactamente el tipo de bug que era A1.
+- **A2 — Home, Grupos, Saldos y Perfil** (las 4 pantallas con bottom nav,
+  no solo Home): el `padding` inferior de su `ListView` pasa a ser
+  `bottomNavHeightProvider + AppSpacing.md`, en vez de un `AppSpacing.xl`
+  fijo (Home) o directamente nada (Grupos, Saldos, Perfil no tenían
+  ningún padding inferior contemplado). Con `extendBody: true` en
+  `AppShell` (así quedó desde antes, para el efecto de navbar flotante),
+  el contenido corre por debajo de la navbar a propósito — sin este
+  padding, el final de cada lista queda tapado.
+- **Tests (`app_shell_layout_test.dart`, nuevo):** A1 — `AppBottomNav` y
+  `PillToggle` comparten el mismo `borderRadius`. A2 — con `AppShell`
+  montado (navbar real, altura medida) y suficiente actividad reciente
+  como para necesitar scroll, se scrollea Home hasta el final y se verifica
+  que el último ítem visible no se solape con el rect de la navbar; se
+  confirmó que este test **falla** si se vuelve al padding fijo de antes
+  (`AppSpacing.xl`), antes de dejarlo con el fix aplicado.
 ## Item B1: No se podía guardar una ubicación — `TextEditingController` usado después de `dispose()`
 
 **Reproducido antes de tocar código** (pedido explícito del usuario, sin

@@ -248,27 +248,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   }
 
   Future<String?> _pedirEtiqueta() async {
-    final l10n = AppLocalizations.of(context)!;
-    final ctrl = TextEditingController();
     final res = await showDialog<String>(
       context: context,
-      builder: (ctx) => AppDialog(
-        title: Text(l10n.eventSavePlace),
-        content: AppTextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: InputDecoration(hintText: l10n.eventPlaceLabelHint),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: Text(l10n.commonSave),
-          ),
-        ],
-      ),
+      builder: (ctx) => const _EtiquetaDialog(),
     );
-    ctrl.dispose();
     return (res == null || res.isEmpty) ? null : res;
   }
 
@@ -533,4 +516,67 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 String _formatearRango(DateTimeRange rango) {
   final formato = DateFormat('d MMM', 'es');
   return '${formato.format(rango.start)} – ${formato.format(rango.end)}';
+}
+
+/// B1 — diálogo para pedir la etiqueta de una ubicación favorita.
+///
+/// Antes el `TextEditingController` vivía en el método que llamaba a
+/// `showDialog` y se disponía "a mano" apenas el `Future` resolvía. El
+/// problema: `Navigator.pop` resuelve ese `Future` en cuanto la ruta se
+/// saca de la pila, pero su animación de salida sigue corriendo un rato
+/// más — y el `AppTextField` seguía montado (y referenciando ese
+/// controller) durante esa transición. Total: "A TextEditingController was
+/// used after being disposed", con una assertion secundaria en cascada
+/// (`_dependents.isEmpty`) porque la excepción corta el rebuild a mitad de
+/// camino.
+///
+/// El fix es dejar que el controller lo administre el propio ciclo de vida
+/// del widget (`initState`/`dispose` de un `StatefulWidget`): Flutter recién
+/// llama a `dispose()` cuando el Element realmente se desmonta del árbol,
+/// nunca antes — no hay forma de que se dispare mientras la transición de
+/// salida del diálogo todavía lo necesita.
+class _EtiquetaDialog extends StatefulWidget {
+  const _EtiquetaDialog();
+
+  @override
+  State<_EtiquetaDialog> createState() => _EtiquetaDialogState();
+}
+
+class _EtiquetaDialogState extends State<_EtiquetaDialog> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AppDialog(
+      title: Text(l10n.eventSavePlace),
+      content: AppTextField(
+        controller: _ctrl,
+        autofocus: true,
+        decoration: InputDecoration(hintText: l10n.eventPlaceLabelHint),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.commonCancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _ctrl.text.trim()),
+          child: Text(l10n.commonSave),
+        ),
+      ],
+    );
+  }
 }

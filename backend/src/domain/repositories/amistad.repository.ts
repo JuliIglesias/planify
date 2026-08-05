@@ -6,6 +6,17 @@ export interface SolicitudAmistad {
   de: PersonaBusqueda;
 }
 
+/**
+ * F1 — una solicitud de amistad pendiente que envié yo, con a quién.
+ * Mismo shape que `SolicitudAmistad` salvo el nombre del campo (`para` en
+ * vez de `de`): son conceptualmente distintas (quién la mandó vs. a quién
+ * se la mandaron) aunque miren la misma tabla desde el otro lado.
+ */
+export interface SolicitudEnviada {
+  amistadId: string;
+  para: PersonaBusqueda;
+}
+
 export interface AmistadRepository {
   /** HU-31 — crear una solicitud (queda `pendiente`). */
   crear(solicitanteId: string, receptorId: string): Promise<Amistad>;
@@ -27,4 +38,7 @@ export interface AmistadRepository {
 
   /** Solicitudes pendientes que recibió el usuario. */
   listSolicitudesRecibidas(usuarioId: string): Promise<SolicitudAmistad[]>;
+
+  /** F1 — solicitudes pendientes que envió el usuario (todavía sin aceptar). */
+  listSolicitudesEnviadas(usuarioId: string): Promise<SolicitudEnviada[]>;
 }

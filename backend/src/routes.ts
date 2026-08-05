@@ -166,6 +166,15 @@ export function createRoutes(c: Container): Router {
     }),
   );
 
+  // F1 — solicitudes que YO envié (distintas de las que recibí, arriba).
+  router.get(
+    '/friends/requests/sent',
+    soloOrganizador,
+    asyncHandler(async (req: OrganizerRequest, res: Response) => {
+      res.json(await c.friends.solicitudesEnviadas(exigirUsuario(req)));
+    }),
+  );
+
   router.post(
     '/friends/request',
     soloOrganizador,

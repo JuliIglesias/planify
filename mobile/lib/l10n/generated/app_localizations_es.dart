@@ -529,6 +529,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventDetailDivideBetween => '¿Entre quiénes se divide?';
 
   @override
+  String get eventDetailAmountPerPayer => 'Monto por pagador';
+
+  @override
+  String get eventDetailAmountPerPerson => 'Monto por persona';
+
+  @override
   String get eventDetailSelectAtLeastOne =>
       'Debe seleccionar al menos una persona';
 
@@ -627,6 +633,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get friendsRequests => 'Solicitudes';
+
+  @override
+  String get friendsRequestsReceived => 'Recibidas';
+
+  @override
+  String get friendsRequestsSent => 'Enviadas';
+
+  @override
+  String get friendsPending => 'Pendiente';
 
   @override
   String get friendsAccept => 'Aceptar';

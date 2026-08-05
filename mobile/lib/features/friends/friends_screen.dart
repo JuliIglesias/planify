@@ -12,6 +12,11 @@ final _requestsProvider = FutureProvider<List<SolicitudAmistad>>(
   (ref) => ref.watch(friendsRepositoryProvider).solicitudesPendientes(),
 );
 
+/// F1 — solicitudes que envié yo, todavía sin aceptar.
+final _sentRequestsProvider = FutureProvider<List<SolicitudEnviada>>(
+  (ref) => ref.watch(friendsRepositoryProvider).solicitudesEnviadas(),
+);
+
 /// SCRUM-14 — HU-31: pantalla de amigos (buscar y agregar, aceptar, listar).
 class FriendsScreen extends ConsumerStatefulWidget {
   const FriendsScreen({super.key});
@@ -53,10 +58,24 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
       await accion();
       ref.invalidate(friendsProvider);
       ref.invalidate(_requestsProvider);
+      ref.invalidate(_sentRequestsProvider);
       if (mounted) messenger.showSnackBar(SnackBar(content: Text(okMsg)));
     } catch (err) {
       if (mounted) messenger.showSnackBar(SnackBar(content: Text('$err')));
     }
+  }
+
+  // F1 — mismo patrón de pull-to-refresh que Home (`home_screen.dart`):
+  // refresca amigos, solicitudes recibidas y enviadas de una.
+  Future<void> _refrescar() async {
+    ref.invalidate(friendsProvider);
+    ref.invalidate(_requestsProvider);
+    ref.invalidate(_sentRequestsProvider);
+    await Future.wait([
+      ref.read(friendsProvider.future),
+      ref.read(_requestsProvider.future),
+      ref.read(_sentRequestsProvider.future),
+    ]);
   }
 
   @override
@@ -64,133 +83,209 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final amigos = ref.watch(friendsProvider);
     final requests = ref.watch(_requestsProvider);
+    final sentRequests = ref.watch(_sentRequestsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.friendsTitle), backgroundColor: AppColors.surface),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        children: [
-          AppTextField(
-            variant: AppTextFieldVariant.email,
-            controller: _busquedaCtrl,
-            onChanged: _buscar,
-            decoration: InputDecoration(
-              hintText: l10n.friendsSearchHint,
-              prefixIcon: const Icon(Icons.search),
-            ),
-          ),
-          if (_buscando)
-            const Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          for (final p in _resultados)
-            ListTile(
-              // Item 3 — toda la fila envía la solicitud, no solo el botón;
-              // el botón se queda como indicador visual de la acción.
-              onTap: () => _accion(
-                () => ref.read(friendsRepositoryProvider).enviarSolicitud(p.id),
-                l10n.friendsRequestSent,
+      appBar: AppBar(
+        title: Text(l10n.friendsTitle),
+        backgroundColor: AppColors.surface,
+      ),
+      // F1 — pull-to-refresh, mismo patrón/componente que Home.
+      body: RefreshIndicator(
+        onRefresh: _refrescar,
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          children: [
+            AppTextField(
+              variant: AppTextFieldVariant.email,
+              controller: _busquedaCtrl,
+              onChanged: _buscar,
+              decoration: InputDecoration(
+                hintText: l10n.friendsSearchHint,
+                prefixIcon: const Icon(Icons.search),
               ),
-              leading: const Icon(Icons.person_outline),
-              title: Text(p.username),
-              // El email en gris ayuda a confirmar que es la persona
-              // correcta, como una sola unidad visual con el username.
-              subtitle: p.email != null
-                  ? Text(p.email!, style: const TextStyle(color: AppColors.textSecondary))
-                  : null,
-              trailing: TextButton(
-                onPressed: () => _accion(
-                  () => ref.read(friendsRepositoryProvider).enviarSolicitud(p.id),
+            ),
+            if (_buscando)
+              const Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            for (final p in _resultados)
+              ListTile(
+                // Item 3 — toda la fila envía la solicitud, no solo el botón;
+                // el botón se queda como indicador visual de la acción.
+                onTap: () => _accion(
+                  () =>
+                      ref.read(friendsRepositoryProvider).enviarSolicitud(p.id),
                   l10n.friendsRequestSent,
                 ),
-                child: Text(l10n.friendsAdd),
+                leading: const Icon(Icons.person_outline),
+                title: Text(p.username),
+                // El email en gris ayuda a confirmar que es la persona
+                // correcta, como una sola unidad visual con el username.
+                subtitle: p.email != null
+                    ? Text(
+                        p.email!,
+                        style: const TextStyle(color: AppColors.textSecondary),
+                      )
+                    : null,
+                trailing: TextButton(
+                  onPressed: () => _accion(
+                    () => ref
+                        .read(friendsRepositoryProvider)
+                        .enviarSolicitud(p.id),
+                    l10n.friendsRequestSent,
+                  ),
+                  child: Text(l10n.friendsAdd),
+                ),
               ),
-            ),
-          if (_busquedaCtrl.text.trim().length >= 2 && !_buscando && _resultados.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Text(l10n.friendsNoResults),
-            ),
+            if (_busquedaCtrl.text.trim().length >= 2 &&
+                !_buscando &&
+                _resultados.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Text(l10n.friendsNoResults),
+              ),
 
-          // ── Solicitudes pendientes ─────────────────────────────────────
-          requests.maybeWhen(
-            data: (lista) => lista.isEmpty
-                ? const SizedBox.shrink()
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: AppSpacing.md),
-                      Text(l10n.friendsRequests,
-                          style: Theme.of(context).textTheme.titleMedium),
-                      for (final s in lista)
-                        ListTile(
-                          // Item 3 — toda la fila acepta, no solo el botón.
-                          onTap: () => _accion(
-                            () => ref.read(friendsRepositoryProvider).aceptar(s.amistadId),
-                            l10n.friendsAccept,
-                          ),
-                          leading: const Icon(Icons.person_add_alt),
-                          title: Text(s.de.username),
-                          subtitle: s.de.email != null
-                              ? Text(s.de.email!,
-                                  style: const TextStyle(color: AppColors.textSecondary))
-                              : null,
-                          trailing: FilledButton(
-                            onPressed: () => _accion(
-                              () => ref.read(friendsRepositoryProvider).aceptar(s.amistadId),
+            // ── F1 — solicitudes pendientes: recibidas y enviadas, cada una
+            // en su propia sección para que se puedan distinguir de un
+            // vistazo (antes solo existían las recibidas). ──────────────────
+            requests.maybeWhen(
+              data: (lista) => lista.isEmpty
+                  ? const SizedBox.shrink()
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          '${l10n.friendsRequests} · ${l10n.friendsRequestsReceived}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        for (final s in lista)
+                          ListTile(
+                            // Item 3 — toda la fila acepta, no solo el botón.
+                            onTap: () => _accion(
+                              () => ref
+                                  .read(friendsRepositoryProvider)
+                                  .aceptar(s.amistadId),
                               l10n.friendsAccept,
                             ),
-                            child: Text(l10n.friendsAccept),
-                          ),
-                        ),
-                    ],
-                  ),
-            orElse: () => const SizedBox.shrink(),
-          ),
-
-          // ── Amigos ─────────────────────────────────────────────────────
-          const SizedBox(height: AppSpacing.md),
-          Text(l10n.friendsTitle, style: Theme.of(context).textTheme.titleMedium),
-          amigos.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (err, _) => Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Text('$err'),
-            ),
-            data: (lista) => lista.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Text(l10n.friendsEmpty,
-                        style: const TextStyle(color: AppColors.textSecondary)),
-                  )
-                : Column(
-                    children: [
-                      for (final p in lista)
-                        ListTile(
-                          // Item 4 — toca cualquier parte de la fila para
-                          // ver el perfil de solo lectura de ese amigo.
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => FriendProfileScreen(usuarioId: p.id),
+                            leading: const Icon(Icons.person_add_alt),
+                            title: Text(s.de.username),
+                            subtitle: s.de.email != null
+                                ? Text(
+                                    s.de.email!,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  )
+                                : null,
+                            trailing: FilledButton(
+                              onPressed: () => _accion(
+                                () => ref
+                                    .read(friendsRepositoryProvider)
+                                    .aceptar(s.amistadId),
+                                l10n.friendsAccept,
+                              ),
+                              child: Text(l10n.friendsAccept),
                             ),
                           ),
-                          leading: const Icon(Icons.person, color: AppColors.primary),
-                          title: Text(p.username),
-                          // Item 3 — email en gris debajo del username, como
-                          // una sola unidad visual.
-                          subtitle: p.email != null
-                              ? Text(p.email!,
-                                  style: const TextStyle(color: AppColors.textSecondary))
-                              : null,
+                      ],
+                    ),
+              orElse: () => const SizedBox.shrink(),
+            ),
+
+            sentRequests.maybeWhen(
+              data: (lista) => lista.isEmpty
+                  ? const SizedBox.shrink()
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          '${l10n.friendsRequests} · ${l10n.friendsRequestsSent}',
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                    ],
-                  ),
-          ),
-        ],
+                        for (final s in lista)
+                          ListTile(
+                            leading: const Icon(Icons.send_outlined),
+                            title: Text(s.para.username),
+                            subtitle: s.para.email != null
+                                ? Text(
+                                    s.para.email!,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  )
+                                : null,
+                            trailing: Text(
+                              l10n.friendsPending,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+              orElse: () => const SizedBox.shrink(),
+            ),
+
+            // ── Amigos ─────────────────────────────────────────────────────
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              l10n.friendsTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            amigos.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (err, _) => Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Text('$err'),
+              ),
+              data: (lista) => lista.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Text(
+                        l10n.friendsEmpty,
+                        style: const TextStyle(color: AppColors.textSecondary),
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        for (final p in lista)
+                          ListTile(
+                            // Item 4 — toca cualquier parte de la fila para
+                            // ver el perfil de solo lectura de ese amigo.
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    FriendProfileScreen(usuarioId: p.id),
+                              ),
+                            ),
+                            leading: const Icon(
+                              Icons.person,
+                              color: AppColors.primary,
+                            ),
+                            title: Text(p.username),
+                            // Item 3 — email en gris debajo del username, como
+                            // una sola unidad visual.
+                            subtitle: p.email != null
+                                ? Text(
+                                    p.email!,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

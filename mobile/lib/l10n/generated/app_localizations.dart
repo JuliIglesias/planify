@@ -1028,6 +1028,18 @@ abstract class AppLocalizations {
   /// **'¿Entre quiénes se divide?'**
   String get eventDetailDivideBetween;
 
+  /// No description provided for @eventDetailAmountPerPayer.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto por pagador'**
+  String get eventDetailAmountPerPayer;
+
+  /// No description provided for @eventDetailAmountPerPerson.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto por persona'**
+  String get eventDetailAmountPerPerson;
+
   /// No description provided for @eventDetailSelectAtLeastOne.
   ///
   /// In es, this message translates to:
@@ -1201,6 +1213,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Solicitudes'**
   String get friendsRequests;
+
+  /// No description provided for @friendsRequestsReceived.
+  ///
+  /// In es, this message translates to:
+  /// **'Recibidas'**
+  String get friendsRequestsReceived;
+
+  /// No description provided for @friendsRequestsSent.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviadas'**
+  String get friendsRequestsSent;
+
+  /// No description provided for @friendsPending.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendiente'**
+  String get friendsPending;
 
   /// No description provided for @friendsAccept.
   ///

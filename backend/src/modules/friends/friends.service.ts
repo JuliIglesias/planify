@@ -3,6 +3,7 @@ import { PersonaBusqueda } from '../../domain/entities';
 import {
   AmistadRepository,
   SolicitudAmistad,
+  SolicitudEnviada,
   UsuarioRepository,
 } from '../../domain/repositories';
 import { ActivityLogService } from '../activity-log/activity-log.service';
@@ -82,5 +83,10 @@ export class FriendsService {
   /** Solicitudes pendientes recibidas. */
   async solicitudesPendientes(usuarioId: string): Promise<SolicitudAmistad[]> {
     return this.amistades.listSolicitudesRecibidas(usuarioId);
+  }
+
+  /** F1 — solicitudes pendientes que envié yo, todavía sin aceptar. */
+  async solicitudesEnviadas(usuarioId: string): Promise<SolicitudEnviada[]> {
+    return this.amistades.listSolicitudesEnviadas(usuarioId);
   }
 }

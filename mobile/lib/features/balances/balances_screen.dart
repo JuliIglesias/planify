@@ -35,10 +35,13 @@ class BalancesScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final balance = ref.watch(balanceProvider);
     final filtro = ref.watch(_filtroBalanceProvider);
+    // A2 — ídem Home/Grupos/Perfil: altura real de la navbar + margen.
+    final bottomPad = ref.watch(bottomNavHeightProvider) + AppSpacing.md;
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(balanceProvider),
       child: ListView(
+        padding: EdgeInsets.only(bottom: bottomPad),
         children: [
           AppHeader(titulo: l10n.balancesTitle),
           balance.when(

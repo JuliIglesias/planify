@@ -72,6 +72,66 @@ void main() {
     expect(friends.llamadas, contains('aceptar:am1'));
   });
 
+  // F1 — antes solo existían las solicitudes recibidas; ahora también se
+  // ven las enviadas, distinguibles entre sí.
+  testWidgets(
+      'las solicitudes enviadas se ven aparte de las recibidas, sin botón de '
+      'aceptar (F1)', (tester) async {
+    final friends = FakeFriendsRepository(
+      solicitudes: const [
+        SolicitudAmistad(amistadId: 'am1', de: Persona(id: 'u2', username: 'Sofía')),
+      ],
+      enviadas: const [
+        SolicitudEnviada(
+          amistadId: 'am2',
+          para: Persona(id: 'u3', username: 'Bruno', email: 'bruno@mail.com'),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(appDePrueba(const FriendsScreen(), friends: friends));
+    await tester.pumpAndSettle();
+
+    // Las dos secciones conviven, cada una con su propia gente.
+    expect(find.text('Sofía'), findsOneWidget);
+    expect(find.text('Bruno'), findsOneWidget);
+    expect(find.text('bruno@mail.com'), findsOneWidget);
+    expect(find.text(l10n.friendsPending), findsOneWidget);
+
+    // La recibida tiene botón de aceptar; la enviada no ofrece esa acción.
+    expect(find.text(l10n.friendsAccept), findsOneWidget);
+  });
+
+  testWidgets('deslizar hacia abajo refresca amigos y solicitudes (F1)',
+      (tester) async {
+    final friends = FakeFriendsRepository(
+      amigos: const [Persona(id: 'u1', username: 'Lucas')],
+      solicitudes: const [
+        SolicitudAmistad(amistadId: 'am1', de: Persona(id: 'u2', username: 'Sofía')),
+      ],
+      enviadas: const [
+        SolicitudEnviada(amistadId: 'am2', para: Persona(id: 'u3', username: 'Bruno')),
+      ],
+    );
+
+    usarPantallaAlta(tester);
+    await tester.pumpWidget(appDePrueba(const FriendsScreen(), friends: friends));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RefreshIndicator), findsOneWidget);
+
+    await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
+    await tester.pump();
+    // Deja correr la animación del indicador y el refetch.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    // Sigue mostrando los mismos datos (el fake no cambia entre llamadas);
+    // lo que importa es que el gesto no haya tirado ningún error.
+    expect(find.text('Lucas'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('tocar un amigo de la lista abre su perfil de solo lectura (Item 4)',
       (tester) async {
     final friends = FakeFriendsRepository(

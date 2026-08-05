@@ -6,6 +6,41 @@
 > (identidad anónima por evento, **diferido** — ver nota al final de este
 > documento).
 
+## Item D1: Modal de Gasto — montos por persona debajo de ambas secciones de selección
+
+**Orden actual confirmado antes de tocar el layout** (no era lo que se
+podría suponer): ya era descripción → monto total → "¿Quién pagó?" →
+"¿Entre quiénes se divide?". El problema real era otro: el input de monto
+por persona (agregado en `0af78aa "split deudor con montos manuales"`, y
+el más viejo de "¿Quién pagó?" multi-acreedor) estaba **intercalado
+dentro de cada fila** de cada sección (checkbox + input `$` en la misma
+fila), no como bloque aparte — con la fila tan angosta, el input quedaba
+apretado al lado del nombre y no se distinguía como "el monto final de
+esta persona". El usuario confirmó que el reordenamiento aplica a
+**ambas** secciones (aportes de "¿Quién pagó?" y montos de "¿Entre
+quiénes se divide?"), no solo a la más nueva.
+
+- **`expense_dialog.dart`:** cada sección de selección ("¿Quién pagó?" /
+  "¿Entre quiénes se divide?") ahora solo tiene checkbox + nombre
+  (`_FilaSeleccion`, nuevo — reemplaza a `_FilaParticipante`, que hacía
+  las dos cosas en una fila). Debajo de AMBAS secciones (nunca
+  intercalado) van dos bloques nuevos, cada uno con su propio título y
+  botón "Repartir": "Monto por pagador" (`_FilaMonto`, uno por acreedor
+  seleccionado — solo si hay más de un pagador, igual que antes) y "Monto
+  por persona" (uno por deudor seleccionado). El resultado final
+  (`DatosGasto`) y toda la lógica de validación/reparto no cambiaron —
+  esto es puramente de layout.
+- **`app_es.arb`/`app_en.arb`:** dos claves nuevas,
+  `eventDetailAmountPerPayer`/`eventDetailAmountPerPerson`, para titular
+  los bloques de montos sin repetir literalmente "¿Quién pagó?"/"¿Entre
+  quiénes se divide?" (esos títulos ya se usaron arriba, para la
+  selección).
+- **Tests (`expense_dialog_test.dart`, nuevo):** el orden vertical real de
+  los 4 títulos de sección (con más de un pagador, para que se pinten
+  los 4); que con un solo pagador no se pida "Monto por pagador"; que con
+  varios pagadores el monto de cada uno aparezca en el bloque de abajo
+  (no al lado de cada fila); y un caso end-to-end que arma el `DatosGasto`
+  final con los montos cargados.
 ## Item C2: Ícono del header del evento — de rueda dentada a calendario con tilde
 
 El ícono que abre disponibilidad y confirmación de asistencia dentro del

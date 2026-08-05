@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_semantic_colors.dart';
 import '../theme/app_spacing.dart';
+import 'app_icon_badge.dart';
 import 'avatar_stack.dart';
 import 'status_badge.dart';
 
@@ -12,6 +14,67 @@ class EventCardPill {
     required this.backgroundColor,
     required this.foregroundColor,
   });
+
+  /// Pill positivo (confirmados, saldado) — docs/06-design-system.md §6.2.
+  /// Reemplaza los `Color(0x...)` sueltos de `groups_screen.dart`.
+  factory EventCardPill.success({
+    required String label,
+    required IconData icon,
+    required BuildContext context,
+  }) {
+    final color = context.appSemanticColors.success;
+    return EventCardPill(
+      label: label,
+      icon: icon,
+      backgroundColor: color.withValues(alpha: 0.12),
+      foregroundColor: color,
+    );
+  }
+
+  /// Pill de advertencia (tareas pendientes).
+  factory EventCardPill.warning({
+    required String label,
+    required IconData icon,
+    required BuildContext context,
+  }) {
+    final color = context.appSemanticColors.warning;
+    return EventCardPill(
+      label: label,
+      icon: icon,
+      backgroundColor: color.withValues(alpha: 0.12),
+      foregroundColor: color,
+    );
+  }
+
+  /// Pill negativo (decisión pendiente, gastos).
+  factory EventCardPill.danger({
+    required String label,
+    required IconData icon,
+    required BuildContext context,
+  }) {
+    final color = context.appSemanticColors.danger;
+    return EventCardPill(
+      label: label,
+      icon: icon,
+      backgroundColor: color.withValues(alpha: 0.12),
+      foregroundColor: color,
+    );
+  }
+
+  /// Pill informativo (mensajes nuevos) — usa `colorScheme.primary`.
+  factory EventCardPill.info({
+    required String label,
+    required IconData icon,
+    required BuildContext context,
+  }) {
+    final color = Theme.of(context).colorScheme.primary;
+    return EventCardPill(
+      label: label,
+      icon: icon,
+      backgroundColor: color.withValues(alpha: 0.12),
+      foregroundColor: color,
+    );
+  }
 
   final String label;
   final IconData icon;
@@ -61,7 +124,7 @@ class EventCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -74,7 +137,7 @@ class EventCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           child: Container(
             width: width,
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -96,12 +159,11 @@ class EventCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
+                      // Color de título: hereda `titleMedium` del tema (azul
+                      // oscuro, docs/06-design-system.md §3.4).
                       child: Text(
                         titulo,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
                   if (badge != null) badge!,
@@ -233,10 +295,11 @@ class BalanceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final semantic = context.appSemanticColors;
     final color = switch (estado) {
-      SaldoEstado.pagar => AppColors.danger,
-      SaldoEstado.pendiente => AppColors.warning,
-      SaldoEstado.saldado => AppColors.success,
+      SaldoEstado.pagar => semantic.danger,
+      SaldoEstado.pendiente => semantic.warning,
+      SaldoEstado.saldado => semantic.success,
     };
 
     return Card(
@@ -293,15 +356,7 @@ class ActivityFeedItem extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.sm),
           child: Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 20, color: iconColor),
-              ),
+              AppIconBadge(icon: icon, color: iconColor, size: 40, iconSize: 20),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(

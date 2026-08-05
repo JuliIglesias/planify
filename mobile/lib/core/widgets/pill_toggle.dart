@@ -21,6 +21,8 @@ class PillToggle<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -40,7 +42,7 @@ class PillToggle<T> extends StatelessWidget {
                   decoration: opcion.value == selected
                       ? BoxDecoration(
                           color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.08),
@@ -54,9 +56,12 @@ class PillToggle<T> extends StatelessWidget {
                     opcion.label,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          // `secondary`: color de contenido sobre blanco para
+                          // el estado no seleccionado (docs/06-design-system.md
+                          // §3.4b) — reemplaza a `AppColors.inactiveBlue`.
                           color: opcion.value == selected
-                              ? AppColors.primary
-                              : AppColors.inactiveBlue,
+                              ? colorScheme.primary
+                              : colorScheme.secondary,
                           fontWeight:
                               opcion.value == selected ? FontWeight.bold : FontWeight.normal,
                         ),

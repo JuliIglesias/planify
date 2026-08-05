@@ -1,3 +1,87 @@
+# Design System v2 — Fase 2: construcción (sin aplicar a pantallas)
+
+> Fase 1 (auditoría + propuesta) en [06-design-system.md](06-design-system.md).
+> Esta fase implementa el `ThemeData` centralizado y la librería de
+> componentes aprobados, sin tocar ninguna pantalla — eso es Fase 3,
+> pantalla por pantalla. Alcance de plataforma ampliado a Android+iOS
+> durante Fase 1 (confirmado por el usuario, ver nota en
+> [00-entendimiento.md](00-entendimiento.md) §8).
+
+**Tema central (`core/theme/`):**
+- `app_colors.dart` — paleta reemplazada por los 6 hex de marca exactos +
+  derivados (`error` propio, `success`/`warning` armonizados, `danger`
+  financiero sin tocar — docs/06-design-system.md §3).
+- `app_semantic_colors.dart` (nuevo) — `ThemeExtension` con
+  `success`/`warning`/`danger`, los 3 semánticos que M3 no modela como rol
+  nativo de `ColorScheme`.
+- `app_spacing.dart` — nuevos `radiusSm`/`radiusLg`/`radiusXl`/`xxl`,
+  formalizando literales (`20`, `28`) que ya se usaban de facto sin token.
+- `app_theme.dart` — reescrito: `ColorScheme` completo (antes solo 3 roles
+  vía `fromSeed`), split título/cuerpo en el `TextTheme` (títulos en azul
+  oscuro vía `onPrimaryContainer`, cuerpo sin cambios), `AppSemanticColors`
+  registrada como extensión. No se tocó `pageTransitionsTheme` (Flutter ya
+  da swipe-back nativo en iOS por default — verificado, docs/06 §1.2).
+
+**Componentes nuevos (`core/widgets/`):** `app_button.dart` (`AppButton`,
+5 variantes), `app_avatar.dart` (`AppAvatar`), `app_person_row.dart`
+(`AppPersonRow`), `app_icon_badge.dart` (`AppIconBadge`), `app_card.dart`
+(`AppCard`), `app_logo.dart` (`AppLogo`, logo con esquinas redondeadas —
+**todavía no conectado a Login/Registro/Home**, eso es Fase 3 explícito).
+`core/utils/initials.dart` (nuevo) — la lógica de iniciales que estaba
+duplicada en `AvatarStack` y `groups_screen.dart` (solo la primera se
+migró; `groups_screen.dart` es una pantalla, queda para su turno en Fase 3).
+
+**Componentes existentes re-tematizados (sin cambiar su API pública, así
+que ninguna pantalla que ya los use se rompe):** `AppHeader`/`AppBottomNav`
+(`app_scaffold.dart` — título hereda azul oscuro del tema,
+`AppColors.inactiveBlue` reemplazado por `colorScheme.secondary`, radio
+`20`→`AppSpacing.radiusLg`), `AuthScaffold` (color de "Planify" vía tema —
+el logo placeholder sigue siendo el ícono vectorial, Fase 3 lo reemplaza),
+`EventCard`/`BalanceRow`/`ActivityFeedItem` (título vía tema, radio
+tokenizado, ícono-en-círculo de `ActivityFeedItem` ahora usa
+`AppIconBadge`), `EventCardPill` (4 constructores semánticos nuevos —
+`.success/.warning/.danger/.info` — listos para reemplazar los 8
+`Color(0x...)` de `groups_screen.dart` en Fase 3), `PillToggle` (mismo
+reemplazo de `inactiveBlue`, radio tokenizado), `QuickActionButton` (reusa
+`AppIconBadge` internamente), `evento_resumen_card.dart` (radio
+tokenizado).
+
+**Catálogo de debug:** `core/debug/design_catalog_screen.dart` (nuevo) —
+todos los componentes de arriba juntos, para revisión visual. Dos formas de
+llegar: long-press sobre el título de cualquier `AppHeader` en build debug
+(`kDebugMode`, sin afectar producción), o el entrypoint dedicado
+`lib/dev_catalog_main.dart` (`flutter run -t lib/dev_catalog_main.dart`).
+
+**Ícono de la app:** `flutter_launcher_icons` configurado (Android + iOS,
+`pubspec.yaml`) y corrido — reemplazó los 5 `ic_launcher.png` default de
+Android (legacy + adaptive, fondo `#ECF4FF`) y generó el set completo de
+iOS (`Assets.xcassets/AppIcon.appiconset`) a partir de `assets/logo.png`
+(declarado como asset por primera vez).
+
+**Plataforma iOS:** se corrió `flutter create --platforms=ios .` (scaffold
+nativo nuevo en `mobile/ios/`, bundle id placeholder default de Flutter —
+docs/06-design-system.md §9.2 punto 5) — precondición para generar el
+ícono de iOS de arriba.
+
+**Validación:** `flutter analyze` limpio (0 issues), suite completa de
+tests **124/124 sin romper ninguno** (1 test tocado —
+`app_bottom_nav_test.dart`, que no wireaba `theme: AppTheme.light` y
+comparaba contra el token viejo `AppColors.inactiveBlue`, eliminado).
+Ninguna pantalla (`lib/features/*`) se tocó.
+
+**Pendiente de decisión del usuario antes de Fase 3:** los 3 puntos
+abiertos de docs/06-design-system.md §9.2 (bundle id real de iOS, tono
+exacto de `error`/`success`/`warning` si se quiere afinar más).
+
+**Catálogo como documentación (pedido post-aprobación de Fase 2):** el
+catálogo HTML de revisión se guardó versionado en
+[docs/design-system/](design-system/) (`catalog.html` + `tokens.json`,
+formato Tokens Studio/W3C para importar a Figma cuando el conector esté
+autorizado — ver [design-system/README.md](design-system/README.md) para
+el paso a paso).
+
+---
+
 # Tanda 7 - 12 bugs/UX + reglas de negocio de usernames anónimos
 
 > Orden de implementación acordado con el usuario: B1, B2 (bugs de Flutter,

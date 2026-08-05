@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import 'app_icon_badge.dart';
 
 /// Botón de "Acciones rápidas" dentro de un evento (mockup "Log de Actividad").
 /// Ícono en círculo pastel + label, como el resto de la iconografía
-/// (docs/03-design-system.md §5).
+/// (docs/06-design-system.md §5). El círculo reusa [AppIconBadge]
+/// (docs/06-design-system.md §6.2 — antes era una copia del mismo patrón
+/// que `ActivityFeedItem`).
 class QuickActionButton extends StatelessWidget {
   const QuickActionButton({
     super.key,
@@ -36,19 +39,11 @@ class QuickActionButton extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: (habilitado ? color : AppColors.textSecondary)
-                      .withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  size: 22,
-                  color: habilitado ? color : AppColors.textSecondary,
-                ),
+              AppIconBadge(
+                icon: icon,
+                color: habilitado ? color : AppColors.textSecondary,
+                size: 44,
+                iconSize: 22,
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(

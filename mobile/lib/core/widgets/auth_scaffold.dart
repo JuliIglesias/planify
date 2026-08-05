@@ -46,17 +46,17 @@ class AuthScaffold extends StatelessWidget {
                   children: [
                     const _AuthLogo(),
                     const SizedBox(height: AppSpacing.sm),
+                    // Color de "Planify": hereda `displaySmall` del tema
+                    // (azul oscuro, docs/06-design-system.md §3.4) — ya no
+                    // se pisa con `AppColors.primary` a mano.
                     Text(
                       l10n.appName,
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       l10n.appTagline,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -65,7 +65,7 @@ class AuthScaffold extends StatelessWidget {
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.08),

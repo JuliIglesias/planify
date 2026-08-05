@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../utils/initials.dart';
 
 /// Avatares superpuestos con un "+N" al final — patrón repetido en Home,
 /// Groups e Historial (docs/00-ui-entendimiento.md §5).
@@ -42,7 +43,7 @@ class AvatarStack extends StatelessWidget {
             Positioned(
               left: i * overlap,
               top: 0,
-              child: _Avatar(label: _iniciales(visibles[i]), radius: radius),
+              child: _Avatar(label: initialsOf(visibles[i]), radius: radius),
             ),
           if (restantes > 0)
             Positioned(
@@ -53,13 +54,6 @@ class AvatarStack extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  static String _iniciales(String nombre) {
-    final partes = nombre.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (partes.isEmpty) return '?';
-    if (partes.length == 1) return partes.first.characters.first.toUpperCase();
-    return (partes.first.characters.first + partes[1].characters.first).toUpperCase();
   }
 }
 

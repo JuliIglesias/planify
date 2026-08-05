@@ -1,26 +1,31 @@
 import 'package:flutter/material.dart';
 
-/// Tokens de color de docs/03-design-system.md.
-/// Valores aproximados por lectura visual de las capturas de Figma — ajustar
-/// cuando se pueda inspeccionar el archivo real con el MCP de Figma.
+/// Paleta de marca — docs/06-design-system.md §3.
+///
+/// Estos son los tokens "crudos" (hex de marca + derivados semánticos). El
+/// `ColorScheme`/`TextTheme` de [AppTheme] es lo que efectivamente se
+/// consulta desde los widgets (`Theme.of(context).colorScheme.xxx`) — esta
+/// clase existe para tener un único lugar donde viven los valores hex, y
+/// para los tokens semánticos (success/warning/danger) que no tienen rol
+/// nativo en `ColorScheme` (ver [AppSemanticColors]).
 abstract final class AppColors {
-  static const primary = Color(0xFF2A3EFF);
-  static const primaryDark = Color(0xFF1A2BD1);
-  static const accent = Color(0xFFFF6B5B);
+  // --- Los 6 colores de marca (valores exactos, docs/06-design-system.md §3.1) ---
+  static const primary = Color(0xFF296CF2); // Azul primario
+  static const secondary = Color(0xFF92C2FC); // Azul secundario
+  static const lightBlue = Color(0xFFDBEAFE); // Azul claro
+  static const background = Color(0xFFECF4FF); // Azul fondo
+  static const accent = Color(0xFFFF6B6B); // Rojo/coral (acento)
+  static const darkBlue = Color(0xFF3E579C); // Azul oscuro (títulos)
 
-  /// "Celestito" — ítems no seleccionados de la Navbar y del toggle
-  /// Todo/Me deben/Debo (Tanda 6, Items 1 y 4). Mismo tono en ambos
-  /// componentes para que compartan una sola línea visual.
-  static const inactiveBlue = Color(0xFFA6B6EF);
+  // --- Derivados de marca (§3.2/§3.5) ---
+  static const error = Color(0xFFCC5A5A); // Rojo propio de formularios/errores — distinto del acento
+  static const surface = Colors.white;
+  static const textPrimary = Color(0xFF14162B); // Texto de cuerpo — SIN cambio (§3.4)
+  static const textSecondary = Color(0xFF6B7280); // Texto secundario/caption — SIN cambio
+  static const border = lightBlue;
 
-  static const success = Color(0xFF2ECC71);
-  static const danger = Color(0xFFE74C3C);
-  static const warning = Color(0xFFF5A623);
-
-  static const background = Color(0xFFF5F7FF);
-  static const surface = Color(0xFFFFFFFF);
-
-  static const textPrimary = Color(0xFF14162B);
-  static const textSecondary = Color(0xFF6B7280);
-  static const border = Color(0xFFE5E7F0);
+  // --- Semánticos de producto (§3.6) — ver AppSemanticColors para el uso vía tema ---
+  static const success = Color(0xFF3FA873);
+  static const warning = Color(0xFFE3A94A);
+  static const danger = Color(0xFFE74C3C); // "Debo"/"pagar" — distinto de `error` (confirmado con el usuario)
 }

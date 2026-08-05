@@ -98,6 +98,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeUpcomingEvents => 'Upcoming events';
 
   @override
+  String get homeSeeAll => 'See all';
+
+  @override
   String get homeRecentActivity => 'Recent activity';
 
   @override
@@ -140,7 +143,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get eventUrgentDecision => 'Decisión pendiente';
+  String get eventUrgentDecision => 'Pending decision';
 
   @override
   String get groupsNoUpcoming => 'No upcoming events';

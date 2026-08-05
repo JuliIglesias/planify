@@ -236,12 +236,12 @@ class _EventoDeGrupoCard extends StatelessWidget {
     // paleta de marca).
     final pills = [
       if (evento.necesitaDecisionRango)
-        // NOTA: 'Decisión pendiente' sigue hardcodeado en español, igual que
-        // en el código original — no lo até a `l10n.eventUrgentDecision`
-        // (que existe con el mismo texto) para no mezclar un fix de i18n
-        // con este refactor de presentación. Ver docs/05-fixes.md.
+        // Bug de i18n corregido (docs/05-fixes.md): usaba el string
+        // 'Decisión pendiente' hardcodeado en vez de esta clave, que ya
+        // existía con el mismo texto en español (y no tenía traducción al
+        // inglés — se agregó `app_en.arb` en el mismo cambio).
         EventCardPill.danger(
-          label: 'Decisión pendiente',
+          label: l10n.eventUrgentDecision,
           icon: Icons.warning_amber_outlined,
           context: context,
         ),

@@ -83,7 +83,7 @@ class HomeScreen extends ConsumerWidget {
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(builder: (_) => const HistoryScreen()),
                   ),
-                  child: const Text('Ver todos'),
+                  child: Text(l10n.homeSeeAll),
                 ),
               ],
             ),

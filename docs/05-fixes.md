@@ -1,3 +1,32 @@
+## Bugs de i18n corregidos (a pedido del usuario, mismo PR)
+
+Los 2 bugs de i18n encontrados durante la Fase 3 (Home y Grupos, ver sus
+secciones más abajo) — el usuario pidió corregirlos en este mismo PR:
+
+- **Home — "Ver todos":** no tenía ninguna clave de traducción; se agregó
+  `homeSeeAll` (`"Ver todos"` / `"See all"`) a ambos ARB y se conectó en
+  `home_screen.dart`.
+- **Grupos — "Decisión pendiente":** ya existía `eventUrgentDecision` con
+  el texto correcto en español, pero **le faltaba la traducción al
+  inglés** en `app_en.arb` (por eso `flutter gen-l10n` avisaba "3
+  untranslated message(s)" desde antes de esta tanda — no lo generé yo,
+  ya estaba así) — sin esa clave, el string quedaba hardcodeado en español
+  sin importar el idioma. Se agregó `"Pending decision"` al ARB en inglés
+  y se conectó `l10n.eventUrgentDecision` en `groups_screen.dart`
+  reemplazando el literal.
+- `flutter gen-l10n` corrido para regenerar `lib/l10n/generated/` — pasó
+  de 3 a 2 mensajes sin traducir en inglés. Los 2 restantes
+  (`unreadActivities`, `groupsUpdateImage`) son de una categoría distinta:
+  ya usan su clave de traducción correctamente en el código en los dos
+  casos (no son literales hardcodeados como los de arriba), solo les
+  falta la traducción al inglés en `app_en.arb` — no forman parte de los 2
+  bugs que se pidió corregir en esta tanda, quedan anotados por si se
+  quiere resolver la paridad ES/EN completa en otro momento.
+- **Tests:** ningún test dependía del string literal en español (`grep`
+  confirmado); `flutter analyze` limpio, 124/124 tests pasan.
+
+---
+
 # Design System v2 — Fase 3: aplicación pantalla por pantalla
 
 > Orden acordado: Login/Registro → Home → Perfil → Grupos → Balances →

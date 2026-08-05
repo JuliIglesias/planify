@@ -33,6 +33,31 @@
   `app_shell_layout_test.dart` (49 tests) sin modificar — pasan tal cual.
   Suite completa: 124/124.
 
+## Balances / Saldos
+
+- **`balances_screen.dart`:** balance neto (`AppColors.success`/`.danger`
+  directos) → `context.appSemanticColors.success`/`.danger`. `_MiniResumen`
+  (cards "Me deben"/"Debo"): el `CircleAvatar` a mano con ícono adentro —
+  el mismo patrón "ícono en círculo pastel" que `QuickActionButton`/
+  `ActivityFeedItem`, tercera copia encontrada en la auditoría de Fase 1
+  (§2.2) — se reemplaza por `AppIconBadge`. Nota: el alpha del fondo pasa
+  de 0.15 (valor propio, sin relación con nada) a 0.12 (el que ya usan
+  `AppIconBadge`/pills en toda la app) — pequeño ajuste de armonización
+  visual, no de comportamiento. Override redundante de `labelMedium`
+  eliminado.
+- **`person_detail_sheet.dart`:** mismos 3 colores financieros
+  (`AppColors.danger/warning/success` → `context.appSemanticColors`) en
+  el encabezado y en cada fila de desglose por evento. El banner de "hay
+  compensación" pasa a `primaryContainer`/`onPrimaryContainer` (mismo
+  patrón que el banner de invitación pendiente de Login). Botón "Saldar
+  todo" (`FilledButton.icon` + spinner manual) → `AppButton(icon: ...,
+  loading: saldando)`. Varios overrides redundantes de `bodySmall`/
+  `labelSmall` con `AppColors.textSecondary` eliminados.
+- **Sin bugs encontrados.**
+- **Tests:** los 40 casos de `screens_test.dart` que tocan
+  `BalancesScreen`/`_DetallePersonaSheet` sin modificar. Suite completa:
+  124/124.
+
 ## Grupos
 
 - **`groups_screen.dart` — los 8 `Color(0x...)` del hallazgo de Fase 1

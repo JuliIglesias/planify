@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/models.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/money_format.dart';
+import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/avatar_stack.dart';
 import '../../core/widgets/status_badge.dart';
@@ -128,6 +129,8 @@ class _Contenido extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final semantic = context.appSemanticColors;
 
     final estado = switch (detalle.estado) {
       'pagar' => SaldoEstado.pagar,
@@ -135,9 +138,9 @@ class _Contenido extends StatelessWidget {
       _ => SaldoEstado.saldado,
     };
     final color = switch (estado) {
-      SaldoEstado.pagar => AppColors.danger,
-      SaldoEstado.pendiente => AppColors.warning,
-      SaldoEstado.saldado => AppColors.success,
+      SaldoEstado.pagar => semantic.danger,
+      SaldoEstado.pendiente => semantic.warning,
+      SaldoEstado.saldado => semantic.success,
     };
 
     return Column(
@@ -160,15 +163,14 @@ class _Contenido extends StatelessWidget {
                 style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: AppSpacing.xs),
+              // `bodySmall` ya usa el gris secundario del tema.
               Text(
                 detalle.estaSaldado
                     ? l10n.balancesStateSettled
                     : estado == SaldoEstado.pagar
                         ? l10n.balancesYouOwe
                         : l10n.balancesOweYou,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                style: theme.textTheme.bodySmall,
               ),
               Text(
                 '\$${MoneyFormat.format(detalle.monto)}',
@@ -181,16 +183,19 @@ class _Contenido extends StatelessWidget {
               // Solo tiene sentido explicar la cuenta si hubo compensación.
               if (detalle.hayCompensacion) ...[
                 const SizedBox(height: AppSpacing.sm),
+                // Mismo par primaryContainer/onPrimaryContainer que el
+                // banner de invitación pendiente de Login (superficie
+                // tintada de marca, docs/06-design-system.md §3.3).
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: AppColors.background,
+                    color: colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.swap_horiz, size: 16, color: AppColors.primary),
+                      Icon(Icons.swap_horiz, size: 16, color: colorScheme.onPrimaryContainer),
                       const SizedBox(width: AppSpacing.xs),
                       Flexible(
                         child: Text(
@@ -198,9 +203,7 @@ class _Contenido extends StatelessWidget {
                             MoneyFormat.format(detalle.totalQueDebo),
                             MoneyFormat.format(detalle.totalQueMeDebe),
                           ),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                          style: theme.textTheme.bodySmall,
                         ),
                       ),
                     ],
@@ -234,10 +237,11 @@ class _Contenido extends StatelessWidget {
                         AppSpacing.md,
                         AppSpacing.sm,
                       ),
+                      // `labelSmall` ya usa el gris secundario del tema —
+                      // solo hace falta el peso/espaciado extra acá.
                       child: Text(
                         l10n.balancesBreakdown,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.6,
                         ),
@@ -249,7 +253,7 @@ class _Contenido extends StatelessWidget {
                         leading: Icon(
                           deuda.yoDebo ? Icons.arrow_upward : Icons.arrow_downward,
                           size: 18,
-                          color: deuda.yoDebo ? AppColors.danger : AppColors.success,
+                          color: deuda.yoDebo ? semantic.danger : semantic.success,
                         ),
                         title: Text(deuda.eventoNombre),
                         subtitle: Text(
@@ -259,7 +263,7 @@ class _Contenido extends StatelessWidget {
                           '\$${MoneyFormat.format(deuda.monto)}',
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: deuda.yoDebo ? AppColors.danger : AppColors.success,
+                            color: deuda.yoDebo ? semantic.danger : semantic.success,
                           ),
                         ),
                         onTap: () {
@@ -279,19 +283,11 @@ class _Contenido extends StatelessWidget {
         if (detalle.deudas.isNotEmpty)
           Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: saldando ? null : onSaldarTodo,
-                icon: saldando
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.price_check),
-                label: Text(l10n.balancesSettleAll),
-              ),
+            child: AppButton(
+              label: l10n.balancesSettleAll,
+              icon: Icons.price_check,
+              loading: saldando,
+              onPressed: saldando ? null : onSaldarTodo,
             ),
           ),
       ],

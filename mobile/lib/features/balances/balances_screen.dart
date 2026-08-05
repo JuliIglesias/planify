@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/money_format.dart';
+import '../../core/widgets/app_icon_badge.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/event_card.dart';
 import '../../core/widgets/pill_toggle.dart';
@@ -55,6 +56,7 @@ class BalancesScreen extends ConsumerWidget {
               detalle: l10n.commonErrorHint,
             ),
             data: (b) {
+              final semantic = context.appSemanticColors;
               final netoPositivo = !b.balanceNeto.trim().startsWith('-');
 
               final saldosFiltrados = b.saldos.where((s) {
@@ -71,17 +73,13 @@ class BalancesScreen extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                     child: Column(
                       children: [
-                        Text(
-                          l10n.balancesNet,
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                        ),
+                        // `labelMedium` ya usa el gris secundario del tema.
+                        Text(l10n.balancesNet, style: Theme.of(context).textTheme.labelMedium),
                         Text(
                           '${netoPositivo ? '+' : ''}\$${MoneyFormat.format(b.balanceNeto)}',
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: netoPositivo ? AppColors.success : AppColors.danger,
+                                color: netoPositivo ? semantic.success : semantic.danger,
                               ),
                         ),
                       ],
@@ -209,11 +207,10 @@ class _MiniResumen extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.sm),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: color.withValues(alpha: 0.15),
-              child: Icon(icono, color: color, size: 18),
-            ),
+            // AppIconBadge (docs/06-design-system.md §6.1/§6.2) — mismo
+            // patrón "ícono en círculo pastel" que QuickActionButton y
+            // ActivityFeedItem, antes copiado acá con un CircleAvatar a mano.
+            AppIconBadge(icon: icono, color: color, size: 36, iconSize: 18),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:planify/core/models/models.dart';
 import 'package:planify/features/events/data/activity_log_repository.dart';
 import 'package:planify/features/events/event_detail_screen.dart';
+import 'package:planify/features/friends/friends_screen.dart';
 import 'package:planify/features/notifications/notifications_providers.dart';
 import 'package:planify/features/notifications/notifications_screen.dart';
 import 'package:planify/l10n/generated/app_localizations.dart';
@@ -113,6 +114,48 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.notificationsEmpty), findsOneWidget);
+    });
+
+    // F2 — una solicitud de amistad no cuelga de ningún evento: solo
+    // aparece en "Todo" (nunca en "Eventos" ni "Gastos"), y tocarla lleva a
+    // Amigos en vez de a un evento (no tiene uno).
+    testWidgets(
+        'una notificación de solicitud de amistad solo se ve en "Todo", y '
+        'lleva a Amigos', (tester) async {
+      final activityLog = FakeActivityLogRepository(
+        recientesEntradas: [
+          ActividadLog(
+            id: 'log-solicitud',
+            tipo: 'solicitud_amistad',
+            actorUsername: 'Ana',
+            createdAt: DateTime(2026, 8, 1, 12),
+          ),
+          ...generarEntradas(1),
+        ],
+      );
+
+      await tester.pumpWidget(
+        appDePrueba(const NotificationsScreen(), activityLog: activityLog),
+      );
+      await tester.pumpAndSettle();
+
+      // Arranca en "Todo": se ve.
+      expect(find.text(l10n.activityFriendRequest('Ana')), findsOneWidget);
+
+      await tester.tap(find.text(l10n.notificationsTabEvents));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.activityFriendRequest('Ana')), findsNothing);
+
+      await tester.tap(find.text(l10n.notificationsTabExpenses));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.activityFriendRequest('Ana')), findsNothing);
+
+      await tester.tap(find.text(l10n.notificationsTabAll));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.activityFriendRequest('Ana')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FriendsScreen), findsOneWidget);
     });
   });
 }

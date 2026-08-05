@@ -6,6 +6,87 @@
 > (identidad anónima por evento, **diferido** — ver nota al final de este
 > documento).
 
+## Item F2: Notificación al recibir una solicitud de amistad
+
+**Confirmado con el usuario antes de implementar:**
+- **Solo in-app por ahora** ("en principio igual in-app porfas") — push
+  queda para más adelante; el punto de entrada ya está pensado para
+  sumarlo sin tocar a quien lo llama (mismo criterio que
+  `ActivityLogService.registrar`, que ya hace ese best-effort con el push
+  de actividad de eventos).
+- **Dónde aparece:** el usuario aclaró cómo funcionan hoy los 3 tabs de
+  Notificaciones — "Eventos" y "Gastos" filtran actividad **de eventos**
+  agrupada; "Todo" es "ahí aparecen gastos, eventos, y amigos, y todo tipo
+  de notificación". Una solicitud de amistad no cuelga de ningún evento,
+  así que solo debía verse en "Todo" — nunca en "Eventos" ni en "Gastos".
+
+**Decisión de arquitectura (evaluada antes de tocar código, documentada acá
+en vez de en un ADR aparte por ser un cambio más chico que G1):**
+`LogActividad`/`ActivityLogService`, el mecanismo de notificaciones que ya
+existe, está construido de punta a punta alrededor de un evento
+(`eventoId` obligatorio, el actor es un `Participante` — una membresía
+DENTRO de un evento). Una solicitud de amistad no tiene ninguno de los
+dos: ni evento, ni participante — el actor y el destinatario son
+`Usuario`s a secas. Forzar `eventoId`/`actorParticipanteId` a nullable en
+`LogActividad` para acomodar esto arriesgaba las queries e índices que ya
+dependen de esa tabla en todos los demás flujos (gastos, tareas,
+asistencia, etc.), a cambio de nada — la mitad de esa tabla nunca la va a
+usar. En cambio: una tabla nueva, chica y separada
+(`NotificacionPersonal`) para "avisos que no cuelgan de un evento", y el
+mismo **servicio** (`ActivityLogService`) mezcla las dos fuentes en
+`recientesDe()` antes de paginar — así el cliente (mobile) sigue viendo un
+único feed, sin enterarse de que por debajo son dos tablas. Esto sí
+reutiliza "el mismo mecanismo" como pidió el usuario, en el sentido que
+importa (un solo feed, una sola pantalla, la misma paginación) sin
+arriesgar el modelo de datos de eventos que ya funciona.
+
+- **Backend:**
+  - **`NotificacionPersonal`** (modelo Prisma nuevo, migración
+    `20260805000000_notificaciones_personales`): `{id, usuarioId
+    (destinatario), tipo, actorUsuarioId, payload, createdAt}` — sin
+    `eventoId` en absoluto.
+  - **`ActivityLogService`** gana `registrarPersonal()` (análogo a
+    `registrar()`, pero sin evento) y `recientesDe()` ahora pide las dos
+    fuentes en paralelo con el mismo cursor `before`, las mezcla por fecha
+    y recorta a 20 — el top-20 combinado siempre sale de entre los dos
+    top-20 parciales (cada fuente ya viene ordenada y acotada), así que no
+    hace falta traer "todo" de ninguna de las dos para paginar bien. La
+    dependencia nueva (`NotificacionPersonalRepository`) es **opcional**
+    en el constructor a propósito: ninguno de los ~10 sitios que ya
+    construían `ActivityLogService` (varios tests) tuvo que tocarse.
+  - **`FriendsService.enviarSolicitud`** gana una dependencia opcional a
+    `ActivityLogService` y, al crear la solicitud, llama a
+    `registrarPersonal()` para el receptor (best-effort — si falla, no
+    tumba la solicitud ya creada).
+  - **`ActivityType.solicitudAmistad`** (`'solicitud_amistad'`), nuevo.
+- **Mobile:**
+  - `activity_presentation.dart`: ícono (`person_add_alt_1`), color
+    (`AppColors.primary`) y texto (`"{actor} te envió una solicitud de
+    amistad"`, clave nueva `activityFriendRequest`) para el tipo nuevo.
+    Como reusa el mismo feed/presentación de siempre, aparece tanto en
+    "Actividad reciente" de Home como en Notificaciones sin código
+    adicional.
+  - `notifications_screen.dart`: `_tiposSinEvento` — un tipo sin evento no
+    cae en el filtro de "Eventos" solo porque no es de gasto (antes
+    `_coincideCategoria` clasificaba "no es gasto" = "es evento", lo cual
+    hubiera sido engañoso acá, ya que no hay ningún evento al que rutear).
+    Tocar la fila lleva a `FriendsScreen` (no hay evento al que ir, pero sí
+    tiene sentido llevar a donde se acepta/rechaza).
+  - **Fuera de alcance, documentado a propósito:** el contador de "no
+    leídos" de la campana (`unreadTotalProvider`) sigue siendo puramente
+    de actividad de eventos (`contarNoLeidasPorEvento`) — una solicitud de
+    amistad nueva no lo incrementa. Ampliar ese contador para incluir
+    notificaciones personales necesitaría su propio concepto de
+    "leído/no leído" (hoy `NotificacionPersonal` no tiene ese estado), que
+    no pidió el usuario y se puede sumar después sin romper nada de esto.
+- **Tests:** backend —
+  `friend-request-notification.test.ts` (nuevo): el receptor ve la
+  notificación, el que la envió no ve nada raro en su propio feed, se
+  mezcla en orden con más de una notificación personal, y que
+  `enviarSolicitud` sigue funcionando si no se inyecta `ActivityLogService`
+  (backward compatibility). Mobile — `notifications_test.dart`: la
+  notificación de solicitud solo aparece en "Todo" (no en "Eventos" ni
+  "Gastos") y tocarla navega a `FriendsScreen`.
 ## Item F1: Amigos — solicitudes enviadas + pull-to-refresh
 
 **El usuario confirmó explícitamente** (contra mi hipótesis inicial de que

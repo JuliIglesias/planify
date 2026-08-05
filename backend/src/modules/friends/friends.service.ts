@@ -6,6 +6,8 @@ import {
   SolicitudEnviada,
   UsuarioRepository,
 } from '../../domain/repositories';
+import { ActivityLogService } from '../activity-log/activity-log.service';
+import { ActivityType } from '../activity-log/activity-log.types';
 
 /**
  * SCRUM-14 — HU-31: gestión de amigos. Una amistad se solicita y se acepta;
@@ -16,6 +18,9 @@ export class FriendsService {
   constructor(
     private readonly amistades: AmistadRepository,
     private readonly usuarios: UsuarioRepository,
+    // F2 — opcional a propósito, mismo criterio que en `ActivityLogService`:
+    // los tests que no prueban notificaciones no tienen que construirlo.
+    private readonly activityLog?: ActivityLogService,
   ) {}
 
   /** HU-31 — buscar personas para agregar (por nombre o email). */
@@ -41,6 +46,21 @@ export class FriendsService {
     }
 
     await this.amistades.crear(solicitanteId, receptorId);
+
+    // F2 — el receptor se entera de que le llegó una solicitud. Best-effort:
+    // si falla, no revierte la solicitud ya creada (mismo criterio que el
+    // push de `ActivityLogService.registrar`).
+    if (this.activityLog) {
+      try {
+        await this.activityLog.registrarPersonal({
+          usuarioId: receptorId,
+          tipo: ActivityType.solicitudAmistad,
+          actorUsuarioId: solicitanteId,
+        });
+      } catch {
+        // No debería tumbar el flujo de "enviar solicitud" ya confirmado.
+      }
+    }
   }
 
   /** HU-31 — aceptar una solicitud recibida. */

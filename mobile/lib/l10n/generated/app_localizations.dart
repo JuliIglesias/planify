@@ -902,6 +902,12 @@ abstract class AppLocalizations {
   /// **'El rango de fechas del evento se extendió'**
   String get activityRangeExtended;
 
+  /// No description provided for @activityFriendRequest.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} te envió una solicitud de amistad'**
+  String activityFriendRequest(String actor);
+
   /// No description provided for @commonSave.
   ///
   /// In es, this message translates to:

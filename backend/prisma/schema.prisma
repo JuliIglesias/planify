@@ -55,6 +55,8 @@ model Usuario {
   amistadesRecibidas Amistad[]     @relation("AmistadUsuario2")
   disponibilidadPerfil DisponibilidadPerfil[]
   ubicacionesFavoritas UbicacionFavorita[]
+  notificacionesRecibidas NotificacionPersonal[] @relation("NotificacionDestinatario")
+  notificacionesEnviadas  NotificacionPersonal[] @relation("NotificacionActor")
 
   @@map("usuarios")
 }
@@ -259,6 +261,25 @@ model LogActividad {
   actor  Participante @relation(fields: [actorParticipanteId], references: [id])
 
   @@map("log_actividad")
+}
+
+/// F2 — notificaciones que no cuelgan de ningún evento (a diferencia de
+/// LogActividad, que sí). Tabla separada a propósito, en vez de forzar
+/// eventoId/actorParticipanteId a nullable en LogActividad: mantiene esa
+/// tabla estrictamente "actividad DENTRO de un evento" sin tocar su forma
+/// ni arriesgar las queries/índices existentes.
+model NotificacionPersonal {
+  id             String   @id @default(uuid())
+  usuarioId      String   @map("usuario_id")
+  tipo           String
+  actorUsuarioId String   @map("actor_usuario_id")
+  payload        Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  usuario Usuario @relation("NotificacionDestinatario", fields: [usuarioId], references: [id], onDelete: Cascade)
+  actor   Usuario @relation("NotificacionActor", fields: [actorUsuarioId], references: [id], onDelete: Cascade)
+
+  @@map("notificaciones_personales")
 }
 
 model Amistad {

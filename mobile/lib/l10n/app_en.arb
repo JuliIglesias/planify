@@ -263,6 +263,12 @@
     }
   },
   "activityRangeExtended": "The event's date range was extended",
+  "activityFriendRequest": "{actor} sent you a friend request",
+  "@activityFriendRequest": {
+    "placeholders": {
+      "actor": { "type": "String" }
+    }
+  },
   "commonSave": "Save",
   "commonCancel": "Cancel",
   "commonAdd": "Add",

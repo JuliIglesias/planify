@@ -7,6 +7,29 @@ import '../../features/home/home_providers.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 
+/// A1/A2 — altura REAL (medida, no estimada) que ocupa [AppBottomNav] en
+/// pantalla, incluida su `SafeArea`/padding. Como la navbar ahora es
+/// "hug content" (A1) en vez de un valor fijo, cualquier constante a mano acá
+/// se desincronizaría apenas cambiara el contenido de la navbar; `AppShell`
+/// la mide de verdad (`GlobalKey` + `RenderBox.size`) y la publica acá para
+/// que las pantallas raíz (Item A2) sepan cuánto padding inferior necesitan
+/// para que ningún contenido quede tapado por la barra flotante. Arranca en
+/// 0 — las pantallas la usan sumada a un mínimo propio, así que no queda sin
+/// padding en absoluto mientras `AppShell` todavía no midió (primer frame, o
+/// en tests que montan una pantalla suelta sin `AppShell` alrededor).
+///
+/// Riverpod 3 sacó `StateProvider` (mismo criterio que `_FiltroBalance` en
+/// `balances_screen.dart`): estado local simple se modela con un `Notifier`.
+class BottomNavHeight extends Notifier<double> {
+  @override
+  double build() => 0;
+
+  void set(double alto) => state = alto;
+}
+
+final bottomNavHeightProvider =
+    NotifierProvider<BottomNavHeight, double>(BottomNavHeight.new);
+
 /// Header con título + campana, común a las 4 pantallas raíz.
 /// La campana muestra un badge con la actividad sin leer (H-17) y, desde el
 /// Item 2 (Tanda 6), abre la pantalla de Notificaciones.
@@ -80,6 +103,19 @@ class AppHeader extends ConsumerWidget {
 /// supera el ancho disponible y el `Row` overfloea (se corta, sin poder
 /// hacer scroll). El fix es envolver cada ítem en `Expanded` para que se
 /// repartan el ancho de la barra en partes iguales.
+///
+/// A1 — la altura ya NO es un valor fijo (`height: 76`, que no tenía
+/// relación con nada más): ahora es "hug content", el contenedor mide lo que
+/// necesita su propio contenido (ícono + texto + paddings), igual que
+/// [PillToggle] (misma familia visual — [AppSpacing.barRadius] compartido).
+/// La navbar termina más alta que un `PillToggle` porque tiene ícono además
+/// de texto, y eso es esperable, no un bug: por eso el radio de borde NO se
+/// calcula como `alto / 2` (dejaría de verse como "rectángulo redondeado" y
+/// pasaría a verse como una cápsula rara en un contenedor tan alto) — usa el
+/// mismo radio fijo que el resto de la familia. La altura real, medida en
+/// tiempo de ejecución, se expone vía [bottomNavHeightProvider] para que las
+/// pantallas raíz (Item A2) sepan cuánto padding inferior necesitan para no
+/// quedar tapadas por esta barra flotante.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({super.key, required this.currentIndex, required this.onTap});
 
@@ -94,10 +130,9 @@ class AppBottomNav extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         child: Container(
-          height: 76,
           decoration: BoxDecoration(
             color: AppColors.surface.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(AppSpacing.barRadius),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.1),

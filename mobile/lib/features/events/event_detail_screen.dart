@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -288,7 +289,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 }
 
-class _Contenido extends ConsumerWidget {
+class _Contenido extends ConsumerStatefulWidget {
   const _Contenido({
     required this.evento,
     required this.ocupado,
@@ -302,15 +303,56 @@ class _Contenido extends ConsumerWidget {
   final VoidCallback onInvitar;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Contenido> createState() => _ContenidoState();
+}
+
+class _ContenidoState extends ConsumerState<_Contenido> {
+  /// B2 — tareas que están a mitad de un swipe-to-dismiss: `flutter_slidable`
+  /// exige que el widget salga del árbol de inmediato apenas termina la
+  /// animación de resize del dismiss (si no, tira "A dismissed Slidable
+  /// widget is still part of the tree"). Como la mutación real es async
+  /// (red + `invalidateEventData` + refetch), no podemos esperar a que
+  /// vuelva para sacar la tarea de la lista: la escondemos acá apenas se
+  /// dispara el gesto, y recién la soltamos cuando `eventTasksProvider` ya
+  /// tiene el dato fresco — así el tile no reaparece con estado viejo, y
+  /// cuando reaparece es literalmente un widget nuevo (con `resized` en
+  /// `false` de nuevo), no el mismo que ya se había dismisseado.
+  final Set<String> _tareasEnVueloDeSwipe = {};
+
+  Future<void> _accionDeSwipe(String tareaId, Future<void> Function() accion) async {
+    setState(() => _tareasEnVueloDeSwipe.add(tareaId));
+    // `flutter_slidable` exige que el Slidable dismisseado desaparezca del
+    // árbol EN EL FRAME SIGUIENTE al dismiss, no "eventualmente" — si el
+    // round-trip de red resuelve muy rápido (o de forma sincrónica, como con
+    // un repo fake en tests), el ciclo completo add→remove puede terminar
+    // antes de que Flutter llegue a pintar un solo frame con la tarea ya
+    // afuera, y el Element viejo (con `resized` en `true`) nunca se
+    // desmonta: sigue estando ahí para el próximo rebuild → misma excepción
+    // de siempre. Esperar el fin del frame actual garantiza que ese frame
+    // "tarea afuera" se pinte de verdad antes de seguir.
+    await SchedulerBinding.instance.endOfFrame;
+    try {
+      await widget.onAccion(accion);
+      // `onAccion` ya invalidó el provider; esperamos a que el refetch
+      // realmente termine antes de volver a mostrar la tarea, para no
+      // mostrarla un instante con el estado viejo.
+      await ref.read(eventTasksProvider(widget.evento.id).future);
+    } finally {
+      if (mounted) setState(() => _tareasEnVueloDeSwipe.remove(tareaId));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final evento = widget.evento;
 
     final fecha = evento.fechaHoraInicio != null
         ? DateFormat("EEEE d 'de' MMMM · HH:mm", 'es').format(evento.fechaHoraInicio!)
         : l10n.commonToBeDefined;
 
-    final habilitado = !ocupado && !evento.estaCancelado;
+    final habilitado = !widget.ocupado && !evento.estaCancelado;
 
     // Pull-to-refresh: si alguien se une al evento (anónimo por link) después de
     // abrir esta pantalla, el organizador puede refrescar y verlo (H-02).
@@ -368,25 +410,25 @@ class _Contenido extends ConsumerWidget {
                   icon: Icons.person_add_outlined,
                   label: l10n.eventDetailInvite,
                   color: AppColors.primary,
-                  onPressed: habilitado ? onInvitar : null,
+                  onPressed: habilitado ? widget.onInvitar : null,
                 ),
                 QuickActionButton(
                   icon: Icons.receipt_long_outlined,
                   label: l10n.eventDetailAddExpense,
                   color: AppColors.danger,
-                  onPressed: habilitado ? () => _agregarGasto(context, ref) : null,
+                  onPressed: habilitado ? () => _agregarGasto(context) : null,
                 ),
                 QuickActionButton(
                   icon: Icons.check_box_outlined,
                   label: l10n.eventDetailAddTask,
                   color: AppColors.warning,
-                  onPressed: habilitado ? () => _agregarTarea(context, ref) : null,
+                  onPressed: habilitado ? () => _agregarTarea(context) : null,
                 ),
                 QuickActionButton(
                   icon: Icons.price_check,
                   label: l10n.eventDetailSettle,
                   color: AppColors.success,
-                  onPressed: habilitado ? () => _mostrarDeudas(context, ref) : null,
+                  onPressed: habilitado ? () => _mostrarDeudas(context) : null,
                 ),
               ],
             ),
@@ -398,40 +440,56 @@ class _Contenido extends ConsumerWidget {
         ref.watch(eventTasksProvider(evento.id)).when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, _) => Text('$err'),
-              data: (tareas) => tareas.isEmpty
-                  ? _TextoVacio(l10n.eventDetailNoTasks)
-                  : Column(
-                      children: [
-                        for (final tarea in tareas)
+              data: (todasLasTareas) {
+                // B2 — las que están a mitad de un swipe-to-dismiss no se
+                // pintan: así el tile sale del árbol de inmediato, como
+                // exige `flutter_slidable`, en vez de esperar al refetch.
+                final tareas = todasLasTareas
+                    .where((t) => !_tareasEnVueloDeSwipe.contains(t.id))
+                    .toList();
+                return tareas.isEmpty
+                    ? _TextoVacio(l10n.eventDetailNoTasks)
+                    : Column(
+                        children: [
+                          for (final tarea in tareas)
                             _TareaTile(
                               tarea: tarea,
                               participantes: evento.participantes,
                               habilitado: habilitado,
-                              onTomar: () => onAccion(() => ref
-                                  .read(tasksRepositoryProvider)
-                                  .asignar(eventoId: evento.id, tareaId: tarea.id)),
-                              onAsignarA: (participanteId) => onAccion(() => ref
+                              onTomar: () => _accionDeSwipe(
+                                  tarea.id,
+                                  () => ref
+                                      .read(tasksRepositoryProvider)
+                                      .asignar(eventoId: evento.id, tareaId: tarea.id)),
+                              onAsignarA: (participanteId) => widget.onAccion(() => ref
                                   .read(tasksRepositoryProvider)
                                   .asignar(
                                     eventoId: evento.id,
                                     tareaId: tarea.id,
                                     asignadoA: participanteId,
                                   )),
-                              onCompletar: () => onAccion(() => ref
-                                  .read(tasksRepositoryProvider)
-                                  .completar(eventoId: evento.id, tareaId: tarea.id)),
-                              onDescompletar: () => onAccion(() => ref
-                                  .read(tasksRepositoryProvider)
-                                  .descompletar(eventoId: evento.id, tareaId: tarea.id)),
-                              onDesasignar: () => onAccion(() => ref
+                              onCompletar: () => _accionDeSwipe(
+                                  tarea.id,
+                                  () => ref
+                                      .read(tasksRepositoryProvider)
+                                      .completar(eventoId: evento.id, tareaId: tarea.id)),
+                              onDescompletar: () => _accionDeSwipe(
+                                  tarea.id,
+                                  () => ref
+                                      .read(tasksRepositoryProvider)
+                                      .descompletar(eventoId: evento.id, tareaId: tarea.id)),
+                              onDesasignar: () => widget.onAccion(() => ref
                                   .read(tasksRepositoryProvider)
                                   .desasignar(eventoId: evento.id, tareaId: tarea.id)),
-                              onEliminar: () => onAccion(() => ref
-                                  .read(tasksRepositoryProvider)
-                                  .eliminar(eventoId: evento.id, tareaId: tarea.id)),
+                              onEliminar: () => _accionDeSwipe(
+                                  tarea.id,
+                                  () => ref
+                                      .read(tasksRepositoryProvider)
+                                      .eliminar(eventoId: evento.id, tareaId: tarea.id)),
                             ),
                         ],
-                      ),
+                      );
+              },
             ),
 
         // ── Log de actividad (HU-24) ──────────────────────────────────────
@@ -463,22 +521,25 @@ class _Contenido extends ConsumerWidget {
     );
   }
 
-  Future<void> _agregarTarea(BuildContext context, WidgetRef ref) async {
+  Future<void> _agregarTarea(BuildContext context) async {
     final titulo = await pedirTituloTarea(context);
     if (titulo == null) return;
-    await onAccion(
-      () => ref.read(tasksRepositoryProvider).crear(eventoId: evento.id, titulo: titulo),
+    await widget.onAccion(
+      () => ref
+          .read(tasksRepositoryProvider)
+          .crear(eventoId: widget.evento.id, titulo: titulo),
     );
   }
 
-  Future<void> _agregarGasto(BuildContext context, WidgetRef ref) async {
+  Future<void> _agregarGasto(BuildContext context) async {
     // Traer la lista más fresca antes de abrir el diálogo: alguien pudo unirse
     // (anónimo por link) después de que se cargó la pantalla (H-02). Si el
     // refetch falla, se usa lo que ya estaba en memoria.
-    var participantes = evento.participantes;
+    var participantes = widget.evento.participantes;
     try {
-      ref.invalidate(eventDetailProvider(evento.id));
-      participantes = (await ref.read(eventDetailProvider(evento.id).future)).participantes;
+      ref.invalidate(eventDetailProvider(widget.evento.id));
+      participantes =
+          (await ref.read(eventDetailProvider(widget.evento.id).future)).participantes;
     } catch (_) {
       // Sin red: seguimos con la lista actual en vez de bloquear la carga.
     }
@@ -487,9 +548,9 @@ class _Contenido extends ConsumerWidget {
     final datos = await pedirDatosGasto(context, participantes);
     if (datos == null) return;
 
-    await onAccion(
+    await widget.onAccion(
       () => ref.read(expensesRepositoryProvider).crear(
-            eventoId: evento.id,
+            eventoId: widget.evento.id,
             descripcion: datos.descripcion,
             montoTotal: datos.montoTotal,
             acreedores: [
@@ -505,9 +566,9 @@ class _Contenido extends ConsumerWidget {
   }
 
 
-  Future<void> _mostrarDeudas(BuildContext context, WidgetRef ref) async {
+  Future<void> _mostrarDeudas(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
-    final deudas = await ref.read(eventDebtsProvider(evento.id).future);
+    final deudas = await ref.read(eventDebtsProvider(widget.evento.id).future);
 
     if (!context.mounted) return;
 
@@ -546,10 +607,10 @@ class _Contenido extends ConsumerWidget {
     );
 
     if (deudaId == null) return;
-    await onAccion(
+    await widget.onAccion(
       () => ref
           .read(balancesRepositoryProvider)
-          .saldar(eventoId: evento.id, deudaId: deudaId),
+          .saldar(eventoId: widget.evento.id, deudaId: deudaId),
     );
   }
 }
@@ -621,7 +682,9 @@ class _TareaTile extends StatelessWidget {
               icon: Icons.delete,
               label: 'Eliminar',
             ),
-            if (!tarea.estaSinAsignar)
+            // C1 — una tarea completada no se puede desasignar: primero hay
+            // que descompletarla (swipe/tap en "Deshacer" del otro extremo).
+            if (!tarea.estaSinAsignar && !esCompletada)
               SlidableAction(
                 onPressed: (_) => onDesasignar(),
                 backgroundColor: Colors.grey.shade600,

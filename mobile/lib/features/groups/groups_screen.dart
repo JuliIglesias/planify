@@ -41,10 +41,15 @@ class GroupsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final grupos = ref.watch(groupsOverviewProvider);
+    // A2 — misma altura real de la navbar que usan las otras pantallas
+    // raíz (Home, Saldos, Perfil): un solo lugar (`bottomNavHeightProvider`)
+    // evita que cada pantalla adivine un número distinto.
+    final bottomPad = ref.watch(bottomNavHeightProvider) + AppSpacing.md;
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(groupsOverviewProvider),
       child: ListView(
+        padding: EdgeInsets.only(bottom: bottomPad),
         children: [
           AppHeader(titulo: l10n.groupsTitle),
           grupos.when(
@@ -65,7 +70,6 @@ class GroupsScreen extends ConsumerWidget {
                   )
                 : _GruposConEventos(grupos: lista),
           ),
-          const SizedBox(height: AppSpacing.xl),
         ],
       ),
     );

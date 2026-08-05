@@ -39,8 +39,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       SesionAnonima(:final username) => username,
       _ => '',
     };
+    // A2 — ídem Home/Grupos/Saldos: altura real de la navbar + margen.
+    final bottomPad = ref.watch(bottomNavHeightProvider) + AppSpacing.md;
 
     return ListView(
+      padding: EdgeInsets.only(bottom: bottomPad),
       children: [
         AppHeader(titulo: l10n.profileTitle),
         const SizedBox(height: AppSpacing.sm),
@@ -137,7 +140,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           onTap: () => ref.read(sessionControllerProvider.notifier).cerrarSesion(),
         ),
-        const SizedBox(height: AppSpacing.xl),
       ],
     );
   }

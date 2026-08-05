@@ -46,6 +46,76 @@ transición.
   cualquier excepción durante el `pumpAndSettle` posterior al guardado
   (antes del fix, este test fallaba con la excepción de arriba); además
   verifica que la ubicación efectivamente haya quedado guardada.
+## Item B2 + C1: Swipe en tareas — "A dismissed Slidable widget is still part of the tree" + no se podía desasignar una tarea completada
+
+**Reproducido antes de tocar código** (pedido explícito del usuario): un
+swipe completo (más allá del `dismissThreshold` de `flutter_slidable`, no
+solo abrir el `ActionPane`) sobre una tarea tira:
+
+```
+A dismissed Slidable widget is still part of the tree.
+Make sure to implement the onDismissed handle of the ActionPane and to
+immediately remove the Slidable widget from the application once that
+handler has fired.
+```
+
+Coincide exactamente con la captura del usuario (mensaje literal del
+paquete `flutter_slidable`, `dismissal.dart`).
+
+**Causa raíz** (leído el código fuente de `flutter_slidable` 4.0.3): el
+`onDismissed` de cada `DismissiblePane` (`onTomar`/`onCompletar`/
+`onDescompletar`/`onEliminar` en `_TareaTile`) llamaba a `onAccion`, que
+hace `setState(_ocupado=true)` **inmediatamente** — dispara un rebuild ya
+mismo — y recién saca la tarea de la lista **después** del round-trip de
+red + `invalidateEventData` + refetch. `flutter_slidable` exige que el
+ítem salga del árbol **de inmediato** apenas termina la animación de
+resize del dismiss (lo dice literalmente el mensaje de error): con la
+tarea todavía en la lista, cualquier rebuild posterior de ese mismo
+`Slidable` (misma `Key`) vuelve a pasar por un `_SlidableDismissalState`
+ya marcado `resized = true`, y explota.
+
+- **`event_detail_screen.dart` (`_Contenido` → `_ContenidoState`):** pasa
+  de `ConsumerWidget` a `ConsumerStatefulWidget` para poder llevar un
+  estado local, `_tareasEnVueloDeSwipe` (los ids que están a mitad de un
+  swipe-to-dismiss). El helper nuevo `_accionDeSwipe(tareaId, accion)`:
+  1. esconde la tarea de inmediato (`setState` agregándola al set),
+  2. **espera a que se pinte un frame real** con la tarea ya afuera del
+     árbol (`SchedulerBinding.instance.endOfFrame`) — sin este paso, si el
+     round-trip resuelve muy rápido (pasa siempre con los repos *fake* de
+     los tests, que no tienen latencia real) el ciclo completo
+     esconder→mostrar puede terminar **antes** de que Flutter llegue a
+     pintar un solo frame con la tarea excluida, y el `Element` viejo
+     (con `resized` en `true`) nunca se desmonta — se reproduce la misma
+     excepción. Se encontró este comportamiento reproduciendo el bug con
+     un test instrumentado con `print` en cada paso, no por inspección de
+     código solamente.
+  3. ejecuta la mutación real vía `onAccion` (mismo mecanismo de
+     `_ocupado`/loading/snackbar de error de siempre, sin duplicarlo),
+  4. espera a que `eventTasksProvider` tenga el dato **fresco** de verdad
+     (`ref.read(...future)`) antes de soltar el escondido — así, cuando la
+     tarea reaparece, es un `Slidable` **nuevo** (mismo id/`Key`, pero un
+     `Element` recién creado, con `resized` en `false` de nuevo — no el
+     mismo que ya se había dismisseado), y trae el estado post-mutación
+     (completada/desasignada/eliminada), no uno viejo.
+  - `onAsignarA`/`onDesasignar` (que no van atados a un `DismissiblePane`,
+    solo a un botón/menú) siguen usando `onAccion` directo, sin pasar por
+    este mecanismo — no lo necesitan.
+- **C1 (`_TareaTile`):** el `SlidableAction` de "Desasignar" ahora solo se
+  ofrece si `!tarea.estaSinAsignar && !esCompletada` — antes se mostraba
+  con cualquier tarea asignada, sin mirar si ya estaba completada. El
+  swipe-to-dismiss de esa `ActionPane` sigue disparando "Eliminar" en
+  cualquier caso (es un solo `DismissiblePane` para todo el pane, por
+  diseño ya existente — el gesto de swipe completo siempre borra, tomar
+  la acción puntual de "Desasignar" requiere el tap sobre el botón, no el
+  swipe completo). Se verificó que el toggle completar/descompletar +
+  desasignar/eliminar del Item 5 de la tanda anterior ya estaba
+  implementado — este fix se aplicó sobre esa base, sin tener que
+  reconstruirla.
+- **Tests (`screens_test.dart`):** regresión de B2 — swipe completo sobre
+  una tarea sin capturar ninguna excepción de Flutter (con un listener de
+  `FlutterError.onError`), y que la llamada `eliminar` se dispare. C1 — dos
+  casos: una tarea completada no ofrece "Desasignar" (solo "Eliminar"), y
+  una asignada-pero-no-completada sí la ofrece y dispara `desasignar`.
 
 # Tanda 6 - Rediseño de navegación y limpieza de features
 

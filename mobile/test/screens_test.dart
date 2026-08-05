@@ -494,13 +494,15 @@ void main() {
       expect(find.text(l10n.eventDetailAddTask), findsOneWidget);
       expect(find.text(l10n.eventDetailSettle), findsOneWidget);
       // Asistencia y disponibilidad ya no viven acá — se accede por el
-      // ícono de engranaje a la pantalla de Configuración aparte.
+      // ícono de calendario con tilde a la pantalla de Configuración aparte
+      // (C2 — antes era una rueda dentada genérica de "configuración").
       expect(find.text(l10n.eventDetailGoing), findsNothing);
       expect(find.text(l10n.eventDetailMyAvailability), findsNothing);
-      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.event_available_outlined), findsOneWidget);
     });
 
-    testWidgets('el ícono de engranaje abre la pantalla de Configuración',
+    testWidgets(
+        'el ícono de calendario con tilde abre la pantalla de Configuración (C2)',
         (tester) async {
       usarPantallaAlta(tester);
       await tester.pumpWidget(
@@ -508,7 +510,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.tap(find.byIcon(Icons.event_available_outlined));
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.eventConfigTitle), findsOneWidget);
@@ -698,6 +700,99 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Deshacer'), findsOneWidget);
+    });
+
+    // C1 — con una tarea completada, no debería poder desasignarse: hay que
+    // descompletarla primero (Item 5 de la tanda anterior ya permite eso).
+    testWidgets('una tarea completada no ofrece la opción de desasignar (C1)', (tester) async {
+      final tasks = FakeTasksRepository(
+        tareas: const [
+          Tarea(
+            id: 't1',
+            titulo: 'Comprar hielo',
+            estado: 'completado',
+            asignadoUsername: 'Sofía',
+          ),
+        ],
+      );
+
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(
+        appDePrueba(const EventDetailScreen(eventoId: 'evt-1'), tasks: tasks),
+      );
+      await tester.pumpAndSettle();
+
+      // Abre el endActionPane (Eliminar/Desasignar) sin llegar al threshold
+      // de dismiss, para inspeccionar qué acciones ofrece.
+      await tester.drag(find.text('Comprar hielo'), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Eliminar'), findsOneWidget);
+      expect(find.text('Desasignar'), findsNothing);
+    });
+
+    testWidgets(
+        'una tarea asignada pero no completada sí puede desasignarse (C1)',
+        (tester) async {
+      final tasks = FakeTasksRepository(
+        tareas: const [
+          Tarea(
+            id: 't1',
+            titulo: 'Comprar hielo',
+            estado: 'asignado',
+            asignadoUsername: 'Sofía',
+          ),
+        ],
+      );
+
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(
+        appDePrueba(const EventDetailScreen(eventoId: 'evt-1'), tasks: tasks),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.text('Comprar hielo'), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Desasignar'), findsOneWidget);
+      await tester.tap(find.text('Desasignar'));
+      await tester.pumpAndSettle();
+
+      expect(tasks.llamadas, contains('desasignar:t1'));
+    });
+
+    // B2 — regresión: un swipe completo (dismiss) sobre una tarea no debe
+    // tirar "A dismissed Slidable widget is still part of the tree" (el
+    // handler no sacaba la tarea de la lista de inmediato, como exige
+    // flutter_slidable, sino recién después del round-trip de red).
+    testWidgets('un swipe completo sobre una tarea no tira errores de Flutter (B2)',
+        (tester) async {
+      final tasks = FakeTasksRepository(
+        tareas: const [Tarea(id: 't1', titulo: 'Comprar carne', estado: 'no_asignado')],
+      );
+      final erroresCapturados = <FlutterErrorDetails>[];
+      final onErrorOriginal = FlutterError.onError;
+      FlutterError.onError = erroresCapturados.add;
+      addTearDown(() => FlutterError.onError = onErrorOriginal);
+
+      usarPantallaAlta(tester);
+      await tester.pumpWidget(
+        appDePrueba(const EventDetailScreen(eventoId: 'evt-1'), tasks: tasks),
+      );
+      await tester.pumpAndSettle();
+
+      // Swipe completo hacia la izquierda (endActionPane -> Eliminar), más
+      // allá del dismissThreshold de flutter_slidable, para disparar
+      // onDismissed (no solo abrir el ActionPane).
+      await tester.timedDrag(
+        find.text('Comprar carne'),
+        const Offset(-3000, 0),
+        const Duration(milliseconds: 400),
+      );
+      await tester.pumpAndSettle();
+
+      expect(erroresCapturados, isEmpty);
+      expect(tasks.llamadas, contains('eliminar:t1'));
     });
 
     testWidgets('un evento cancelado deshabilita las acciones rápidas', (tester) async {

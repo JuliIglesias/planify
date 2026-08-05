@@ -294,6 +294,8 @@
   },
   "eventDetailWhoPaid": "Who paid?",
   "eventDetailDivideBetween": "Divide between:",
+  "eventDetailAmountPerPayer": "Amount per payer",
+  "eventDetailAmountPerPerson": "Amount per person",
   "eventDetailSelectAtLeastOne": "Select at least one person",
   "eventDetailExpenseInvalid": "Enter a description and a valid amount",
   "eventDetailSplitEqually": "Split",

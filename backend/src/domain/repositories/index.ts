@@ -21,6 +21,7 @@ export * from './tarea.repository';
 export * from './gasto.repository';
 export * from './deuda.repository';
 export * from './log-actividad.repository';
+export * from './notificacion-personal.repository';
 export * from './notifications.repository';
 export * from './ai-events.repository';
 export * from './servicios-externos';

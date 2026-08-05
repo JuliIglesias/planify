@@ -38,6 +38,7 @@ import {
   FakeIdGenerator,
   FakeInvitacionRepository,
   FakeLogActividadRepository,
+  FakeNotificacionPersonalRepository,
   FakeParticipanteRepository,
   FakePasswordHasher,
   FakeTareaRepository,
@@ -59,6 +60,7 @@ export interface TestContainer {
     gastos: FakeGastoRepository;
     deudas: FakeDeudaRepository;
     logs: FakeLogActividadRepository;
+    notificacionesPersonales: FakeNotificacionPersonalRepository;
     push: FakePushNotifier;
     imagenes: FakeImageStorageRepository;
   };
@@ -93,13 +95,20 @@ export function createTestContainer(): TestContainer {
   // parte, que es lo que agrupa la compensación cruzada (FR9).
   const deudas = new FakeDeudaRepository(participantes);
   const logs = new FakeLogActividadRepository();
+  const notificacionesPersonales = new FakeNotificacionPersonalRepository(usuarios);
 
   const push = new FakePushNotifier();
   const deviceRegistry = new FakeDeviceRegistry();
   const notifications = new NotificationsService(participantes, deviceRegistry, push);
-  const activityLog = new ActivityLogService(logs, participantes, clock, notifications);
+  const activityLog = new ActivityLogService(
+    logs,
+    participantes,
+    clock,
+    notifications,
+    notificacionesPersonales,
+  );
   const auth = new AuthService(usuarios, participantes, hasher, tokens);
-  const friends = new FriendsService(amistades, usuarios);
+  const friends = new FriendsService(amistades, usuarios, activityLog);
   const friendProfile = new FriendProfileService(
     amistades,
     usuarios,
@@ -191,6 +200,7 @@ export function createTestContainer(): TestContainer {
       gastos,
       deudas,
       logs,
+      notificacionesPersonales,
       push,
       imagenes,
     },

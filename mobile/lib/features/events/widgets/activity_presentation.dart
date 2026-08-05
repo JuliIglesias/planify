@@ -24,13 +24,15 @@ IconData iconoDeActividad(String tipo) => switch (tipo) {
       'disponibilidad_cargada' => Icons.calendar_month,
       'asistencia_confirmada' => Icons.how_to_reg,
       'rango_extendido' => Icons.date_range,
+      // F2 — no cuelga de ningún evento (a diferencia de todo lo de arriba).
+      'solicitud_amistad' => Icons.person_add_alt_1,
       _ => Icons.bolt,
     };
 
 Color colorDeActividad(String tipo) => switch (tipo) {
       'gasto_agregado' || 'evento_cancelado' => AppColors.danger,
       'deuda_saldada' || 'tarea_completada' => AppColors.success,
-      'horario_confirmado' || 'evento_creado' => AppColors.primary,
+      'horario_confirmado' || 'evento_creado' || 'solicitud_amistad' => AppColors.primary,
       _ => AppColors.warning,
     };
 
@@ -54,6 +56,8 @@ String textoActividad(AppLocalizations l10n, ActividadLog entrada) {
     'evento_cancelado' => l10n.activityCancelled(actor),
     // Disparado por el sistema (Item 1), no por un participante real.
     'rango_extendido' => l10n.activityRangeExtended,
+    // F2 — no cuelga de ningún evento (a diferencia de todo lo de arriba).
+    'solicitud_amistad' => l10n.activityFriendRequest(actor),
     _ => actor,
   };
 }

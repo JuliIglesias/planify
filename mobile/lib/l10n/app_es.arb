@@ -272,6 +272,12 @@
     }
   },
   "activityRangeExtended": "El rango de fechas del evento se extendió",
+  "activityFriendRequest": "{actor} te envió una solicitud de amistad",
+  "@activityFriendRequest": {
+    "placeholders": {
+      "actor": { "type": "String" }
+    }
+  },
   "commonSave": "Guardar",
   "commonCancel": "Cancelar",
   "commonAdd": "Agregar",

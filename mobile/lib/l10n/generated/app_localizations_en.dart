@@ -458,6 +458,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityRangeExtended => 'The event\'s date range was extended';
 
   @override
+  String activityFriendRequest(String actor) {
+    return '$actor sent you a friend request';
+  }
+
+  @override
   String get commonSave => 'Save';
 
   @override

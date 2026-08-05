@@ -458,6 +458,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'El rango de fechas del evento se extendió';
 
   @override
+  String activityFriendRequest(String actor) {
+    return '$actor te envió una solicitud de amistad';
+  }
+
+  @override
   String get commonSave => 'Guardar';
 
   @override

@@ -21,6 +21,8 @@ export const ActivityType = {
   gastosCerrados: 'gastos_cerrados',
   /** Item 1 (Fase 5) — el rango de fechas se extendió solo por no confirmarse horario. */
   rangoExtendido: 'rango_extendido',
+  /** F2 — recibí una solicitud de amistad. No cuelga de ningún evento. */
+  solicitudAmistad: 'solicitud_amistad',
 } as const;
 
 export type ActivityTypeValue = (typeof ActivityType)[keyof typeof ActivityType];

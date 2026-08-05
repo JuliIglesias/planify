@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 
 
 import '../../core/models/models.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/money_format.dart';
 import '../../core/widgets/app_dialog.dart';
@@ -71,7 +71,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         // Item 2 — el nombre se movió al body (ver `_Contenido`): el AppBar
         // lo forzaba a una sola línea con "...", perdiendo nombres largos.
         actions: [
@@ -215,16 +215,21 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             children: [
               Text(l10n.eventDetailInviteHint),
               const SizedBox(height: AppSpacing.md),
+              // Mismo par primaryContainer/onPrimaryContainer que el
+              // banner de invitación pendiente de Login y el de
+              // compensación de Balances.
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.border),
+                  color: Theme.of(ctx).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
                 child: SelectableText(
                   inviteLink,
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(ctx).colorScheme.onPrimaryContainer,
+                  ),
                 ),
               ),
             ],
@@ -273,8 +278,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(l10n.commonCancel),
           ),
+          // Acción destructiva — colorScheme.error, no el rojo financiero
+          // (mismo criterio que "Abandonar grupo"/"Cerrar sesión").
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(l10n.commonConfirm),
           ),
@@ -346,6 +353,7 @@ class _ContenidoState extends ConsumerState<_Contenido> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final semantic = context.appSemanticColors;
     final evento = widget.evento;
 
     final fecha = evento.fechaHoraInicio != null
@@ -384,7 +392,9 @@ class _ContenidoState extends ConsumerState<_Contenido> {
             ),
             if (evento.estaCancelado) ...[
               const SizedBox(width: AppSpacing.sm),
-              StatusBadge(label: l10n.eventDetailCancelled, color: AppColors.danger),
+              // Estado negativo general — colorScheme.error, no el rojo
+              // financiero (cancelar un evento no es un monto "debo").
+              StatusBadge(label: l10n.eventDetailCancelled, color: theme.colorScheme.error),
             ] else if (evento.estaFinalizado) ...[
               const SizedBox(width: AppSpacing.sm),
               StatusBadge.saldo(SaldoEstado.saldado, l10n.balancesStateSettled),
@@ -409,25 +419,25 @@ class _ContenidoState extends ConsumerState<_Contenido> {
                 QuickActionButton(
                   icon: Icons.person_add_outlined,
                   label: l10n.eventDetailInvite,
-                  color: AppColors.primary,
+                  color: theme.colorScheme.primary,
                   onPressed: habilitado ? widget.onInvitar : null,
                 ),
                 QuickActionButton(
                   icon: Icons.receipt_long_outlined,
                   label: l10n.eventDetailAddExpense,
-                  color: AppColors.danger,
+                  color: semantic.danger,
                   onPressed: habilitado ? () => _agregarGasto(context) : null,
                 ),
                 QuickActionButton(
                   icon: Icons.check_box_outlined,
                   label: l10n.eventDetailAddTask,
-                  color: AppColors.warning,
+                  color: semantic.warning,
                   onPressed: habilitado ? () => _agregarTarea(context) : null,
                 ),
                 QuickActionButton(
                   icon: Icons.price_check,
                   label: l10n.eventDetailSettle,
-                  color: AppColors.success,
+                  color: semantic.success,
                   onPressed: habilitado ? () => _mostrarDeudas(context) : null,
                 ),
               ],
@@ -641,6 +651,8 @@ class _TareaTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final semantic = context.appSemanticColors;
 
     final esTomar = tarea.estaSinAsignar;
     final esCompletada = tarea.estaCompletada;
@@ -662,7 +674,9 @@ class _TareaTile extends StatelessWidget {
               onPressed: (_) => esTomar
                   ? onTomar()
                   : (esCompletada ? onDescompletar() : onCompletar()),
-              backgroundColor: esCompletada ? Colors.orange : AppColors.success,
+              // "Deshacer" (descompletar) → warning; el resto de estados
+              // positivos ya usan `success` en toda la app.
+              backgroundColor: esCompletada ? semantic.warning : semantic.success,
               foregroundColor: Colors.white,
               icon: esCompletada ? Icons.undo : Icons.check,
               label: esCompletada ? 'Deshacer' : (esTomar ? 'Tomar' : 'Completar'),
@@ -675,9 +689,11 @@ class _TareaTile extends StatelessWidget {
             onDismissed: onEliminar,
           ),
           children: [
+            // Eliminar — acción destructiva: colorScheme.error, no el rojo
+            // financiero.
             SlidableAction(
               onPressed: (_) => onEliminar(),
-              backgroundColor: AppColors.danger,
+              backgroundColor: theme.colorScheme.error,
               foregroundColor: Colors.white,
               icon: Icons.delete,
               label: 'Eliminar',
@@ -687,7 +703,7 @@ class _TareaTile extends StatelessWidget {
             if (!tarea.estaSinAsignar && !esCompletada)
               SlidableAction(
                 onPressed: (_) => onDesasignar(),
-                backgroundColor: Colors.grey.shade600,
+                backgroundColor: theme.colorScheme.onSurfaceVariant,
                 foregroundColor: Colors.white,
                 icon: Icons.person_off,
                 label: 'Desasignar',
@@ -697,7 +713,7 @@ class _TareaTile extends StatelessWidget {
         child: ListTile(
           leading: Icon(
             tarea.estaCompletada ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: tarea.estaCompletada ? AppColors.success : AppColors.textSecondary,
+            color: tarea.estaCompletada ? semantic.success : theme.colorScheme.onSurfaceVariant,
           ),
           title: Text(tarea.titulo),
           subtitle: Text(tarea.asignadoUsername ?? l10n.eventDetailTaskUnassigned),
@@ -753,15 +769,11 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AppColors.primary),
+        Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: AppSpacing.xs),
+        // `bodyLarge` ya usa el gris de cuerpo del tema — sin override.
         Expanded(
-          child: Text(
-            texto,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-          ),
+          child: Text(texto, style: Theme.of(context).textTheme.bodyLarge),
         ),
       ],
     );
@@ -775,15 +787,10 @@ class _TextoVacio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // `bodySmall` ya usa el gris secundario del tema.
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
-      child: Text(
-        texto,
-        style: Theme.of(context)
-            .textTheme
-            .bodySmall
-            ?.copyWith(color: AppColors.textSecondary),
-      ),
+      child: Text(texto, style: Theme.of(context).textTheme.bodySmall),
     );
   }
 }

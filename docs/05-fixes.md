@@ -33,6 +33,65 @@
   `app_shell_layout_test.dart` (49 tests) sin modificar — pasan tal cual.
   Suite completa: 124/124.
 
+## Evento (detalle, configuración, crear evento, modales de Gasto/Tarea)
+
+La pantalla más grande de esta fase — 7 archivos, ~2600 líneas. Cambios por
+archivo:
+
+- **`event_detail_screen.dart`:**
+  - Banner del link de invitación → `primaryContainer`/`onPrimaryContainer`
+    (mismo patrón que Login/Balances); radio suelto `8` → `AppSpacing.radiusSm`.
+  - Confirmar "Cancelar evento" (botón del diálogo) y el `StatusBadge`
+    "Cancelado" → `colorScheme.error` (acción/estado destructivo), no el
+    rojo financiero.
+  - Los 4 `QuickActionButton` de acciones rápidas → `context.appSemanticColors`
+    (antes `AppColors.danger/warning/success` directos).
+  - **2 colores de Material puro genuinamente hardcodeados (hallazgo de
+    Fase 1 §2.1), los únicos de toda la pantalla que no eran ni siquiera
+    tokens propios:** `Colors.orange` (acción "Deshacer" al descompletar
+    tarea) → `semantic.warning`; `Colors.grey.shade600` (acción
+    "Desasignar") → `colorScheme.onSurfaceVariant`. También "Eliminar" →
+    `colorScheme.error` (destructivo).
+  - `_InfoRow` (ícono primario + `AppColors.textPrimary` en `bodyLarge`):
+    el override de `textPrimary` se saca (`bodyLarge` ya es ese gris por
+    default).
+  - Varios overrides redundantes de `bodySmall`/`AppColors.textSecondary`
+    eliminados.
+- **`event_config_screen.dart`:** banner de "rango vencido" y sus íconos
+  (`AppColors.warning`) → `semantic.warning`; botones de asistencia
+  (`AppColors.danger`/`.success`) → `semantic.danger`/`.success`; AppBar
+  → `colorScheme.surface`; overrides redundantes de `textSecondary`
+  eliminados.
+- **`create_event_screen.dart`:** botón "Generar con IA" (`OutlinedButton.icon`
+  + spinner manual) → `AppButton(variant: outlined, loading: ...)`. Botones
+  "Atrás"/"Siguiente-Crear" (`OutlinedButton`/`FilledButton` + spinner
+  manual, en un `Row` con `Expanded`) → `AppButton(fullWidth: false, ...)`
+  — funciona igual de "full width" porque `Expanded` ya le da un ancho
+  fijo. Radio suelto `12` (hallazgo de Fase 1 §2.3) → `AppSpacing.cardRadius`
+  (se prefirió converger al token existente antes que crear uno nuevo para
+  un solo caso). Resto de `AppColors.primary`/`.textSecondary` → roles del
+  tema.
+- **`widgets/expense_dialog.dart`:** el color "cuadra o no cuadra" el total
+  pasa de `success`/`danger` (financiero) a `success`/`error` — es una
+  validación de formulario (¿suma lo mismo?), no un estado de deuda.
+- **`widgets/quick_expense_sheet.dart`:** ícono `AppColors.primary` → tema.
+- **`widgets/task_dialogs.dart`:** sin cambios — ya estaba limpio.
+- **Deliberadamente NO tocado, documentado:** `widgets/activity_presentation.dart`
+  (`colorDeActividad`) sigue devolviendo `AppColors.danger/success/primary/warning`
+  directos en vez de `context.appSemanticColors`/`colorScheme`. Es una
+  función pura sin `BuildContext` (`String tipo → Color`), compartida por
+  Home (ya migrado), este feed, y más adelante Notificaciones/Amigos —
+  cambiar su firma para aceptar `context` implicaría tocar pantallas que
+  todavía no tuvieron su turno en Fase 3. Los valores que devuelve ya son
+  correctos (la paleta de Fase 2), así que no hay ningún bug visual — es
+  una prolija arquitectónica pendiente para cuando le toque el turno a
+  Notificaciones/Amigos.
+- **Sin bugs de comportamiento encontrados.**
+- **Tests:** `screens_test.dart` (los casos de `EventDetailScreen`/
+  `AppShell`), `create_event_screen_test.dart`, `event_config_screen_test.dart`,
+  `expense_dialog_test.dart` (61 tests en total en esta corrida) sin
+  modificar. Suite completa: 124/124.
+
 ## Balances / Saldos
 
 - **`balances_screen.dart`:** balance neto (`AppColors.success`/`.danger`

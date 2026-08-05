@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 
 /// Toggle en forma de píldora — misma estructura visual que la Navbar
 /// (Item 1, Tanda 6): contenedor blanco translúcido, opción no seleccionada
 /// en "celestito" y la seleccionada con chip blanco + texto azul principal.
+/// Comparte con [AppBottomNav] el mismo radio de borde (A1,
+/// [AppSpacing.barRadius]) — misma familia visual, aunque la navbar termine
+/// más alta por llevar ícono además de texto.
 ///
 /// Genérico para reusarse donde haga falta (hoy: Todo/Me deben/Debo en
-/// Gastos — Item 4).
+/// Gastos — Item 4; Todo/Eventos/Gastos en Notificaciones — Item 2).
 class PillToggle<T> extends StatelessWidget {
   const PillToggle({super.key, required this.options, required this.selected, required this.onChanged});
 
@@ -21,7 +25,7 @@ class PillToggle<T> extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.surface.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppSpacing.barRadius),
       ),
       child: Row(
         children: [

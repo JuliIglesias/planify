@@ -52,6 +52,7 @@ export class PrismaParticipanteRepository implements ParticipanteRepository {
         username: data.username,
         esAnonimo: true,
         tokenSesion: data.tokenSesion,
+        pinHash: data.pinHash,
       },
     });
     return toParticipante(row);
@@ -81,6 +82,31 @@ export class PrismaParticipanteRepository implements ParticipanteRepository {
       where: { esAnonimo: true, username: { equals: username, mode: 'insensitive' } },
     });
     return count > 0;
+  }
+
+  async findAnonimoPorEventoYUsername(
+    eventoId: string,
+    username: string,
+  ): Promise<Participante | null> {
+    const row = await this.prisma.participante.findFirst({
+      where: { eventoId, esAnonimo: true, username: { equals: username, mode: 'insensitive' } },
+    });
+    return row ? toParticipante(row) : null;
+  }
+
+  async listAnonimosPorUsername(username: string): Promise<Participante[]> {
+    const rows = await this.prisma.participante.findMany({
+      where: { esAnonimo: true, username: { equals: username, mode: 'insensitive' } },
+    });
+    return rows.map(toParticipante);
+  }
+
+  async regenerarTokenSesion(id: string, tokenSesion: string): Promise<Participante> {
+    const row = await this.prisma.participante.update({
+      where: { id },
+      data: { tokenSesion },
+    });
+    return toParticipante(row);
   }
 
   async updateAsistencia(id: string, estado: AsistenciaEstado): Promise<Participante> {

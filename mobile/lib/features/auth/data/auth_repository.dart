@@ -25,9 +25,6 @@ class SesionAnonimaDto {
 
   final String participanteId;
   final String tokenSesion;
-
-  /// Puede diferir del pedido si el backend tuvo que auto-sufijarlo por
-  /// colisión con otro username ya existente (registrado o anónimo).
   final String username;
 }
 
@@ -41,10 +38,13 @@ abstract interface class AuthRepository {
   /// HU-27 — registro de una cuenta real.
   Future<SesionOrganizadorDto> register(String username, String email, String password);
 
-  /// HU-01/HU-03 — un anónimo se une a un evento existente.
+  /// HU-01/HU-03 — un anónimo se une a un evento existente. G1: el PIN es
+  /// obligatorio — es lo que permite recuperar la MISMA identidad si vuelve
+  /// a entrar con el mismo username a ese evento más adelante.
   Future<SesionAnonimaDto> unirseComoAnonimo({
     required String eventoId,
     required String username,
+    required String pin,
   });
 
   /// HU-02 — resuelve un link de invitación al id del evento.
@@ -95,11 +95,12 @@ class AuthRepositoryHttp implements AuthRepository {
   Future<SesionAnonimaDto> unirseComoAnonimo({
     required String eventoId,
     required String username,
+    required String pin,
   }) =>
       ejecutar(() async {
         final res = await _dio.post<Map<String, dynamic>>(
           '/participants/anonymous',
-          data: {'eventoId': eventoId, 'username': username},
+          data: {'eventoId': eventoId, 'username': username, 'pin': pin},
         );
         return SesionAnonimaDto(
           participanteId: res.data!['participanteId'] as String,

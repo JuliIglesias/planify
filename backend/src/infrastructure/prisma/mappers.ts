@@ -47,6 +47,7 @@ export function toParticipante(row: {
   esAnonimo: boolean;
   esOrganizador: boolean;
   tokenSesion: string | null;
+  pinHash: string | null;
   estadoAsistencia: string;
   ultimaLecturaAt: Date | null;
   createdAt: Date;

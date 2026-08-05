@@ -16,9 +16,12 @@ import 'package:planify/features/profile/data/profile_repository.dart';
 /// se puede probar toda la UI sin red ni backend levantado.
 
 class FakeAuthRepository implements AuthRepository {
-  FakeAuthRepository({this.fallaLogin = false});
+  FakeAuthRepository({this.fallaLogin = false, this.errorAnonimo});
 
   final bool fallaLogin;
+  /// G1 — si viene seteado, `unirseComoAnonimo` lo tira en vez de unir (para
+  /// simular el rechazo del backend: PIN incorrecto o username ya en uso).
+  final String? errorAnonimo;
   final List<String> llamadas = [];
 
   @override
@@ -43,8 +46,10 @@ class FakeAuthRepository implements AuthRepository {
   Future<SesionAnonimaDto> unirseComoAnonimo({
     required String eventoId,
     required String username,
+    required String pin,
   }) async {
-    llamadas.add('anonimo:$eventoId:$username');
+    llamadas.add('anonimo:$eventoId:$username:$pin');
+    if (errorAnonimo != null) throw Exception(errorAnonimo);
     return SesionAnonimaDto(participanteId: 'part-1', tokenSesion: 'tok-anon', username: username);
   }
 

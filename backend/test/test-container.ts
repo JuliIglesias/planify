@@ -112,7 +112,15 @@ export function createTestContainer(): TestContainer {
   const aiEvents = new AiEventsService(new HeuristicEventGenerator(), amistades);
   const profileAvailability = new ProfileAvailabilityService(disponibilidadPerfil);
   const locations = new LocationsService(ubicaciones);
-  const participants = new ParticipantsService(participantes, usuarios, eventos, ids, activityLog);
+  const participants = new ParticipantsService(
+    participantes,
+    usuarios,
+    eventos,
+    ids,
+    activityLog,
+    hasher,
+    deudas,
+  );
   const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
   const events = new EventsService(eventos, grupos, participantes, usuarios, activityLog, clock);
   const eventsQuery = new EventsQueryService(

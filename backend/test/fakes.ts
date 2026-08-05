@@ -451,6 +451,7 @@ export class FakeParticipanteRepository implements R.ParticipanteRepository {
       username: data.username,
       esAnonimo: true,
       tokenSesion: data.tokenSesion,
+      pinHash: data.pinHash,
     });
   }
 
@@ -492,6 +493,29 @@ export class FakeParticipanteRepository implements R.ParticipanteRepository {
     );
   }
 
+  async findAnonimoPorEventoYUsername(eventoId: string, username: string) {
+    return (
+      this.participantes.find(
+        (p) =>
+          p.eventoId === eventoId &&
+          p.esAnonimo &&
+          p.username.toLowerCase() === username.toLowerCase(),
+      ) ?? null
+    );
+  }
+
+  async listAnonimosPorUsername(username: string) {
+    return this.participantes.filter(
+      (p) => p.esAnonimo && p.username.toLowerCase() === username.toLowerCase(),
+    );
+  }
+
+  async regenerarTokenSesion(id: string, tokenSesion: string) {
+    const p = this.participantes.find((x) => x.id === id)!;
+    p.tokenSesion = tokenSesion;
+    return p;
+  }
+
   agregar(parcial: Partial<D.Participante> = {}): D.Participante {
     const participante: D.Participante = {
       id: nuevoId('part'),
@@ -501,6 +525,7 @@ export class FakeParticipanteRepository implements R.ParticipanteRepository {
       esAnonimo: false,
       esOrganizador: false,
       tokenSesion: null,
+      pinHash: null,
       estadoAsistencia: 'sin_confirmar',
       ultimaLecturaAt: null,
       createdAt: new Date('2026-07-28'),

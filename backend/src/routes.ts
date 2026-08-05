@@ -199,9 +199,11 @@ export function createRoutes(c: Container): Router {
   router.post(
     '/participants/anonymous',
     asyncHandler(async (req: Request, res: Response) => {
-      const { eventoId, username } = req.body ?? {};
+      // G1 — el PIN es obligatorio para poder recuperar la misma sesión más
+      // adelante (ver docs/adrs/0003-identidad-anonima-por-evento.md).
+      const { eventoId, username, pin } = req.body ?? {};
       if (!eventoId) throw new BadRequestError('eventoId es requerido');
-      res.status(201).json(await c.participants.unirseComoAnonimo(eventoId, username));
+      res.status(201).json(await c.participants.unirseComoAnonimo(eventoId, username, pin));
     }),
   );
 

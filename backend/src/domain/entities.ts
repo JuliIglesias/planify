@@ -66,6 +66,8 @@ export interface Participante {
   esAnonimo: boolean;
   esOrganizador: boolean;
   tokenSesion: string | null;
+  /** G1 (ADR 0003) — solo si `esAnonimo`. Nunca sale de `ParticipantsService`. */
+  pinHash: string | null;
   estadoAsistencia: AsistenciaEstado;
   ultimaLecturaAt: Date | null;
   createdAt: Date;

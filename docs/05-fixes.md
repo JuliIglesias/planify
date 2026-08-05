@@ -33,6 +33,68 @@
   `app_shell_layout_test.dart` (49 tests) sin modificar — pasan tal cual.
   Suite completa: 124/124.
 
+## Historial y Notificaciones ("cualquier pantalla restante")
+
+Las 2 pantallas que quedaban sin tocar de todo `lib/features/`.
+
+- **`history_screen.dart`:** AppBar → tema. Punto/barra de la línea de
+  tiempo (`AppColors.primary`/`.border`) → `colorScheme.primary`/`.outline`.
+  Encabezado de mes: se saca el `color: AppColors.primary` explícito — el
+  comentario del propio código decía "misma jerarquía que los encabezados
+  de sección de Home", y Home ya no pisa el color ahí (hereda el azul
+  oscuro del `TextTheme`, Fase 2) — sacar el override acá completa esa
+  consistencia que el comentario original ya pedía. `montoColor` del
+  `EventCard` migrado a `context.appSemanticColors`.
+- **`notifications_screen.dart`:** AppBar → tema; encabezado de día
+  (`labelSmall` + `textSecondary`) → override de color eliminado
+  (`labelSmall` ya es ese gris por default). `colorDeActividad`/
+  `iconoDeActividad` (de `activity_presentation.dart`) se siguen usando acá
+  tal cual — mismo criterio ya documentado en la sección de Evento.
+- **Sin bugs encontrados.**
+- **Tests:** los casos de `HistoryScreen` en `screens_test.dart` y
+  `notifications_test.dart` completo (46 tests en esta corrida) sin
+  modificar. Suite completa: 124/124.
+
+## Verificación final — sin colores hex sueltos fuera del tema
+
+Lo que pedía la consigna literal — `grep` de `#`/`Color(0x` fuera del
+archivo de theme:
+
+```
+grep -rn "Color(0x" lib --include="*.dart" | grep -v "core/theme/"
+→ sin resultados (0 coincidencias de código real — solo quedan 2
+  comentarios que MENCIONAN "Color(0x..." al explicar qué se migró)
+```
+
+**Cero colores hex hardcodeados sueltos en toda la app.** Los 8 originales
+de `groups_screen.dart` (Fase 1 §2.1) y los 2 `Colors.*` de Material puro
+en `event_detail_screen.dart` (hallazgo de Fase 1, el resto de la lista)
+ya se migraron en sus respectivos pasos — no quedó ninguno sin poder
+migrar.
+
+**Chequeo extra, más allá de lo pedido:** también grepeé referencias
+simbólicas a `AppColors.xxx` (no son hex hardcodeados — son referencias al
+token centralizado, exactamente lo que se supone que hay que usar — pero
+quería ver cuántas quedaban apuntando a la constante estática en vez de
+`Theme.of(context).colorScheme.xxx`/`context.appSemanticColors`). Quedan
+bastantes, todas en archivos de **componentes** (`core/widgets/*.dart`:
+`app_scaffold.dart`, `auth_scaffold.dart`, `avatar_stack.dart`,
+`event_card.dart`, `pill_toggle.dart`, `quick_action_button.dart`,
+`status_badge.dart`, `unread_dot.dart`, `weekly_availability_grid.dart`) más
+`activity_presentation.dart` — **ninguna pantalla** (`lib/features/*_screen.dart`)
+quedó con una referencia real a `AppColors` (los 2 hits que aparecieron ahí
+al gerpear eran comentarios explicativos, no código). Es una decisión
+tomada en Fase 2 y sostenida a propósito en Fase 3: esos componentes ya
+usan la paleta correcta (Fase 2 actualizó los valores de `AppColors`), así
+que no hay ningún bug visual — solo quedó pendiente la migración
+arquitectónica de "constante estática" a "vía tema" en la librería de
+componentes en sí, que no formaba parte del pedido explícito de ninguna
+fase (Fase 2 pedía construir los componentes nuevos y re-tematizar los
+existentes con la paleta nueva — ya está — no pedía que cada línea interna
+leyera del `ColorScheme` en vez de `AppColors`). Se puede encarar como un
+PR chico de limpieza aparte si querés, mismo criterio que
+`activity_presentation.dart`.
+
 ## Amigos
 
 Última pantalla explícita de la lista — y donde `AppPersonRow` (construido

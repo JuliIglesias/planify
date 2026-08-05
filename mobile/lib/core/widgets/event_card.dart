@@ -61,6 +61,22 @@ class EventCardPill {
     );
   }
 
+  /// Pill de acento (actividad financiera puntual — ej. "N gastos") — usa
+  /// `colorScheme.tertiary`, el mismo rol que FAB y badges "nuevo".
+  factory EventCardPill.accent({
+    required String label,
+    required IconData icon,
+    required BuildContext context,
+  }) {
+    final color = Theme.of(context).colorScheme.tertiary;
+    return EventCardPill(
+      label: label,
+      icon: icon,
+      backgroundColor: color.withValues(alpha: 0.12),
+      foregroundColor: color,
+    );
+  }
+
   /// Pill informativo (mensajes nuevos) — usa `colorScheme.primary`.
   factory EventCardPill.info({
     required String label,

@@ -12,6 +12,7 @@ class AppAvatar extends StatelessWidget {
     this.imageUrl,
     this.radius = 20,
     this.backgroundColor,
+    this.foregroundColor,
   });
 
   /// Usado para las iniciales de fallback y como `semanticsLabel`.
@@ -21,6 +22,12 @@ class AppAvatar extends StatelessWidget {
 
   /// Default: `colorScheme.primary`.
   final Color? backgroundColor;
+
+  /// Color de las iniciales de fallback. Default: `colorScheme.onPrimary`
+  /// (blanco) — si se pasa un `backgroundColor` claro/pastel (ej. un
+  /// estado "inactivo"), hay que pasar también un `foregroundColor` con
+  /// contraste (blanco sobre pastel no cumple AA).
+  final Color? foregroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +48,7 @@ class AppAvatar extends StatelessWidget {
                 style: TextStyle(
                   fontSize: radius * 0.7,
                   fontWeight: FontWeight.w600,
-                  color: colorScheme.onPrimary,
+                  color: foregroundColor ?? colorScheme.onPrimary,
                 ),
               ),
       ),

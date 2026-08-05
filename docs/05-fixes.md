@@ -33,6 +33,46 @@
   `app_shell_layout_test.dart` (49 tests) sin modificar — pasan tal cual.
   Suite completa: 124/124.
 
+## Grupos
+
+- **`groups_screen.dart` — los 8 `Color(0x...)` del hallazgo de Fase 1
+  (§2.1)**: reemplazados por 5 constructores semánticos nuevos de
+  `EventCardPill` (`.success/.warning/.danger/.info/.accent` — el último,
+  `.accent`, se agregó en este pase para el pill de "gastos", que no
+  encajaba en ninguno de los 4 de Fase 2 sin forzarlo).
+- **Avatar del carrusel de grupos**: el `CircleAvatar` a mano + `_iniciales`
+  duplicado (mismo cálculo que ya estaba en `AvatarStack`) se reemplaza por
+  `AppAvatar` — que ganó un `foregroundColor` opcional (extensión de su API,
+  no había forma de cubrir el estado "inactivo" con pastel + texto oscuro
+  sin él). Elimina la última duplicación de esa lógica en el código
+  (`core/utils/initials.dart` ya la había centralizado en Fase 2, pero acá
+  todavía quedaba una copia propia).
+- **`group_manage_sheet.dart`**: mismo criterio que "Cerrar sesión" en
+  Perfil — "Abandonar grupo" pasa de `AppColors.danger` (rojo financiero) a
+  `colorScheme.error` (acción destructiva), tanto en el ícono/texto del
+  `ListTile` como en el botón de confirmación del diálogo. Override
+  redundante de `bodySmall`+`textSecondary` eliminado.
+- **`group_availability_screen.dart`**: `AppColors.surface` del `AppBar` →
+  `colorScheme.surface`. El texto de hint (`bodyMedium`) mantiene su
+  override de color — a diferencia de `bodySmall`/`labelMedium`,
+  `bodyMedium` por default es el gris de CUERPO (casi negro), no el
+  secundario, así que sacar el override cambiaría el resultado visual; el
+  override se queda pero ahora vía `colorScheme.onSurfaceVariant` en vez de
+  `AppColors.textSecondary` suelto.
+- **Bugs encontrados, NO corregidos (mismo criterio que "Ver todos" de
+  Home — avisados, no mezclados):**
+  1. El pill "Decisión pendiente" tiene el texto hardcodeado en español
+     (`'Decisión pendiente'`), igual que "Ver todos" — a diferencia de ese
+     caso, acá **ya existe** una clave de traducción con el mismo texto
+     (`l10n.eventUrgentDecision`) sin usar en este sitio. Se podría
+     resolver con un cambio de una línea.
+  2. El pill de "gastos" (`l10n.groupsExpenses`) y el resto de los labels
+     de pills sí usan `l10n` correctamente — no es un patrón generalizado,
+     solo esos dos casos puntuales.
+- **Tests:** los 40 casos de `screens_test.dart` que cubren
+  `GroupsScreen`/`GroupAvailabilityScreen`/`group_manage_sheet` sin
+  modificar. Suite completa: 124/124.
+
 ## Perfil
 
 - **`profile_screen.dart`:** `bodySmall` con override redundante de

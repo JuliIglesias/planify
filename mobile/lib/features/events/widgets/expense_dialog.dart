@@ -181,6 +181,9 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
             const SizedBox(height: AppSpacing.md),
 
             // ── ¿Quién pagó? (uno o varios acreedores — FR7) ────────────────
+            // D1 — solo la selección acá (checkbox + nombre); el monto de
+            // cada uno se pide más abajo, después de las dos secciones de
+            // selección, para que no quede "perdido" al lado de cada fila.
             Row(
               children: [
                 Expanded(
@@ -192,19 +195,12 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
-                if (!_unSoloPagador)
-                  TextButton(
-                    onPressed: _total > 0 ? _repartirEntrePagadores : null,
-                    child: Text(l10n.eventDetailSplitEqually),
-                  ),
               ],
             ),
             for (final p in widget.participantes)
-              _FilaParticipante(
+              _FilaSeleccion(
                 nombre: p.username,
                 seleccionado: _acreedores.contains(p.id),
-                mostrarMonto: !_unSoloPagador && _acreedores.contains(p.id),
-                controller: _montoPorAcreedor[p.id]!,
                 onCambio: (checked) => setState(() {
                   if (checked) {
                     _acreedores.add(p.id);
@@ -212,10 +208,67 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
                     _acreedores.remove(p.id);
                   }
                 }),
-                onMonto: () => setState(() {}),
               ),
 
-            if (!_unSoloPagador)
+            const SizedBox(height: AppSpacing.md),
+
+            // ── ¿Entre quiénes se divide? ────────────────────────────────
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.eventDetailDivideBetween,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            for (final p in widget.participantes)
+              _FilaSeleccion(
+                nombre: p.username,
+                seleccionado: _deudoresSeleccionados.contains(p.id),
+                onCambio: (checked) {
+                  setState(() {
+                    if (checked) {
+                      _deudoresSeleccionados.add(p.id);
+                    } else if (_deudoresSeleccionados.length > 1) {
+                      _deudoresSeleccionados.remove(p.id);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.eventDetailSelectAtLeastOne)),
+                      );
+                    }
+                  });
+                },
+              ),
+
+            // ── D1 — montos repartidos por persona, debajo de ambas
+            // secciones de selección (no intercalados en cada fila). ──────
+            if (!_unSoloPagador) ...[
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.eventDetailAmountPerPayer,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _total > 0 ? _repartirEntrePagadores : null,
+                    child: Text(l10n.eventDetailSplitEqually),
+                  ),
+                ],
+              ),
+              for (final id in _acreedores)
+                _FilaMonto(
+                  nombre: _nombreDe(id),
+                  controller: _montoPorAcreedor[id]!,
+                  onMonto: () => setState(() {}),
+                ),
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.xs),
                 child: Text(
@@ -228,13 +281,14 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
                       ),
                 ),
               ),
+            ],
 
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
                 Expanded(
                   child: Text(
-                    l10n.eventDetailDivideBetween,
+                    l10n.eventDetailAmountPerPerson,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -244,25 +298,10 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
                 ),
               ],
             ),
-            for (final p in widget.participantes)
-              _FilaParticipante(
-                nombre: p.username,
-                seleccionado: _deudoresSeleccionados.contains(p.id),
-                mostrarMonto: _deudoresSeleccionados.contains(p.id),
-                controller: _montoPorDeudor[p.id]!,
-                onCambio: (checked) {
-                  setState(() {
-                    if (checked == true) {
-                      _deudoresSeleccionados.add(p.id);
-                    } else if (_deudoresSeleccionados.length > 1) {
-                      _deudoresSeleccionados.remove(p.id);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.eventDetailSelectAtLeastOne)),
-                      );
-                    }
-                  });
-                },
+            for (final id in _deudoresSeleccionados)
+              _FilaMonto(
+                nombre: _nombreDe(id),
+                controller: _montoPorDeudor[id]!,
                 onMonto: () => setState(() {}),
               ),
           ],
@@ -333,41 +372,59 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
   void _error(String texto) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
   }
+
+  String _nombreDe(String participanteId) => widget.participantes
+      .firstWhere((p) => p.id == participanteId)
+      .username;
 }
 
-/// Una fila de "quién pagó" o "quién debe": checkbox + el monto.
-class _FilaParticipante extends StatelessWidget {
-  const _FilaParticipante({
+/// D1 — una fila de selección de "quién pagó"/"quién debe": checkbox +
+/// nombre, sin el monto (que ahora va en un bloque aparte, después de
+/// ambas secciones — ver [_FilaMonto]).
+class _FilaSeleccion extends StatelessWidget {
+  const _FilaSeleccion({
     required this.nombre,
     required this.seleccionado,
-    required this.mostrarMonto,
-    required this.controller,
     required this.onCambio,
-    required this.onMonto,
   });
 
   final String nombre;
   final bool seleccionado;
-  final bool mostrarMonto;
-  final TextEditingController controller;
   final ValueChanged<bool> onCambio;
+
+  @override
+  Widget build(BuildContext context) {
+    return CheckboxListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+      title: Text(nombre),
+      value: seleccionado,
+      onChanged: (v) => onCambio(v ?? false),
+    );
+  }
+}
+
+/// D1 — una fila del bloque de montos (por pagador o por deudor, según la
+/// sección): nombre + input de monto, ya elegida la persona más arriba.
+class _FilaMonto extends StatelessWidget {
+  const _FilaMonto({
+    required this.nombre,
+    required this.controller,
+    required this.onMonto,
+  });
+
+  final String nombre;
+  final TextEditingController controller;
   final VoidCallback onMonto;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: CheckboxListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            title: Text(nombre),
-            value: seleccionado,
-            onChanged: (v) => onCambio(v ?? false),
-          ),
-        ),
-        if (mostrarMonto)
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs / 2),
+      child: Row(
+        children: [
+          Expanded(child: Text(nombre)),
           SizedBox(
             width: 90,
             child: AppTextField(
@@ -378,7 +435,8 @@ class _FilaParticipante extends StatelessWidget {
               onChanged: (_) => onMonto(),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }

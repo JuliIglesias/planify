@@ -524,6 +524,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventDetailDivideBetween => 'Divide between:';
 
   @override
+  String get eventDetailAmountPerPayer => 'Amount per payer';
+
+  @override
+  String get eventDetailAmountPerPerson => 'Amount per person';
+
+  @override
   String get eventDetailSelectAtLeastOne => 'Select at least one person';
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/models.dart';
+import '../theme/app_spacing.dart';
 import '../../features/events/event_detail_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'event_card.dart';
@@ -25,7 +26,7 @@ class EventoResumenCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
       ),
       child: Text(
         badgeText,

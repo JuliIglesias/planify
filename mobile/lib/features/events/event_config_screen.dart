@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/models/models.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/collapsible_section.dart';
@@ -52,6 +52,8 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final semantic = context.appSemanticColors;
     final detalle = ref.watch(eventDetailProvider(widget.eventoId));
     final savedAvailAsync = ref.watch(myEventAvailabilityProvider(widget.eventoId));
     final profileAvailAsync = ref.watch(profileAvailabilityProvider);
@@ -78,7 +80,7 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: colorScheme.surface,
         title: Text(l10n.eventConfigTitle),
       ),
       body: detalle.when(
@@ -98,13 +100,12 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
               // ── Rango de fechas del evento (Item 1) ──────────────────────
               if (evento.necesitaDecisionRango) ...[
                 Card(
-                  color: AppColors.warning.withValues(alpha: 0.12),
+                  color: semantic.warning.withValues(alpha: 0.12),
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Row(
                       children: [
-                        const Icon(Icons.warning_amber_rounded,
-                            color: AppColors.warning),
+                        Icon(Icons.warning_amber_rounded, color: semantic.warning),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
@@ -122,17 +123,17 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
                   padding: const EdgeInsets.only(bottom: AppSpacing.md),
                   child: Row(
                     children: [
-                      const Icon(Icons.date_range_outlined,
-                          size: 16, color: AppColors.textSecondary),
+                      Icon(Icons.date_range_outlined,
+                          size: 16, color: colorScheme.onSurfaceVariant),
                       const SizedBox(width: AppSpacing.xs),
+                      // `bodySmall` ya usa el gris secundario del tema.
                       Expanded(
                         child: Text(
                           l10n.eventDateRangeShowing(
                             DateFormat('d MMM', 'es').format(evento.rangoInicio),
                             DateFormat('d MMM', 'es').format(evento.rangoFin),
                           ),
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: AppColors.textSecondary),
+                          style: theme.textTheme.bodySmall,
                         ),
                       ),
                     ],
@@ -152,7 +153,7 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
                       _BotonAsistencia(
                         label: l10n.eventDetailNotGoing,
                         seleccionado: miEstado == 'rechazado',
-                        color: AppColors.danger,
+                        color: semantic.danger,
                         onPressed: habilitado
                             ? () => _accion(() => ref
                                 .read(eventsRepositoryProvider)
@@ -164,7 +165,7 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
                       _BotonAsistencia(
                         label: l10n.eventDetailGoing,
                         seleccionado: miEstado == 'confirmado',
-                        color: AppColors.success,
+                        color: semantic.success,
                         onPressed: habilitado
                             ? () => _accion(() => ref
                                 .read(eventsRepositoryProvider)
@@ -257,11 +258,8 @@ class _EventConfigScreenState extends ConsumerState<EventConfigScreen> {
                           ),
                           if (evento.soyOrganizador) ...[
                             const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              l10n.eventDetailTapToConfirm,
-                              style: theme.textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.textSecondary),
-                            ),
+                            // `bodySmall` ya usa el gris secundario del tema.
+                            Text(l10n.eventDetailTapToConfirm, style: theme.textTheme.bodySmall),
                           ],
                         ],
                       ),

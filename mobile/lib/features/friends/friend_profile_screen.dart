@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_avatar.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/collapsible_section.dart';
 import '../../core/widgets/event_card.dart';
@@ -29,7 +30,7 @@ class FriendProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title: Text(perfil.value?.persona.username ?? l10n.commonLoading),
       ),
       body: perfil.when(
@@ -62,40 +63,30 @@ class FriendProfileScreen extends ConsumerWidget {
               _TextoVacio(l10n.friendProfileNoGroups)
             else
               for (final grupo in p.gruposEnComun)
-                Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                      backgroundImage:
-                          grupo.avatarUrl != null ? NetworkImage(grupo.avatarUrl!) : null,
-                      child: grupo.avatarUrl == null
-                          ? Text(
-                              _iniciales(grupo.nombre),
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            )
-                          : null,
+                Builder(builder: (context) {
+                  final colorScheme = Theme.of(context).colorScheme;
+                  // Estilo "pastel" (fondo claro + iniciales en color, no
+                  // blanco) — distinto del AppAvatar sólido de AvatarStack,
+                  // se preserva pasando backgroundColor/foregroundColor
+                  // explícitos en vez de forzar el default.
+                  return Card(
+                    child: ListTile(
+                      leading: AppAvatar(
+                        nombre: grupo.nombre,
+                        imageUrl: grupo.avatarUrl,
+                        backgroundColor: colorScheme.primary.withValues(alpha: 0.15),
+                        foregroundColor: colorScheme.primary,
+                      ),
+                      title: Text(grupo.nombre),
                     ),
-                    title: Text(grupo.nombre),
-                  ),
-                ),
+                  );
+                }),
             const SizedBox(height: AppSpacing.xl),
           ],
         ),
       ),
     );
   }
-}
-
-String _iniciales(String nombre) {
-  final limpio = nombre.trim();
-  if (limpio.isEmpty) return '?';
-  final partes = limpio.split(RegExp(r'\s+'));
-  final primera = partes.first.characters.first;
-  if (partes.length == 1) return primera.toUpperCase();
-  return (primera + partes.last.characters.first).toUpperCase();
 }
 
 class _Encabezado extends StatelessWidget {
@@ -106,34 +97,29 @@ class _Encabezado extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Column(
       children: [
-        CircleAvatar(
+        // Mismo estilo "pastel" que el avatar de grupo en común, más abajo.
+        AppAvatar(
+          nombre: persona.username,
+          imageUrl: persona.avatarUrl,
           radius: 40,
-          backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-          backgroundImage:
-              persona.avatarUrl != null ? NetworkImage(persona.avatarUrl!) : null,
-          child: persona.avatarUrl == null
-              ? Text(
-                  _iniciales(persona.username),
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 28,
-                  ),
-                )
-              : null,
+          backgroundColor: colorScheme.primary.withValues(alpha: 0.15),
+          foregroundColor: colorScheme.primary,
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
           persona.username,
           style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
+        // `bodyMedium` por default es el gris de CUERPO — este texto quiere
+        // el secundario, así que el override se queda (vía colorScheme).
         if (persona.email != null)
           Text(
             persona.email!,
-            style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
           ),
       ],
     );
@@ -153,15 +139,17 @@ class _HeatmapComparado extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final semantic = context.appSemanticColors;
     final porSlot = {
       for (final s in slots) AvailabilitySlot(s.diaSemana, s.bloqueHora): s.estado,
     };
 
     Color colorDe(AvailabilitySlot slot) => switch (porSlot[slot]) {
-          EstadoSlotComparado.ambos => AppColors.success,
-          EstadoSlotComparado.soloYo => AppColors.primary,
-          EstadoSlotComparado.soloAmigo => AppColors.accent,
-          null => AppColors.background,
+          EstadoSlotComparado.ambos => semantic.success,
+          EstadoSlotComparado.soloYo => colorScheme.primary,
+          EstadoSlotComparado.soloAmigo => colorScheme.tertiary,
+          null => colorScheme.secondaryContainer,
         };
 
     String labelDe(AvailabilitySlot slot) => switch (porSlot[slot]) {
@@ -185,13 +173,16 @@ class _HeatmapComparado extends StatelessWidget {
           spacing: AppSpacing.md,
           runSpacing: AppSpacing.xs,
           children: [
-            _LeyendaItem(color: AppColors.success, texto: l10n.friendProfileLegendBoth),
-            _LeyendaItem(color: AppColors.primary, texto: l10n.friendProfileLegendMeOnly),
+            _LeyendaItem(color: semantic.success, texto: l10n.friendProfileLegendBoth),
+            _LeyendaItem(color: colorScheme.primary, texto: l10n.friendProfileLegendMeOnly),
             _LeyendaItem(
-              color: AppColors.accent,
+              color: colorScheme.tertiary,
               texto: l10n.friendProfileLegendFriendOnly(persona.username),
             ),
-            _LeyendaItem(color: AppColors.background, texto: l10n.friendProfileLegendNeither),
+            _LeyendaItem(
+              color: colorScheme.secondaryContainer,
+              texto: l10n.friendProfileLegendNeither,
+            ),
           ],
         ),
       ],
@@ -216,7 +207,7 @@ class _LeyendaItem extends StatelessWidget {
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(3),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: Theme.of(context).colorScheme.outline),
           ),
         ),
         const SizedBox(width: AppSpacing.xs),
@@ -250,12 +241,10 @@ class _TextoVacio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // `bodySmall` ya usa el gris secundario del tema.
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Text(
-        texto,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-      ),
+      child: Text(texto, style: Theme.of(context).textTheme.bodySmall),
     );
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/auth_scaffold.dart';
@@ -97,13 +97,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               decoration: InputDecoration(hintText: l10n.loginAnonymousPinHint),
             ),
             const SizedBox(height: AppSpacing.xs),
-            Text(
-              l10n.loginAnonymousPinHelp,
-              style: Theme.of(ctx)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: AppColors.textSecondary),
-            ),
+            // `bodySmall` ya usa el gris secundario del tema — sin override.
+            Text(l10n.loginAnonymousPinHelp, style: Theme.of(ctx).textTheme.bodySmall),
           ],
         ),
         actions: [
@@ -205,6 +200,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final cargando = ref.watch(sessionControllerProvider).isLoading;
     final invitacionPendiente = ref.watch(pendingInvitationProvider) != null;
 
@@ -213,15 +209,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (invitacionPendiente) ...[
+            // Banner "container" — mismo par primaryContainer/onPrimaryContainer
+            // que el resto del theme usa para superficies tintadas de marca,
+            // en vez de un `AppColors.primary` con alpha a mano.
             Container(
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.mail_outline, color: AppColors.primary, size: 20),
+                  Icon(Icons.mail_outline, color: colorScheme.onPrimaryContainer, size: 20),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(l10n.loginPendingInvitation, style: theme.textTheme.bodySmall),
@@ -259,32 +258,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: cargando ? null : _ingresar,
-              child: cargando
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(l10n.loginSubmit),
-            ),
+          AppButton(
+            label: l10n.loginSubmit,
+            onPressed: cargando ? null : _ingresar,
+            loading: cargando,
           ),
           const SizedBox(height: AppSpacing.md),
           Text(l10n.loginOr, style: theme.textTheme.bodySmall),
           const SizedBox(height: AppSpacing.md),
-          OutlinedButton.icon(
+          AppButton(
+            label: l10n.loginContinueAnonymous,
+            variant: AppButtonVariant.outlined,
+            icon: Icons.visibility_off_outlined,
             onPressed: cargando ? null : _continuarComoAnonimo,
-            icon: const Icon(Icons.visibility_off_outlined),
-            label: Text(l10n.loginContinueAnonymous),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-              ),
-            ),
           ),
         ],
       ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/models.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../home/home_providers.dart';
@@ -82,7 +81,7 @@ class _SelectorDeEvento extends StatelessWidget {
               children: [
                 for (final evento in eventos)
                   ListTile(
-                    leading: const Icon(Icons.event_outlined, color: AppColors.primary),
+                    leading: Icon(Icons.event_outlined, color: Theme.of(context).colorScheme.primary),
                     title: Text(evento.nombre),
                     subtitle: Text(evento.lugarTexto),
                     onTap: () => Navigator.pop(context, evento),

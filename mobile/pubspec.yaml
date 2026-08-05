@@ -1,5 +1,5 @@
 name: planify
-description: "Planify — coordinación de juntadas grupales (Android)."
+description: "Planify — coordinación de juntadas grupales (Flutter, Android/iOS)."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -44,6 +44,7 @@ dependencies:
     sdk: flutter
   flutter_slidable: ^4.0.3
   image_picker: ^1.1.2
+  characters: ^1.4.0
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +57,9 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
   mocktail: ^1.0.5
+  # Genera los íconos de app (Android + iOS) a partir de assets/logo.png —
+  # docs/06-design-system.md §8.
+  flutter_launcher_icons: ^0.14.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -70,6 +74,9 @@ flutter:
 
   # i18n desde el día 1 — ningún texto hardcodeado (docs/02-decisiones.md, Duda #15/F5).
   generate: true
+
+  assets:
+    - assets/logo.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -101,3 +108,16 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Ícono de la app (Android + iOS) — docs/06-design-system.md §8.
+# Se corre con: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  image_path: "assets/logo.png"
+  adaptive_icon_background: "#ECF4FF" # Azul fondo
+  adaptive_icon_foreground: "assets/logo.png"
+  min_sdk_android: 21
+
+  ios: true
+  image_path_ios: "assets/logo.png"
+  remove_alpha_ios: true

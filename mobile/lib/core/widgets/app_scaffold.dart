@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../debug/design_catalog_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import 'app_logo.dart';
 import '../../features/home/home_providers.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -34,11 +37,21 @@ final bottomNavHeightProvider =
 /// La campana muestra un badge con la actividad sin leer (H-17) y, desde el
 /// Item 2 (Tanda 6), abre la pantalla de Notificaciones.
 class AppHeader extends ConsumerWidget {
-  const AppHeader({super.key, required this.titulo, this.subtitulo, this.trailing});
+  const AppHeader({
+    super.key,
+    required this.titulo,
+    this.subtitulo,
+    this.trailing,
+    this.showLogo = false,
+  });
 
   final String titulo;
   final String? subtitulo;
   final Widget? trailing;
+
+  /// Refuerzo de marca (docs/06-design-system.md §7) — solo en Home, para no
+  /// saturar los headers secundarios (Grupos/Balances/Perfil).
+  final bool showLogo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,24 +68,40 @@ class AppHeader extends ConsumerWidget {
       child: Row(
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  titulo,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-                if (subtitulo != null)
-                  Text(
-                    subtitulo!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+            child: GestureDetector(
+              // Acceso oculto al catálogo de componentes — solo en builds
+              // debug, no visible en producción (docs/06-design-system.md
+              // §6.3/§9.1 punto 4). No cambia nada del header en sí.
+              onLongPress: kDebugMode
+                  ? () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => const DesignCatalogScreen()),
+                      )
+                  : null,
+              child: Row(
+                children: [
+                  if (showLogo) ...[
+                    const AppLogo(size: 28),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Color de título: hereda `headlineSmall` del tema
+                        // (azul oscuro, docs/06-design-system.md §3.4) — ya
+                        // no se pisa con `AppColors.primary` a mano.
+                        Text(
+                          titulo,
+                          style: theme.textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        if (subtitulo != null)
+                          Text(subtitulo!, style: theme.textTheme.bodySmall),
+                      ],
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
           trailing ??
@@ -206,7 +235,11 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.primary : AppColors.inactiveBlue;
+    final colorScheme = Theme.of(context).colorScheme;
+    // `secondary`: color de CONTENIDO sobre blanco para el estado inactivo —
+    // no un fondo relleno (docs/06-design-system.md §3.4b). Reemplaza al
+    // antiguo `AppColors.inactiveBlue`.
+    final color = isSelected ? colorScheme.primary : colorScheme.secondary;
 
     return GestureDetector(
       onTap: onTap,
@@ -218,7 +251,7 @@ class _NavItem extends StatelessWidget {
           decoration: isSelected
               ? BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.08),

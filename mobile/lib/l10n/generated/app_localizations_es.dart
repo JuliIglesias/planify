@@ -98,6 +98,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeUpcomingEvents => 'Próximos eventos';
 
   @override
+  String get homeSeeAll => 'Ver todos';
+
+  @override
   String get homeRecentActivity => 'Actividad reciente';
 
   @override

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_button.dart';
+import '../../core/widgets/app_person_row.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'data/friends_repository.dart';
 
@@ -85,11 +86,19 @@ class _FriendPickerSheetState extends ConsumerState<_FriendPickerSheet> {
                           // toda la fila por defecto (no solo el checkbox);
                           // acá se suma el email como una sola unidad
                           // visual con el username.
+                          // CheckboxListTile ya hace clickeable toda la fila
+                          // por defecto — no hay una versión "checkbox" de
+                          // AppPersonRow, así que se queda como está, solo
+                          // con el color del subtítulo migrado al tema.
                           CheckboxListTile(
                             title: Text(amigo.username),
                             subtitle: amigo.email != null
-                                ? Text(amigo.email!,
-                                    style: const TextStyle(color: AppColors.textSecondary))
+                                ? Text(
+                                    amigo.email!,
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                  )
                                 : null,
                             value: _seleccionados.containsKey(amigo.id),
                             onChanged: (v) => setState(() {
@@ -101,13 +110,10 @@ class _FriendPickerSheetState extends ConsumerState<_FriendPickerSheet> {
                             }),
                           )
                         else
-                          ListTile(
-                            leading: const Icon(Icons.person_outline),
-                            title: Text(amigo.username),
-                            subtitle: amigo.email != null
-                                ? Text(amigo.email!,
-                                    style: const TextStyle(color: AppColors.textSecondary))
-                                : null,
+                          AppPersonRow(
+                            nombre: amigo.username,
+                            subtitulo: amigo.email,
+                            avatarUrl: amigo.avatarUrl,
                             onTap: () => Navigator.pop(context, [amigo]),
                           ),
                     ],
@@ -118,16 +124,11 @@ class _FriendPickerSheetState extends ConsumerState<_FriendPickerSheet> {
             if (widget.multiple)
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _seleccionados.isEmpty
-                        ? null
-                        : () => Navigator.pop(context, _seleccionados.values.toList()),
-                    child: Text(
-                      l10n.friendsPickConfirm(_seleccionados.length),
-                    ),
-                  ),
+                child: AppButton(
+                  label: l10n.friendsPickConfirm(_seleccionados.length),
+                  onPressed: _seleccionados.isEmpty
+                      ? null
+                      : () => Navigator.pop(context, _seleccionados.values.toList()),
                 ),
               ),
             const SizedBox(height: AppSpacing.sm),

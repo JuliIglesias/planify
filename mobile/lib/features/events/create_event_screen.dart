@@ -5,8 +5,8 @@ import 'package:intl/intl.dart';
 import 'data/ai_events_repository.dart';
 import 'data/events_repository.dart';
 import 'data/tasks_repository.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -274,11 +274,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final grupos = ref.watch(groupsOverviewProvider);
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: colorScheme.surface,
         title: Text(l10n.eventCreateTitle),
       ),
       body: Padding(
@@ -288,7 +289,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
           children: [
             LinearProgressIndicator(
               value: _paso == 0 ? 0.5 : 1.0,
-              backgroundColor: AppColors.border,
+              backgroundColor: colorScheme.outline,
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
@@ -305,19 +306,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     ? Column(
                         children: [
                           // HU-42: describir el evento y que la IA lo pre-arme.
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: _generandoIA || _creando ? null : _generarConIA,
-                              icon: _generandoIA
-                                  ? const SizedBox(
-                                      height: 16,
-                                      width: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    )
-                                  : const Icon(Icons.auto_awesome, size: 18),
-                              label: Text(l10n.eventAiButton),
-                            ),
+                          AppButton(
+                            label: l10n.eventAiButton,
+                            variant: AppButtonVariant.outlined,
+                            icon: Icons.auto_awesome,
+                            loading: _generandoIA,
+                            onPressed: _generandoIA || _creando ? null : _generarConIA,
                           ),
                           const SizedBox(height: AppSpacing.md),
                           AppTextField(
@@ -353,25 +347,23 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                           // puntual, que sigue saliendo del heatmap).
                           InkWell(
                             onTap: _creando ? null : _elegirRango,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                   vertical: AppSpacing.sm),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.date_range_outlined,
-                                      color: AppColors.primary),
+                                  Icon(Icons.date_range_outlined, color: colorScheme.primary),
                                   const SizedBox(width: AppSpacing.sm),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
+                                      // `bodySmall` ya usa el gris
+                                      // secundario del tema.
                                       children: [
                                         Text(l10n.eventDateRangeLabel,
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                                    color: AppColors
-                                                        .textSecondary)),
+                                            style: theme.textTheme.bodySmall),
                                         Text(
                                           _formatearRango(_rango),
                                           style: theme.textTheme.bodyLarge,
@@ -379,8 +371,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                                       ],
                                     ),
                                   ),
-                                  const Icon(Icons.chevron_right,
-                                      color: AppColors.textSecondary),
+                                  Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
                                 ],
                               ),
                             ),
@@ -388,15 +379,14 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                           const SizedBox(height: AppSpacing.md),
                           Row(
                             children: [
-                              const Icon(Icons.info_outline,
-                                  size: 16, color: AppColors.textSecondary),
+                              Icon(Icons.info_outline,
+                                  size: 16, color: colorScheme.onSurfaceVariant),
                               const SizedBox(width: AppSpacing.xs),
+                              // `bodySmall` ya usa el gris secundario del tema.
                               Expanded(
                                 child: Text(
                                   l10n.eventDateComesLater,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
+                                  style: theme.textTheme.bodySmall,
                                 ),
                               ),
                             ],
@@ -479,28 +469,26 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
               children: [
                 if (_paso == 1)
                   Expanded(
-                    child: OutlinedButton(
+                    child: AppButton(
+                      label: l10n.eventBack,
+                      variant: AppButtonVariant.outlined,
+                      fullWidth: false,
                       onPressed:
                           _creando ? null : () => setState(() => _paso = 0),
-                      child: Text(l10n.eventBack),
                     ),
                   ),
                 if (_paso == 1) const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   flex: 2,
-                  child: FilledButton(
+                  child: AppButton(
+                    label: _paso == 0 ? l10n.eventNext : l10n.eventCreate,
+                    fullWidth: false,
+                    loading: _creando,
                     onPressed: _creando
                         ? null
                         : _paso == 0
                             ? (_paso1Valido ? () => setState(() => _paso = 1) : null)
                             : (_paso2Valido ? _crear : null),
-                    child: _creando
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(_paso == 0 ? l10n.eventNext : l10n.eventCreate),
                   ),
                 ),
               ],

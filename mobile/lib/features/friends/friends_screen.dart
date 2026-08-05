@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_person_row.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'data/friends_repository.dart';
@@ -88,7 +88,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.friendsTitle),
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
       ),
       // F1 — pull-to-refresh, mismo patrón/componente que Home.
       body: RefreshIndicator(
@@ -111,7 +111,13 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 child: Center(child: CircularProgressIndicator()),
               ),
             for (final p in _resultados)
-              ListTile(
+              // AppPersonRow (docs/06-design-system.md §6.1) reemplaza el
+              // ListTile a mano — mismo patrón repetido 4 veces en esta
+              // pantalla (hallazgo de Fase 1 §2.2).
+              AppPersonRow(
+                nombre: p.username,
+                subtitulo: p.email,
+                avatarUrl: p.avatarUrl,
                 // Item 3 — toda la fila envía la solicitud, no solo el botón;
                 // el botón se queda como indicador visual de la acción.
                 onTap: () => _accion(
@@ -119,16 +125,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                       ref.read(friendsRepositoryProvider).enviarSolicitud(p.id),
                   l10n.friendsRequestSent,
                 ),
-                leading: const Icon(Icons.person_outline),
-                title: Text(p.username),
-                // El email en gris ayuda a confirmar que es la persona
-                // correcta, como una sola unidad visual con el username.
-                subtitle: p.email != null
-                    ? Text(
-                        p.email!,
-                        style: const TextStyle(color: AppColors.textSecondary),
-                      )
-                    : null,
                 trailing: TextButton(
                   onPressed: () => _accion(
                     () => ref
@@ -162,7 +158,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         for (final s in lista)
-                          ListTile(
+                          AppPersonRow(
+                            nombre: s.de.username,
+                            subtitulo: s.de.email,
+                            avatarUrl: s.de.avatarUrl,
                             // Item 3 — toda la fila acepta, no solo el botón.
                             onTap: () => _accion(
                               () => ref
@@ -170,16 +169,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                   .aceptar(s.amistadId),
                               l10n.friendsAccept,
                             ),
-                            leading: const Icon(Icons.person_add_alt),
-                            title: Text(s.de.username),
-                            subtitle: s.de.email != null
-                                ? Text(
-                                    s.de.email!,
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  )
-                                : null,
                             trailing: FilledButton(
                               onPressed: () => _accion(
                                 () => ref
@@ -207,22 +196,15 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         for (final s in lista)
-                          ListTile(
-                            leading: const Icon(Icons.send_outlined),
-                            title: Text(s.para.username),
-                            subtitle: s.para.email != null
-                                ? Text(
-                                    s.para.email!,
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  )
-                                : null,
+                          AppPersonRow(
+                            nombre: s.para.username,
+                            subtitulo: s.para.email,
+                            avatarUrl: s.para.avatarUrl,
                             trailing: Text(
                               l10n.friendsPending,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                              ),
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
                             ),
                           ),
                       ],
@@ -248,15 +230,23 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
               data: (lista) => lista.isEmpty
                   ? Padding(
                       padding: const EdgeInsets.all(AppSpacing.md),
+                      // `bodyMedium` (default de Text sin estilo) es el gris
+                      // de cuerpo del tema — se agrega el override para el
+                      // gris SECUNDARIO que pedía el diseño original.
                       child: Text(
                         l10n.friendsEmpty,
-                        style: const TextStyle(color: AppColors.textSecondary),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
                       ),
                     )
                   : Column(
                       children: [
                         for (final p in lista)
-                          ListTile(
+                          AppPersonRow(
+                            nombre: p.username,
+                            subtitulo: p.email,
+                            avatarUrl: p.avatarUrl,
                             // Item 4 — toca cualquier parte de la fila para
                             // ver el perfil de solo lectura de ese amigo.
                             onTap: () => Navigator.of(context).push(
@@ -265,21 +255,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                     FriendProfileScreen(usuarioId: p.id),
                               ),
                             ),
-                            leading: const Icon(
-                              Icons.person,
-                              color: AppColors.primary,
-                            ),
-                            title: Text(p.username),
-                            // Item 3 — email en gris debajo del username, como
-                            // una sola unidad visual.
-                            subtitle: p.email != null
-                                ? Text(
-                                    p.email!,
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  )
-                                : null,
                           ),
                       ],
                     ),

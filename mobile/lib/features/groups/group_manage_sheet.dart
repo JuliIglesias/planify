@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/models/models.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/app_text_field.dart';
@@ -79,10 +78,10 @@ class _GestionGrupoSheetState extends ConsumerState<_GestionGrupoSheet> {
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              // `bodySmall` ya usa el gris secundario del tema.
               child: Text(
                 '${l10n.groupsMembers}: ${widget.grupo.miembros.length}',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: AppColors.textSecondary),
+                style: theme.textTheme.bodySmall,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -165,12 +164,14 @@ class _GestionGrupoSheetState extends ConsumerState<_GestionGrupoSheet> {
               },
             ),
 
-            // HU-33 — abandonar el grupo
+            // HU-33 — abandonar el grupo. Acción destructiva —
+            // `colorScheme.error`, no el rojo financiero (mismo criterio que
+            // "Cerrar sesión" en Perfil, docs/06-design-system.md §3.6).
             ListTile(
-              leading: const Icon(Icons.logout, color: AppColors.danger),
+              leading: Icon(Icons.logout, color: theme.colorScheme.error),
               title: Text(
                 l10n.groupsLeave,
-                style: const TextStyle(color: AppColors.danger),
+                style: TextStyle(color: theme.colorScheme.error),
               ),
               enabled: !_ocupado,
               onTap: () async {
@@ -185,7 +186,9 @@ class _GestionGrupoSheetState extends ConsumerState<_GestionGrupoSheet> {
                         child: Text(l10n.commonCancel),
                       ),
                       FilledButton(
-                        style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Theme.of(ctx).colorScheme.error,
+                        ),
                         onPressed: () => Navigator.pop(ctx, true),
                         child: Text(l10n.commonConfirm),
                       ),

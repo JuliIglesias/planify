@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/models.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_semantic_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../core/widgets/app_dialog.dart';
@@ -276,8 +276,13 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
                     aportado.toStringAsFixed(2),
                     _total.toStringAsFixed(2),
                   ),
+                  // "Cuadra" es una validación (¿suma lo mismo que el
+                  // total?), no un estado financiero — success/error, no
+                  // success/danger (docs/06-design-system.md §3.6).
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: cuadra ? AppColors.success : AppColors.danger,
+                        color: cuadra
+                            ? context.appSemanticColors.success
+                            : Theme.of(context).colorScheme.error,
                       ),
                 ),
               ),

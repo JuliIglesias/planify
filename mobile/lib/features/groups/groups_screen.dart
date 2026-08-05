@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/models/models.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_avatar.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/event_card.dart';
 import '../../core/widgets/unread_dot.dart';
@@ -155,6 +155,7 @@ class _CarruselDeGrupos extends ConsumerWidget {
         itemBuilder: (context, i) {
           final grupo = grupos[i];
           final activo = grupo.id == seleccionadoId;
+          final colorScheme = Theme.of(context).colorScheme;
 
           return GestureDetector(
             onTap: () =>
@@ -167,23 +168,16 @@ class _CarruselDeGrupos extends ConsumerWidget {
                   Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      CircleAvatar(
+                      // AppAvatar (docs/06-design-system.md §6.1) reemplaza
+                      // el CircleAvatar + cálculo de iniciales duplicado.
+                      AppAvatar(
+                        nombre: grupo.nombre,
+                        imageUrl: grupo.avatarUrl,
                         radius: 26,
                         backgroundColor: activo
-                            ? AppColors.primary
-                            : AppColors.primary.withValues(alpha: 0.15),
-                        backgroundImage: grupo.avatarUrl != null
-                            ? NetworkImage(grupo.avatarUrl!)
-                            : null,
-                        child: grupo.avatarUrl == null
-                            ? Text(
-                                _iniciales(grupo.nombre),
-                                style: TextStyle(
-                                  color: activo ? Colors.white : AppColors.primary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              )
-                            : null,
+                            ? colorScheme.primary
+                            : colorScheme.primary.withValues(alpha: 0.15),
+                        foregroundColor: activo ? colorScheme.onPrimary : colorScheme.primary,
                       ),
                       Positioned(
                         right: -2,
@@ -200,7 +194,7 @@ class _CarruselDeGrupos extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           fontWeight: activo ? FontWeight.bold : FontWeight.normal,
-                          color: activo ? AppColors.primary : AppColors.textSecondary,
+                          color: activo ? colorScheme.primary : colorScheme.onSurfaceVariant,
                         ),
                   ),
                   // E1 — se sacó el badge de texto "NUEVO" (no se iba nunca:
@@ -221,13 +215,6 @@ class _CarruselDeGrupos extends ConsumerWidget {
       ),
     );
   }
-
-  static String _iniciales(String nombre) {
-    final partes = nombre.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (partes.isEmpty) return '?';
-    if (partes.length == 1) return partes.first.characters.first.toUpperCase();
-    return (partes.first.characters.first + partes[1].characters.first).toUpperCase();
-  }
 }
 
 class _EventoDeGrupoCard extends StatelessWidget {
@@ -238,46 +225,48 @@ class _EventoDeGrupoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
 
     final fecha = evento.fechaHoraInicio != null
         ? DateFormat("EEEE d 'de' MMMM · HH:mm", 'es').format(evento.fechaHoraInicio!)
         : l10n.commonToBeDefined;
 
+    // Constructores semánticos de EventCardPill (docs/06-design-system.md
+    // §6.2) — reemplazan los 8 `Color(0x...)` hardcodeados que traía cada
+    // pill (tonos "de catálogo" de Material pegados a mano, ninguno de la
+    // paleta de marca).
     final pills = [
       if (evento.necesitaDecisionRango)
-        const EventCardPill(
-          label: 'Decisión pendiente',
+        // Bug de i18n corregido (docs/05-fixes.md): usaba el string
+        // 'Decisión pendiente' hardcodeado en vez de esta clave, que ya
+        // existía con el mismo texto en español (y no tenía traducción al
+        // inglés — se agregó `app_en.arb` en el mismo cambio).
+        EventCardPill.danger(
+          label: l10n.eventUrgentDecision,
           icon: Icons.warning_amber_outlined,
-          backgroundColor: Color(0xFFFFEBEE), // Light red
-          foregroundColor: Color(0xFFC62828), // Dark red
+          context: context,
         ),
       if (evento.noLeidos > 0)
-        EventCardPill(
+        EventCardPill.info(
           label: l10n.unreadActivities(evento.noLeidos),
           icon: Icons.chat_bubble_outline,
-          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-          foregroundColor: theme.colorScheme.primary,
+          context: context,
         ),
-      EventCardPill(
+      EventCardPill.success(
         label: l10n.groupsConfirmed(evento.confirmados),
         icon: Icons.people_outline,
-        backgroundColor: const Color(0xFFE8F5E9), // Light green
-        foregroundColor: const Color(0xFF2E7D32), // Dark green
+        context: context,
       ),
       if (evento.tareasPendientes > 0)
-        EventCardPill(
+        EventCardPill.warning(
           label: l10n.groupsPendingTasks(evento.tareasPendientes),
           icon: Icons.assignment_outlined,
-          backgroundColor: const Color(0xFFFFF8E1), // Light amber
-          foregroundColor: const Color(0xFFF57F17), // Dark amber
+          context: context,
         ),
       if (evento.gastos > 0)
-        EventCardPill(
+        EventCardPill.accent(
           label: l10n.groupsExpenses(evento.gastos),
           icon: Icons.monetization_on_outlined,
-          backgroundColor: const Color(0xFFFFECEB), // Light coral/red
-          foregroundColor: const Color(0xFFD84315), // Dark coral/red
+          context: context,
         ),
     ];
 

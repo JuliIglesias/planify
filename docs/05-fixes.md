@@ -1,3 +1,426 @@
+## Bugs de i18n corregidos (a pedido del usuario, mismo PR)
+
+Los 2 bugs de i18n encontrados durante la Fase 3 (Home y Grupos, ver sus
+secciones más abajo) — el usuario pidió corregirlos en este mismo PR:
+
+- **Home — "Ver todos":** no tenía ninguna clave de traducción; se agregó
+  `homeSeeAll` (`"Ver todos"` / `"See all"`) a ambos ARB y se conectó en
+  `home_screen.dart`.
+- **Grupos — "Decisión pendiente":** ya existía `eventUrgentDecision` con
+  el texto correcto en español, pero **le faltaba la traducción al
+  inglés** en `app_en.arb` (por eso `flutter gen-l10n` avisaba "3
+  untranslated message(s)" desde antes de esta tanda — no lo generé yo,
+  ya estaba así) — sin esa clave, el string quedaba hardcodeado en español
+  sin importar el idioma. Se agregó `"Pending decision"` al ARB en inglés
+  y se conectó `l10n.eventUrgentDecision` en `groups_screen.dart`
+  reemplazando el literal.
+- `flutter gen-l10n` corrido para regenerar `lib/l10n/generated/` — pasó
+  de 3 a 2 mensajes sin traducir en inglés. Los 2 restantes
+  (`unreadActivities`, `groupsUpdateImage`) son de una categoría distinta:
+  ya usan su clave de traducción correctamente en el código en los dos
+  casos (no son literales hardcodeados como los de arriba), solo les
+  falta la traducción al inglés en `app_en.arb` — no forman parte de los 2
+  bugs que se pidió corregir en esta tanda, quedan anotados por si se
+  quiere resolver la paridad ES/EN completa en otro momento.
+- **Tests:** ningún test dependía del string literal en español (`grep`
+  confirmado); `flutter analyze` limpio, 124/124 tests pasan.
+
+---
+
+# Design System v2 — Fase 3: aplicación pantalla por pantalla
+
+> Orden acordado: Login/Registro → Home → Perfil → Grupos → Balances →
+> Evento → Amigos → resto. Refactor de presentación puro — sin cambios de
+> comportamiento. Cada pantalla, su propio commit, tests corridos antes de
+> pasar a la siguiente.
+
+## Home
+
+- **`app_scaffold.dart` (`AppHeader`):** nuevo prop `showLogo` (default
+  `false`) — agrega `AppLogo` (28dp, ligero ajuste sobre los 24dp
+  propuestos en Fase 1 para balancear mejor con `headlineSmall`) a la
+  izquierda del título. Solo se activa en Home.
+- **`home_screen.dart`:** `showLogo: true` en su `AppHeader`. Colores de
+  "Me deben"/"Debo" pasan de `AppColors.success`/`AppColors.danger`
+  directos a `context.appSemanticColors.success`/`.danger` (vía tema, Fase
+  2). Overrides redundantes de color (`labelMedium`/`bodySmall` +
+  `AppColors.textSecondary`) eliminados — esos roles ya son ese gris por
+  default desde el `TextTheme` nuevo.
+- **Radios/spacing/tipografía:** ya estaban dentro de la escala — el
+  carrusel de eventos usa `EventoResumenCard`/`EventCard` (ya
+  retematizados en Fase 2), sin literales sueltos en la pantalla misma.
+- **Bug encontrado, NO corregido (fuera de alcance de este PR, avisado en
+  vez de mezclado):** el botón "Ver todos" (`home_screen.dart`, sobre
+  "Próximos eventos") tiene el texto **hardcodeado en español**
+  (`Text('Ver todos')`), sin pasar por `AppLocalizations` — viola la
+  política propia del proyecto ("i18n desde el día 1", comentario en
+  `pubspec.yaml`, NFR6). Es un bug de i18n preexistente, no algo que haya
+  tocado este refactor de presentación — **pendiente de confirmación del
+  usuario** para corregirlo (agregar clave `homeViewAll`/`homeSeeAll` a
+  `app_es.arb`/`app_en.arb`) en este mismo PR o en uno aparte.
+- **Tests:** `screens_test.dart`, `activity_grouping_test.dart`,
+  `app_shell_layout_test.dart` (49 tests) sin modificar — pasan tal cual.
+  Suite completa: 124/124.
+
+## Historial y Notificaciones ("cualquier pantalla restante")
+
+Las 2 pantallas que quedaban sin tocar de todo `lib/features/`.
+
+- **`history_screen.dart`:** AppBar → tema. Punto/barra de la línea de
+  tiempo (`AppColors.primary`/`.border`) → `colorScheme.primary`/`.outline`.
+  Encabezado de mes: se saca el `color: AppColors.primary` explícito — el
+  comentario del propio código decía "misma jerarquía que los encabezados
+  de sección de Home", y Home ya no pisa el color ahí (hereda el azul
+  oscuro del `TextTheme`, Fase 2) — sacar el override acá completa esa
+  consistencia que el comentario original ya pedía. `montoColor` del
+  `EventCard` migrado a `context.appSemanticColors`.
+- **`notifications_screen.dart`:** AppBar → tema; encabezado de día
+  (`labelSmall` + `textSecondary`) → override de color eliminado
+  (`labelSmall` ya es ese gris por default). `colorDeActividad`/
+  `iconoDeActividad` (de `activity_presentation.dart`) se siguen usando acá
+  tal cual — mismo criterio ya documentado en la sección de Evento.
+- **Sin bugs encontrados.**
+- **Tests:** los casos de `HistoryScreen` en `screens_test.dart` y
+  `notifications_test.dart` completo (46 tests en esta corrida) sin
+  modificar. Suite completa: 124/124.
+
+## Verificación final — sin colores hex sueltos fuera del tema
+
+Lo que pedía la consigna literal — `grep` de `#`/`Color(0x` fuera del
+archivo de theme:
+
+```
+grep -rn "Color(0x" lib --include="*.dart" | grep -v "core/theme/"
+→ sin resultados (0 coincidencias de código real — solo quedan 2
+  comentarios que MENCIONAN "Color(0x..." al explicar qué se migró)
+```
+
+**Cero colores hex hardcodeados sueltos en toda la app.** Los 8 originales
+de `groups_screen.dart` (Fase 1 §2.1) y los 2 `Colors.*` de Material puro
+en `event_detail_screen.dart` (hallazgo de Fase 1, el resto de la lista)
+ya se migraron en sus respectivos pasos — no quedó ninguno sin poder
+migrar.
+
+**Chequeo extra, más allá de lo pedido:** también grepeé referencias
+simbólicas a `AppColors.xxx` (no son hex hardcodeados — son referencias al
+token centralizado, exactamente lo que se supone que hay que usar — pero
+quería ver cuántas quedaban apuntando a la constante estática en vez de
+`Theme.of(context).colorScheme.xxx`/`context.appSemanticColors`). Quedan
+bastantes, todas en archivos de **componentes** (`core/widgets/*.dart`:
+`app_scaffold.dart`, `auth_scaffold.dart`, `avatar_stack.dart`,
+`event_card.dart`, `pill_toggle.dart`, `quick_action_button.dart`,
+`status_badge.dart`, `unread_dot.dart`, `weekly_availability_grid.dart`) más
+`activity_presentation.dart` — **ninguna pantalla** (`lib/features/*_screen.dart`)
+quedó con una referencia real a `AppColors` (los 2 hits que aparecieron ahí
+al gerpear eran comentarios explicativos, no código). Es una decisión
+tomada en Fase 2 y sostenida a propósito en Fase 3: esos componentes ya
+usan la paleta correcta (Fase 2 actualizó los valores de `AppColors`), así
+que no hay ningún bug visual — solo quedó pendiente la migración
+arquitectónica de "constante estática" a "vía tema" en la librería de
+componentes en sí, que no formaba parte del pedido explícito de ninguna
+fase (Fase 2 pedía construir los componentes nuevos y re-tematizar los
+existentes con la paleta nueva — ya está — no pedía que cada línea interna
+leyera del `ColorScheme` en vez de `AppColors`). Se puede encarar como un
+PR chico de limpieza aparte si querés, mismo criterio que
+`activity_presentation.dart`.
+
+## Amigos
+
+Última pantalla explícita de la lista — y donde `AppPersonRow` (construido
+en Fase 2, sin usar hasta ahora) se conecta por primera vez.
+
+- **`friends_screen.dart`:** las 4 filas "persona" duplicadas (resultados de
+  búsqueda, solicitudes recibidas, solicitudes enviadas, lista de amigos —
+  el hallazgo más repetido de la auditoría de Fase 1, §2.2) migradas a
+  `AppPersonRow`. Cambio visual real, no solo de color: pasa de un ícono
+  genérico (`Icons.person_outline`/`.person_add_alt`/etc.) a un avatar con
+  iniciales por persona — es la modernización de UX/UI que pediste, no un
+  efecto secundario accidental. AppBar y overrides de `textSecondary`
+  migrados al tema.
+- **`friend_picker.dart`:** la variante de selección única (`ListTile`) →
+  `AppPersonRow`. La variante múltiple (`CheckboxListTile`) se queda igual
+  — no hay (todavía) una versión con checkbox de `AppPersonRow`, forzarla
+  hubiera significado reconstruir el checkbox a mano adentro; solo se migró
+  el color de su subtítulo. Botón de confirmar selección
+  (`SizedBox`+`FilledButton`) → `AppButton`.
+- **`friend_profile_screen.dart`:** el avatar del encabezado y el de cada
+  "grupo en común" — ambos con su propio `CircleAvatar` + cálculo de
+  iniciales duplicado (un tercer lugar con esa lógica, además de los ya
+  encontrados en `AvatarStack`/Grupos) — migrados a `AppAvatar`. Estos dos
+  usan un estilo "pastel" (fondo claro + iniciales en color, no blanco)
+  distinto del `AppAvatar` sólido de `AvatarStack`/Grupos — se preservó
+  pasando `backgroundColor`/`foregroundColor` explícitos en vez de forzar
+  el default sólido, para no aplanar una diferencia visual que ya existía
+  a propósito. El heatmap comparado (4 colores: coincidimos/solo
+  yo/solo el amigo/ninguno) migrado de `AppColors` sueltos a
+  `colorScheme`/`context.appSemanticColors`. Borde de la leyenda y texto
+  vacío migrados al tema.
+  - **Nota de comportamiento menor, no un bug de negocio:** la función
+    `_iniciales` local que se eliminó calculaba "primera letra + última
+    palabra" para nombres de 3+ palabras; `initialsOf` (la utilidad
+    compartida que ya usa `AppAvatar`) calcula "primera letra + segunda
+    palabra". Para "Juan Carlos Pérez" cambia de "JP" a "JC". Solo afecta
+    la letra de fallback de un avatar decorativo (sin foto), ningún dato ni
+    lógica de negocio — se aplicó sin pedir confirmación aparte por ser
+    puramente cosmético, pero queda documentado por transparencia.
+- **Tests:** `friends_screen_test.dart` (9 casos) y
+  `friend_profile_screen_test.dart` sin modificar. Suite completa: 124/124.
+
+## Evento (detalle, configuración, crear evento, modales de Gasto/Tarea)
+
+La pantalla más grande de esta fase — 7 archivos, ~2600 líneas. Cambios por
+archivo:
+
+- **`event_detail_screen.dart`:**
+  - Banner del link de invitación → `primaryContainer`/`onPrimaryContainer`
+    (mismo patrón que Login/Balances); radio suelto `8` → `AppSpacing.radiusSm`.
+  - Confirmar "Cancelar evento" (botón del diálogo) y el `StatusBadge`
+    "Cancelado" → `colorScheme.error` (acción/estado destructivo), no el
+    rojo financiero.
+  - Los 4 `QuickActionButton` de acciones rápidas → `context.appSemanticColors`
+    (antes `AppColors.danger/warning/success` directos).
+  - **2 colores de Material puro genuinamente hardcodeados (hallazgo de
+    Fase 1 §2.1), los únicos de toda la pantalla que no eran ni siquiera
+    tokens propios:** `Colors.orange` (acción "Deshacer" al descompletar
+    tarea) → `semantic.warning`; `Colors.grey.shade600` (acción
+    "Desasignar") → `colorScheme.onSurfaceVariant`. También "Eliminar" →
+    `colorScheme.error` (destructivo).
+  - `_InfoRow` (ícono primario + `AppColors.textPrimary` en `bodyLarge`):
+    el override de `textPrimary` se saca (`bodyLarge` ya es ese gris por
+    default).
+  - Varios overrides redundantes de `bodySmall`/`AppColors.textSecondary`
+    eliminados.
+- **`event_config_screen.dart`:** banner de "rango vencido" y sus íconos
+  (`AppColors.warning`) → `semantic.warning`; botones de asistencia
+  (`AppColors.danger`/`.success`) → `semantic.danger`/`.success`; AppBar
+  → `colorScheme.surface`; overrides redundantes de `textSecondary`
+  eliminados.
+- **`create_event_screen.dart`:** botón "Generar con IA" (`OutlinedButton.icon`
+  + spinner manual) → `AppButton(variant: outlined, loading: ...)`. Botones
+  "Atrás"/"Siguiente-Crear" (`OutlinedButton`/`FilledButton` + spinner
+  manual, en un `Row` con `Expanded`) → `AppButton(fullWidth: false, ...)`
+  — funciona igual de "full width" porque `Expanded` ya le da un ancho
+  fijo. Radio suelto `12` (hallazgo de Fase 1 §2.3) → `AppSpacing.cardRadius`
+  (se prefirió converger al token existente antes que crear uno nuevo para
+  un solo caso). Resto de `AppColors.primary`/`.textSecondary` → roles del
+  tema.
+- **`widgets/expense_dialog.dart`:** el color "cuadra o no cuadra" el total
+  pasa de `success`/`danger` (financiero) a `success`/`error` — es una
+  validación de formulario (¿suma lo mismo?), no un estado de deuda.
+- **`widgets/quick_expense_sheet.dart`:** ícono `AppColors.primary` → tema.
+- **`widgets/task_dialogs.dart`:** sin cambios — ya estaba limpio.
+- **Deliberadamente NO tocado, documentado:** `widgets/activity_presentation.dart`
+  (`colorDeActividad`) sigue devolviendo `AppColors.danger/success/primary/warning`
+  directos en vez de `context.appSemanticColors`/`colorScheme`. Es una
+  función pura sin `BuildContext` (`String tipo → Color`), compartida por
+  Home (ya migrado), este feed, y más adelante Notificaciones/Amigos —
+  cambiar su firma para aceptar `context` implicaría tocar pantallas que
+  todavía no tuvieron su turno en Fase 3. Los valores que devuelve ya son
+  correctos (la paleta de Fase 2), así que no hay ningún bug visual — es
+  una prolija arquitectónica pendiente para cuando le toque el turno a
+  Notificaciones/Amigos.
+- **Sin bugs de comportamiento encontrados.**
+- **Tests:** `screens_test.dart` (los casos de `EventDetailScreen`/
+  `AppShell`), `create_event_screen_test.dart`, `event_config_screen_test.dart`,
+  `expense_dialog_test.dart` (61 tests en total en esta corrida) sin
+  modificar. Suite completa: 124/124.
+
+## Balances / Saldos
+
+- **`balances_screen.dart`:** balance neto (`AppColors.success`/`.danger`
+  directos) → `context.appSemanticColors.success`/`.danger`. `_MiniResumen`
+  (cards "Me deben"/"Debo"): el `CircleAvatar` a mano con ícono adentro —
+  el mismo patrón "ícono en círculo pastel" que `QuickActionButton`/
+  `ActivityFeedItem`, tercera copia encontrada en la auditoría de Fase 1
+  (§2.2) — se reemplaza por `AppIconBadge`. Nota: el alpha del fondo pasa
+  de 0.15 (valor propio, sin relación con nada) a 0.12 (el que ya usan
+  `AppIconBadge`/pills en toda la app) — pequeño ajuste de armonización
+  visual, no de comportamiento. Override redundante de `labelMedium`
+  eliminado.
+- **`person_detail_sheet.dart`:** mismos 3 colores financieros
+  (`AppColors.danger/warning/success` → `context.appSemanticColors`) en
+  el encabezado y en cada fila de desglose por evento. El banner de "hay
+  compensación" pasa a `primaryContainer`/`onPrimaryContainer` (mismo
+  patrón que el banner de invitación pendiente de Login). Botón "Saldar
+  todo" (`FilledButton.icon` + spinner manual) → `AppButton(icon: ...,
+  loading: saldando)`. Varios overrides redundantes de `bodySmall`/
+  `labelSmall` con `AppColors.textSecondary` eliminados.
+- **Sin bugs encontrados.**
+- **Tests:** los 40 casos de `screens_test.dart` que tocan
+  `BalancesScreen`/`_DetallePersonaSheet` sin modificar. Suite completa:
+  124/124.
+
+## Grupos
+
+- **`groups_screen.dart` — los 8 `Color(0x...)` del hallazgo de Fase 1
+  (§2.1)**: reemplazados por 5 constructores semánticos nuevos de
+  `EventCardPill` (`.success/.warning/.danger/.info/.accent` — el último,
+  `.accent`, se agregó en este pase para el pill de "gastos", que no
+  encajaba en ninguno de los 4 de Fase 2 sin forzarlo).
+- **Avatar del carrusel de grupos**: el `CircleAvatar` a mano + `_iniciales`
+  duplicado (mismo cálculo que ya estaba en `AvatarStack`) se reemplaza por
+  `AppAvatar` — que ganó un `foregroundColor` opcional (extensión de su API,
+  no había forma de cubrir el estado "inactivo" con pastel + texto oscuro
+  sin él). Elimina la última duplicación de esa lógica en el código
+  (`core/utils/initials.dart` ya la había centralizado en Fase 2, pero acá
+  todavía quedaba una copia propia).
+- **`group_manage_sheet.dart`**: mismo criterio que "Cerrar sesión" en
+  Perfil — "Abandonar grupo" pasa de `AppColors.danger` (rojo financiero) a
+  `colorScheme.error` (acción destructiva), tanto en el ícono/texto del
+  `ListTile` como en el botón de confirmación del diálogo. Override
+  redundante de `bodySmall`+`textSecondary` eliminado.
+- **`group_availability_screen.dart`**: `AppColors.surface` del `AppBar` →
+  `colorScheme.surface`. El texto de hint (`bodyMedium`) mantiene su
+  override de color — a diferencia de `bodySmall`/`labelMedium`,
+  `bodyMedium` por default es el gris de CUERPO (casi negro), no el
+  secundario, así que sacar el override cambiaría el resultado visual; el
+  override se queda pero ahora vía `colorScheme.onSurfaceVariant` en vez de
+  `AppColors.textSecondary` suelto.
+- **Bugs encontrados, NO corregidos (mismo criterio que "Ver todos" de
+  Home — avisados, no mezclados):**
+  1. El pill "Decisión pendiente" tiene el texto hardcodeado en español
+     (`'Decisión pendiente'`), igual que "Ver todos" — a diferencia de ese
+     caso, acá **ya existe** una clave de traducción con el mismo texto
+     (`l10n.eventUrgentDecision`) sin usar en este sitio. Se podría
+     resolver con un cambio de una línea.
+  2. El pill de "gastos" (`l10n.groupsExpenses`) y el resto de los labels
+     de pills sí usan `l10n` correctamente — no es un patrón generalizado,
+     solo esos dos casos puntuales.
+- **Tests:** los 40 casos de `screens_test.dart` que cubren
+  `GroupsScreen`/`GroupAvailabilityScreen`/`group_manage_sheet` sin
+  modificar. Suite completa: 124/124.
+
+## Perfil
+
+- **`profile_screen.dart`:** `bodySmall` con override redundante de
+  `AppColors.textSecondary` eliminado (ya es ese gris por default). El
+  ícono/texto de "Cerrar sesión" pasa de `AppColors.danger` (rojo
+  financiero) a `colorScheme.error` — es una acción destructiva/de salida,
+  no un monto "debo"; son roles distintos a propósito desde Fase 2 (§3.6).
+  Import de `app_colors.dart` eliminado (ya no queda ningún uso directo).
+- **Sin duplicación de componentes que migrar:** la pantalla es
+  mayormente `ListTile`s de navegación (íconos + texto + chevron), ya
+  consistente con Material y sin necesidad de `AppPersonRow` (esa fila es
+  para personas, no para accesos de configuración).
+- **Sin bugs encontrados.**
+- **Tests:** `profile_screen_test.dart` + los casos de `ProfileScreen` en
+  `screens_test.dart` (41 tests en total en esta corrida) sin modificar.
+  Suite completa: 124/124.
+
+## Login / Registro
+
+- **`login_screen.dart`:** banner de invitación pendiente pasa de
+  `AppColors.primary.withValues(alpha: 0.08)` a mano →
+  `colorScheme.primaryContainer`/`onPrimaryContainer` (el par pensado
+  justo para superficies tintadas de marca). Botón "Ingresar"
+  (`ElevatedButton` + spinner manual) → `AppButton` (`loading: cargando`).
+  Botón "Continuar como Anónimo" (`OutlinedButton.icon` con `style:` a
+  mano) → `AppButton(variant: outlined, icon: ...)`. El texto de ayuda del
+  PIN pierde su `color: AppColors.textSecondary` explícito —
+  `bodySmall` ya lo hace por default desde el `TextTheme` nuevo (Fase 2).
+- **`register_screen.dart`:** mismo reemplazo de botón primario
+  (`ElevatedButton` + spinner manual → `AppButton(loading: ...)`). No tenía
+  ningún color hardcodeado.
+- **`auth_scaffold.dart` (`_AuthLogo`):** el placeholder vectorial
+  (`Icons.autorenew`, pendiente desde Tanda 6 Item 6) se reemplaza por el
+  logo real vía `AppLogo` (esquinas redondeadas, `AppSpacing.radiusLg` =
+  20dp) — mismo marco circular blanco con sombra de siempre, ahora con el
+  logo de marca adentro en vez del ícono genérico.
+- **Radios/spacing/tipografía:** ya estaban dentro de la escala (16/24/32,
+  `cardRadius`) — no hubo inconsistencias que corregir en estas 2
+  pantallas más allá de lo de arriba.
+- **Sin bugs encontrados** al tocar estas pantallas.
+- **Tests:** `login_screen_test.dart` (15/15) y `register_screen_test.dart`
+  (3/3) sin modificar — pasan tal cual, ninguno dependía de qué widget de
+  botón se usara por debajo, solo del texto/comportamiento. Suite completa:
+  124/124.
+
+---
+
+# Design System v2 — Fase 2: construcción (sin aplicar a pantallas)
+
+> Fase 1 (auditoría + propuesta) en [06-design-system.md](06-design-system.md).
+> Esta fase implementa el `ThemeData` centralizado y la librería de
+> componentes aprobados, sin tocar ninguna pantalla — eso es Fase 3,
+> pantalla por pantalla. Alcance de plataforma ampliado a Android+iOS
+> durante Fase 1 (confirmado por el usuario, ver nota en
+> [00-entendimiento.md](00-entendimiento.md) §8).
+
+**Tema central (`core/theme/`):**
+- `app_colors.dart` — paleta reemplazada por los 6 hex de marca exactos +
+  derivados (`error` propio, `success`/`warning` armonizados, `danger`
+  financiero sin tocar — docs/06-design-system.md §3).
+- `app_semantic_colors.dart` (nuevo) — `ThemeExtension` con
+  `success`/`warning`/`danger`, los 3 semánticos que M3 no modela como rol
+  nativo de `ColorScheme`.
+- `app_spacing.dart` — nuevos `radiusSm`/`radiusLg`/`radiusXl`/`xxl`,
+  formalizando literales (`20`, `28`) que ya se usaban de facto sin token.
+- `app_theme.dart` — reescrito: `ColorScheme` completo (antes solo 3 roles
+  vía `fromSeed`), split título/cuerpo en el `TextTheme` (títulos en azul
+  oscuro vía `onPrimaryContainer`, cuerpo sin cambios), `AppSemanticColors`
+  registrada como extensión. No se tocó `pageTransitionsTheme` (Flutter ya
+  da swipe-back nativo en iOS por default — verificado, docs/06 §1.2).
+
+**Componentes nuevos (`core/widgets/`):** `app_button.dart` (`AppButton`,
+5 variantes), `app_avatar.dart` (`AppAvatar`), `app_person_row.dart`
+(`AppPersonRow`), `app_icon_badge.dart` (`AppIconBadge`), `app_card.dart`
+(`AppCard`), `app_logo.dart` (`AppLogo`, logo con esquinas redondeadas —
+**todavía no conectado a Login/Registro/Home**, eso es Fase 3 explícito).
+`core/utils/initials.dart` (nuevo) — la lógica de iniciales que estaba
+duplicada en `AvatarStack` y `groups_screen.dart` (solo la primera se
+migró; `groups_screen.dart` es una pantalla, queda para su turno en Fase 3).
+
+**Componentes existentes re-tematizados (sin cambiar su API pública, así
+que ninguna pantalla que ya los use se rompe):** `AppHeader`/`AppBottomNav`
+(`app_scaffold.dart` — título hereda azul oscuro del tema,
+`AppColors.inactiveBlue` reemplazado por `colorScheme.secondary`, radio
+`20`→`AppSpacing.radiusLg`), `AuthScaffold` (color de "Planify" vía tema —
+el logo placeholder sigue siendo el ícono vectorial, Fase 3 lo reemplaza),
+`EventCard`/`BalanceRow`/`ActivityFeedItem` (título vía tema, radio
+tokenizado, ícono-en-círculo de `ActivityFeedItem` ahora usa
+`AppIconBadge`), `EventCardPill` (4 constructores semánticos nuevos —
+`.success/.warning/.danger/.info` — listos para reemplazar los 8
+`Color(0x...)` de `groups_screen.dart` en Fase 3), `PillToggle` (mismo
+reemplazo de `inactiveBlue`, radio tokenizado), `QuickActionButton` (reusa
+`AppIconBadge` internamente), `evento_resumen_card.dart` (radio
+tokenizado).
+
+**Catálogo de debug:** `core/debug/design_catalog_screen.dart` (nuevo) —
+todos los componentes de arriba juntos, para revisión visual. Dos formas de
+llegar: long-press sobre el título de cualquier `AppHeader` en build debug
+(`kDebugMode`, sin afectar producción), o el entrypoint dedicado
+`lib/dev_catalog_main.dart` (`flutter run -t lib/dev_catalog_main.dart`).
+
+**Ícono de la app:** `flutter_launcher_icons` configurado (Android + iOS,
+`pubspec.yaml`) y corrido — reemplazó los 5 `ic_launcher.png` default de
+Android (legacy + adaptive, fondo `#ECF4FF`) y generó el set completo de
+iOS (`Assets.xcassets/AppIcon.appiconset`) a partir de `assets/logo.png`
+(declarado como asset por primera vez).
+
+**Plataforma iOS:** se corrió `flutter create --platforms=ios .` (scaffold
+nativo nuevo en `mobile/ios/`, bundle id placeholder default de Flutter —
+docs/06-design-system.md §9.2 punto 5) — precondición para generar el
+ícono de iOS de arriba.
+
+**Validación:** `flutter analyze` limpio (0 issues), suite completa de
+tests **124/124 sin romper ninguno** (1 test tocado —
+`app_bottom_nav_test.dart`, que no wireaba `theme: AppTheme.light` y
+comparaba contra el token viejo `AppColors.inactiveBlue`, eliminado).
+Ninguna pantalla (`lib/features/*`) se tocó.
+
+**Pendiente de decisión del usuario antes de Fase 3:** los 3 puntos
+abiertos de docs/06-design-system.md §9.2 (bundle id real de iOS, tono
+exacto de `error`/`success`/`warning` si se quiere afinar más).
+
+**Catálogo como documentación (pedido post-aprobación de Fase 2):** el
+catálogo HTML de revisión se guardó versionado en
+[docs/design-system/](design-system/) (`catalog.html` + `tokens.json`,
+formato Tokens Studio/W3C para importar a Figma cuando el conector esté
+autorizado — ver [design-system/README.md](design-system/README.md) para
+el paso a paso).
+
+---
+
 # Tanda 7 - 12 bugs/UX + reglas de negocio de usernames anónimos
 
 > Orden de implementación acordado con el usuario: B1, B2 (bugs de Flutter,

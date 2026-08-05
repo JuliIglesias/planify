@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planify/core/theme/app_colors.dart';
+import 'package:planify/core/theme/app_theme.dart';
 import 'package:planify/core/widgets/app_scaffold.dart';
 import 'package:planify/l10n/generated/app_localizations.dart';
 
@@ -9,6 +10,11 @@ import 'package:planify/l10n/generated/app_localizations.dart';
 void main() {
   Widget conNavbar(int seleccionado, {ValueChanged<int>? onTap}) {
     return MaterialApp(
+      // `AppBottomNav` lee sus colores de `Theme.of(context).colorScheme`
+      // desde docs/06-design-system.md (antes eran constantes `AppColors`
+      // sueltas) — sin esto, el test correría contra el ColorScheme default
+      // de Flutter, no el de la app.
+      theme: AppTheme.light,
       locale: const Locale('es'),
       localizationsDelegates: const [
         ...AppLocalizations.localizationsDelegates,
@@ -61,7 +67,9 @@ void main() {
     expect(iconoGrupos.color, AppColors.primary);
 
     final iconoInicio = tester.widget<Icon>(find.byIcon(Icons.home_outlined));
-    expect(iconoInicio.color, AppColors.inactiveBlue);
+    // `AppColors.inactiveBlue` se reemplazó por `colorScheme.secondary`
+    // (docs/06-design-system.md §3.4b) — mismo valor de fondo, ahora vía tema.
+    expect(iconoInicio.color, AppColors.secondary);
   });
 
   testWidgets('tocar un tab dispara onTap con su índice', (tester) async {

@@ -110,8 +110,19 @@ Posicionamiento: alternativa integrada a usar **When2Meet + Splitwise** por sepa
 8. Capacitación del equipo
 9. Despliegue de versiones funcionales, incl. MVP inicial
 
-**Fuera de alcance (explícito):**
+**Fuera de alcance (explícito, según el charter original):**
 - Versión iOS o web
+
+> ⚠️ **Actualización de alcance (2026-08-05, confirmada directamente por el
+> usuario en chat, no por una revisión del PDF):** el ítem "Versión iOS" de
+> la lista de abajo **ya no aplica tal cual**. La decisión de negocio sigue
+> siendo Android-first (Play Store, ver §1/§9), pero el frontend mobile se
+> mantiene **Flutter multiplataforma de punta a punta** — código único,
+> sin ramas nativas separadas — para que compilar una versión iOS a futuro
+> sea solo cuestión de build, no de rediseño. Ver
+> [06-design-system.md](06-design-system.md) §1 para el detalle de qué
+> implica esto en el design system.
+
 - Pasarelas de pago / transacciones reales de dinero
 - Mensajería avanzada en tiempo real
 - Red social abierta / gestión de usuarios a gran escala

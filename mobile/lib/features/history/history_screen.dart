@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/models/models.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/money_format.dart';
 import '../../core/widgets/app_scaffold.dart';
@@ -26,7 +26,7 @@ class HistoryScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.historyTitle),
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
       ),
       body: historial.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -91,6 +91,8 @@ class _TimelineRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -104,14 +106,11 @@ class _TimelineRail extends StatelessWidget {
                 Container(
                   width: _diametroPunto,
                   height: _diametroPunto,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary,
-                  ),
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: colorScheme.primary),
                 ),
                 Expanded(
                   child: Center(
-                    child: Container(width: _anchoBarra, color: AppColors.border),
+                    child: Container(width: _anchoBarra, color: colorScheme.outline),
                   ),
                 ),
               ],
@@ -124,17 +123,18 @@ class _TimelineRail extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  // Item 3 — antes labelSmall (11sp): muy chico para el
+                  // encabezado principal de cada grupo. titleMedium/bold es
+                  // la misma jerarquía que usan los encabezados de sección
+                  // de Home ("Próximos eventos", "Actividad reciente") —
+                  // ya no se pisa el color a mano, hereda el azul oscuro
+                  // del tema igual que esos (docs/06-design-system.md §3.4).
                   child: Text(
                     mes.toUpperCase(),
-                    // Item 3 — antes labelSmall (11sp): muy chico para el
-                    // encabezado principal de cada grupo. titleMedium/bold
-                    // es la misma jerarquía que usan los encabezados de
-                    // sección de Home ("Próximos eventos", "Actividad
-                    // reciente"), por docs/guidelines.
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
                 child,
@@ -176,9 +176,9 @@ class _HistorialCard extends StatelessWidget {
       montoLabel: estado == SaldoEstado.pagar ? l10n.historyToPay : l10n.historyYourShare,
       monto: '\$${MoneyFormat.format(evento.monto)}',
       montoColor: switch (estado) {
-        SaldoEstado.pagar => AppColors.danger,
-        SaldoEstado.pendiente => AppColors.warning,
-        SaldoEstado.saldado => AppColors.success,
+        SaldoEstado.pagar => context.appSemanticColors.danger,
+        SaldoEstado.pendiente => context.appSemanticColors.warning,
+        SaldoEstado.saldado => context.appSemanticColors.success,
       },
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(

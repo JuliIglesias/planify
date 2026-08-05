@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/weekly_availability_grid.dart';
@@ -26,8 +25,10 @@ class GroupAvailabilityScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final matches = ref.watch(_disponibilidadDeGrupoProvider(grupoId));
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.groupAvailabilityTitle), backgroundColor: AppColors.surface),
+      appBar: AppBar(title: Text(l10n.groupAvailabilityTitle), backgroundColor: colorScheme.surface),
       body: matches.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => AsyncStateView(
@@ -40,10 +41,14 @@ class GroupAvailabilityScreen extends ConsumerWidget {
           children: [
             Text(
               l10n.groupAvailabilityHint(c.totalPersonas),
+              // bodyMedium por default es el gris de CUERPO (onSurface, casi
+              // negro) — este texto quiere el gris SECUNDARIO más claro, así
+              // que el override sigue haciendo falta (vía colorScheme, no
+              // AppColors suelto).
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(color: AppColors.textSecondary),
+                  ?.copyWith(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: AppSpacing.md),
             Card(

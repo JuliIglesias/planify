@@ -266,6 +266,12 @@ abstract class AppLocalizations {
   /// **'Próximos eventos'**
   String get homeUpcomingEvents;
 
+  /// No description provided for @homeSeeAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver todos'**
+  String get homeSeeAll;
+
   /// No description provided for @homeRecentActivity.
   ///
   /// In es, this message translates to:

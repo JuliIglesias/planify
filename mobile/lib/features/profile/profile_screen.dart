@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/locale_provider.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/avatar_stack.dart';
@@ -79,12 +78,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   },
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Text(
-                  l10n.profileAvailabilityHint,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                // `bodySmall` ya usa el gris secundario del tema.
+                Text(l10n.profileAvailabilityHint, style: theme.textTheme.bodySmall),
               ],
             ),
           ),
@@ -132,11 +127,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
           ),
         ),
+        // Acción destructiva/de salida — `colorScheme.error`, no el rojo
+        // financiero (docs/06-design-system.md §3.6: son roles distintos).
         ListTile(
-          leading: const Icon(Icons.logout, color: AppColors.danger),
+          leading: Icon(Icons.logout, color: theme.colorScheme.error),
           title: Text(
             l10n.profileLogout,
-            style: const TextStyle(color: AppColors.danger),
+            style: TextStyle(color: theme.colorScheme.error),
           ),
           onTap: () => ref.read(sessionControllerProvider.notifier).cerrarSesion(),
         ),

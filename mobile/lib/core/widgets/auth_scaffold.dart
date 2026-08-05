@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../../l10n/generated/app_localizations.dart';
+import 'app_logo.dart';
 
 /// Item 6 (Tanda 6) — chrome común a Login y Registro: logo + nombre de la
 /// app arriba, y una card blanca flotante abajo con el formulario.
@@ -46,17 +47,17 @@ class AuthScaffold extends StatelessWidget {
                   children: [
                     const _AuthLogo(),
                     const SizedBox(height: AppSpacing.sm),
+                    // Color de "Planify": hereda `displaySmall` del tema
+                    // (azul oscuro, docs/06-design-system.md §3.4) — ya no
+                    // se pisa con `AppColors.primary` a mano.
                     Text(
                       l10n.appName,
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       l10n.appTagline,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -65,7 +66,7 @@ class AuthScaffold extends StatelessWidget {
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.08),
@@ -102,6 +103,10 @@ class _AuthLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Fase 3 (Login/Registro) — reemplaza el placeholder vectorial
+    // (`Icons.autorenew`) por el logo real, redondeado (docs/06-design-system.md
+    // §7): el marco circular blanco con sombra se mantiene igual que antes,
+    // el `AppLogo` de adentro es lo nuevo.
     return Container(
       width: 72,
       height: 72,
@@ -116,7 +121,8 @@ class _AuthLogo extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(Icons.autorenew, color: AppColors.primary, size: 36),
+      alignment: Alignment.center,
+      child: const AppLogo(size: 56),
     );
   }
 }

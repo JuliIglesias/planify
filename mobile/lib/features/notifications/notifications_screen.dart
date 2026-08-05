@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/event_card.dart';
@@ -73,7 +72,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final feed = ref.watch(notificationsFeedProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.notificationsTitle), backgroundColor: AppColors.surface),
+      appBar: AppBar(
+        title: Text(l10n.notificationsTitle),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+      ),
       body: Column(
         children: [
           Padding(
@@ -131,12 +133,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         if (encabezado != encabezadoAnterior)
                           Padding(
                             padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
+                            // `labelSmall` ya usa el gris secundario del tema.
                             child: Text(
                               encabezado,
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
                         Padding(

@@ -4,6 +4,8 @@ export interface CrearParticipanteAnonimoData {
   eventoId: string;
   username: string;
   tokenSesion: string;
+  /** G1 (ADR 0003) — hash del PIN que el anónimo define al unirse. */
+  pinHash: string;
 }
 
 export interface CrearParticipanteRegistradoData {
@@ -28,12 +30,38 @@ export interface ParticipanteRepository {
   createAnonimo(data: CrearParticipanteAnonimoData): Promise<Participante>;
 
   /**
-   * Username único — HU-01/HU-27. Chequea contra TODOS los eventos (no solo
-   * uno): un participante anónimo puede aparecer en varios eventos, pero acá
-   * se busca si ALGUNA fila anónima ya usa ese username, para no chocar con
-   * una cuenta registrada que se quiera crear con el mismo. Case-insensitive.
+   * Username único — HU-01/HU-27. Chequea contra TODOS los eventos, pasados o
+   * presentes (a propósito — ver ADR 0003 §"Por qué no reusa esto G1"): se
+   * usa para que un username anónimo nunca choque con el de una cuenta
+   * REGISTRADA, que es una identidad permanente y no debería "liberarse"
+   * nunca por más que el evento del anónimo haya terminado. Case-insensitive.
    */
   existsUsernameAnonimo(username: string): Promise<boolean>;
+
+  /**
+   * G1 (ADR 0003) — la fila anónima de ESE username en ESE evento puntual
+   * (case-insensitive), si existe. Es la base para "recuperar la misma
+   * cuenta" al volver a entrar con las mismas credenciales.
+   */
+  findAnonimoPorEventoYUsername(eventoId: string, username: string): Promise<Participante | null>;
+
+  /**
+   * G1 (ADR 0003) — todas las filas anónimas (en cualquier evento) que usan
+   * este username, case-insensitive. `ParticipantsService` decide, evento
+   * por evento, si cada una todavía "reserva" el username o si ya se
+   * liberó (evento finalizado/cancelado + deudas saldadas) — el
+   * repositorio no sabe nada de esas reglas de negocio, solo devuelve las
+   * filas candidatas.
+   */
+  listAnonimosPorUsername(username: string): Promise<Participante[]>;
+
+  /**
+   * G1 (ADR 0003) — al recuperar una sesión anónima existente (mismo
+   * evento + username + PIN correcto), se emite un token de sesión nuevo
+   * en vez de reusar el viejo: mismo criterio que un login normal, para
+   * que un token viejo filtrado no siga sirviendo para siempre.
+   */
+  regenerarTokenSesion(id: string, tokenSesion: string): Promise<Participante>;
 
   /**
    * Materializa a un miembro registrado del grupo como participante del evento.

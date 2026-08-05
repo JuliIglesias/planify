@@ -3,9 +3,61 @@
 > Orden de implementación acordado con el usuario: B1, B2 (bugs de Flutter,
 > reproducidos antes de tocar código) → C1 (regla de negocio en tareas) →
 > A1, A2 (layout) → C2, D1, E1 (visuales/menores) → F1, F2 (Amigos) → G1
-> (identidad anónima por evento, **diferido** — ver nota al final de este
-> documento).
+> (identidad anónima por evento — el más grande, se hizo al final).
 
+## Item G1: Identidad anónima única por evento (username + PIN)
+
+**Diseño completo en `docs/adrs/0003-identidad-anonima-por-evento.md`** —
+tercera vuelta sobre el mismo tema (Tanda 1 item 5, Tanda 2 item 1), así
+que se documentó como ADR para no reabrir la discusión sin contexto, tal
+como pidió el usuario. Reemplaza el mecanismo viejo (auto-sufijo silencioso
+en cualquier colisión, contra cualquier evento, para siempre) por tres
+reglas confirmadas con el usuario:
+
+1. Solo se entra por link de invitación a un evento puntual + username (sin
+   cambios — ya era así, confirmado antes de tocar código).
+2. Username + **PIN** (nuevo, mínimo 4 caracteres) son las credenciales:
+   reingresar al MISMO evento con las MISMAS credenciales recupera la
+   MISMA fila de `Participante` (mismo historial), no crea una nueva.
+3. El mismo username **no** sirve para OTRO evento mientras el primero
+   sigue activo — se libera cuando ese evento termina (`finalizado` o
+   `cancelado`) Y no quedan deudas pendientes de ese evento. Una colisión
+   ahora se **rechaza** (con una sugerencia de alternativa), nunca se
+   auto-sufija en silencio.
+
+- **Backend:**
+  - **Schema:** `Participante.pinHash` (nullable, migración
+    `20260805100000_participante_pin_anonimo`).
+  - **`ParticipantsService.unirseComoAnonimo`** reescrito de punta a punta:
+    gana dos dependencias (`PasswordHasher`, reusa el mismo puerto que las
+    contraseñas de cuentas registradas; `DeudaRepository`, para el chequeo
+    de deudas pendientes de la regla 3). Reingreso vs. alta nueva se
+    distingue buscando primero si YA existe una fila anónima con ese
+    username en ESE evento (`findAnonimoPorEventoYUsername`, nuevo); el
+    token de sesión se regenera en cada reingreso exitoso (mismo criterio
+    que un login, para que un token filtrado no sirva para siempre).
+  - **`ParticipanteRepository`** gana `findAnonimoPorEventoYUsername`,
+    `listAnonimosPorUsername` y `regenerarTokenSesion`. `resolverUsernameUnico`
+    / auto-sufijo se eliminaron del todo.
+  - **`POST /participants/anonymous`** ahora exige `pin` en el body.
+- **Mobile:** el diálogo de "Continuar como Anónimo" (`login_screen.dart`)
+  suma un campo de PIN obligatorio (mínimo 4 caracteres, con
+  `AppTextFieldVariant.password` para que no quede a la vista). A
+  diferencia de antes (el pedido nunca fallaba), ahora puede rechazarse —
+  el mensaje específico del backend (con la sugerencia de username) se
+  muestra tal cual llega, no un mensaje genérico.
+- **Tests:** backend — `participants.service.test.ts` reescrito
+  completamente (14 casos: alta nueva, PIN inválido/faltante, reingreso
+  exitoso con mismo `participanteId` y token renovado, PIN incorrecto
+  rechazado, colisión con otro evento activo rechazada con sugerencia,
+  liberación al finalizar+saldar deudas, liberación al cancelar+saldar
+  deudas, bloqueo si el evento no terminó aunque tenga cero deudas,
+  bloqueo permanente contra cuentas registradas); `api.test.ts` actualizado
+  (8 llamadas a `/participants/anonymous` ahora mandan `pin`). Mobile —
+  `login_screen_test.dart`: PIN requerido para habilitar "Confirmar", y que
+  un rechazo del backend muestra su mensaje específico (no uno genérico).
+
+# Tanda 6 - Rediseño de navegación y limpieza de features
 ## Item F2: Notificación al recibir una solicitud de amistad
 
 **Confirmado con el usuario antes de implementar:**

@@ -194,6 +194,24 @@ abstract class AppLocalizations {
   /// **'ej. Sofía'**
   String get loginAnonymousNameHint;
 
+  /// No description provided for @loginAnonymousPinLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'PIN'**
+  String get loginAnonymousPinLabel;
+
+  /// No description provided for @loginAnonymousPinHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Al menos 4 caracteres'**
+  String get loginAnonymousPinHint;
+
+  /// No description provided for @loginAnonymousPinHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Lo vas a necesitar para volver a entrar a este evento con el mismo username.'**
+  String get loginAnonymousPinHelp;
+
   /// No description provided for @loginPendingInvitation.
   ///
   /// In es, this message translates to:

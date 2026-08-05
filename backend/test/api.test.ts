@@ -125,7 +125,7 @@ describe('POST /participants/anonymous (HU-01)', () => {
 
     const res = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId: evento.id, username: 'Sofía' });
+      .send({ eventoId: evento.id, username: 'Sofía', pin: 'secreto1' });
 
     expect(res.status).toBe(201);
     expect(res.body.tokenSesion).toBeDefined();
@@ -138,7 +138,7 @@ describe('POST /participants/anonymous (HU-01)', () => {
 
     const res = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId: evento.id, username: 'Sofía' });
+      .send({ eventoId: evento.id, username: 'Sofía', pin: 'secreto1' });
 
     expect(res.status).toBe(400);
   });
@@ -147,7 +147,7 @@ describe('POST /participants/anonymous (HU-01)', () => {
     const { app } = armarApi();
     const res = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId: 'no-existe', username: 'Sofía' });
+      .send({ eventoId: 'no-existe', username: 'Sofía', pin: 'secreto1' });
 
     expect(res.status).toBe(404);
   });
@@ -186,7 +186,7 @@ describe('Flujo completo del MVP', () => {
 
     const anonimo = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId, username: 'Sofía' });
+      .send({ eventoId, username: 'Sofía', pin: 'secreto1' });
     const tokenAnonimo = anonimo.body.tokenSesion;
 
     // 4. El anónimo carga su disponibilidad (HU-07)
@@ -246,7 +246,7 @@ describe('Flujo completo del MVP', () => {
     // Se suma un anónimo para tener a alguien entre quien dividir.
     const anonimo = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId, username: 'Sofía' });
+      .send({ eventoId, username: 'Sofía', pin: 'secreto1' });
 
     // Marcos paga $4500 de carne y se divide entre los dos (HU-13/HU-14).
     const gasto = await request(app)
@@ -307,10 +307,10 @@ describe('Flujo completo del MVP', () => {
 
     const anonimo1 = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId, username: 'Sofía' });
+      .send({ eventoId, username: 'Sofía', pin: 'secreto1' });
     const anonimo2 = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId, username: 'Pedro' });
+      .send({ eventoId, username: 'Pedro', pin: 'secreto1' });
     expect(anonimo1.status).toBe(201);
     expect(anonimo2.status).toBe(201);
 
@@ -367,7 +367,7 @@ describe('SCRUM-15 · notificaciones (HU-35)', () => {
     // organizador (otro participante con device) recibe el push.
     const anonimo = await request(app)
       .post('/participants/anonymous')
-      .send({ eventoId, username: 'Sofía' });
+      .send({ eventoId, username: 'Sofía', pin: 'secreto1' });
     await request(app)
       .patch(`/events/${eventoId}/attendance`)
       .set('X-Participant-Token', anonimo.body.tokenSesion)

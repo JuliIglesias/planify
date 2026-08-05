@@ -58,6 +58,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loginAnonymousNameHint => 'ej. Sofía';
 
   @override
+  String get loginAnonymousPinLabel => 'PIN';
+
+  @override
+  String get loginAnonymousPinHint => 'Al menos 4 caracteres';
+
+  @override
+  String get loginAnonymousPinHelp =>
+      'Lo vas a necesitar para volver a entrar a este evento con el mismo username.';
+
+  @override
   String get loginPendingInvitation =>
       'Te invitaron a un evento. Iniciá sesión, creá una cuenta o continuá como anónimo para unirte.';
 

@@ -57,8 +57,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       text: ref.read(pendingInvitationProvider) ?? '',
     );
     final usernameController = TextEditingController();
+    // G1 — el PIN es lo que permite recuperar la misma identidad si vuelve a
+    // entrar más adelante con el mismo username a este mismo evento.
+    final pinController = TextEditingController();
 
-    final datos = await showDialog<(String, String)>(
+    final datos = await showDialog<(String, String, String)>(
       context: context,
       builder: (ctx) => AppDialog(
         title: Text(l10n.loginContinueAnonymous),
@@ -85,6 +88,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               controller: usernameController,
               decoration: InputDecoration(hintText: l10n.loginAnonymousNameHint),
             ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(l10n.loginAnonymousPinLabel),
+            const SizedBox(height: AppSpacing.xs),
+            AppTextField(
+              variant: AppTextFieldVariant.password,
+              controller: pinController,
+              decoration: InputDecoration(hintText: l10n.loginAnonymousPinHint),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.loginAnonymousPinHelp,
+              style: Theme.of(ctx)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: AppColors.textSecondary),
+            ),
           ],
         ),
         actions: [
@@ -96,8 +115,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             onPressed: () {
               final token = tokenController.text.trim();
               final username = usernameController.text.trim();
-              if (token.isNotEmpty && username.isNotEmpty) {
-                Navigator.pop(ctx, (token, username));
+              final pin = pinController.text.trim();
+              if (token.isNotEmpty && username.isNotEmpty && pin.length >= 4) {
+                Navigator.pop(ctx, (token, username, pin));
               }
             },
             child: Text(l10n.commonConfirm),
@@ -111,15 +131,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       tokenController.dispose();
       usernameController.dispose();
+      pinController.dispose();
     });
 
     if (datos == null) return;
-    await _unirseConTokenYUsername(datos.$1, datos.$2);
+    await _unirseConTokenYUsername(datos.$1, datos.$2, datos.$3);
   }
 
-  /// Resuelve el token de invitación y une con el username ya recolectado, sin
-  /// mostrar ningún diálogo adicional.
-  Future<void> _unirseConTokenYUsername(String tokenInput, String username) async {
+  /// Resuelve el token de invitación y une con el username/PIN ya
+  /// recolectados, sin mostrar ningún diálogo adicional.
+  Future<void> _unirseConTokenYUsername(
+    String tokenInput,
+    String username,
+    String pin,
+  ) async {
     final cleanToken = tokenInput
         .replaceAll('planify://invite/', '')
         .replaceAll('planify://', '')
@@ -130,7 +155,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final authRepo = ref.read(authRepositoryProvider);
       final eventoId = await authRepo.resolverInvitacion(cleanToken);
       if (!mounted) return;
-      await _unirseComoAnonimo(eventoId: eventoId, username: username);
+      await _unirseComoAnonimo(eventoId: eventoId, username: username, pin: pin);
+
+      // G1 — a diferencia de antes (nunca fallaba, auto-sufijaba), ahora
+      // unirse puede rechazarse (PIN incorrecto al reingresar, o el
+      // username ya en uso en otro evento activo): `unirseComoAnonimo`
+      // guarda el error en el estado en vez de relanzarlo (mismo patrón
+      // que `_ingresar`), así que hay que leerlo acá para mostrar el
+      // mensaje específico del backend (trae la sugerencia de username).
+      final estado = ref.read(sessionControllerProvider);
+      if (estado.hasError) {
+        if (mounted) _mensaje('${estado.error}');
+        return;
+      }
+
       // El token ya se consumió: si venía de un deep link, no debe quedar
       // pendiente de aplicar de nuevo.
       ref.read(pendingInvitationProvider.notifier).set(null);
@@ -142,10 +180,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _unirseComoAnonimo({
     required String eventoId,
     required String username,
+    required String pin,
   }) =>
       ref.read(sessionControllerProvider.notifier).unirseComoAnonimo(
             eventoId: eventoId,
             username: username,
+            pin: pin,
           );
 
 

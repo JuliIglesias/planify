@@ -73,13 +73,16 @@ void main() {
     final campos = find.byType(TextField);
     await tester.enterText(campos.at(2), 'planify://invite/f210607e');
     await tester.enterText(campos.at(3), 'Sofía');
+    // G1 — el PIN es obligatorio: es lo que permite recuperar la misma
+    // identidad si vuelve a entrar con el mismo username a este evento.
+    await tester.enterText(campos.at(4), 'pin1234');
 
     await tester.tap(find.text(l10n.commonConfirm));
     await tester.pumpAndSettle();
 
     // El nombre viaja junto con el token: el anónimo queda registrado como
     // Participante real desde el primer paso (H-01/H-02 siguen valiendo).
-    expect(auth.llamadas, contains('anonimo:evt-1:Sofía'));
+    expect(auth.llamadas, contains('anonimo:evt-1:Sofía:pin1234'));
     expect(find.byType(AlertDialog), findsNothing);
   });
 
@@ -103,6 +106,60 @@ void main() {
     // El diálogo sigue abierto: no se puede unir como anónimo sin nombre.
     expect(find.byType(AlertDialog), findsOneWidget);
     expect(auth.llamadas, isEmpty);
+  });
+
+  // G1 — el PIN es obligatorio (mismo criterio que el nombre, arriba): sin
+  // uno de al menos 4 caracteres, no hay forma de recuperar la sesión más
+  // adelante, así que ni siquiera se manda el pedido.
+  testWidgets('el confirmar del diálogo de anónimo queda deshabilitado sin PIN válido (G1)',
+      (tester) async {
+    final auth = FakeAuthRepository();
+
+    await tester.pumpWidget(appDePrueba(const LoginScreen(), auth: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.loginContinueAnonymous));
+    await tester.pumpAndSettle();
+
+    final campos = find.byType(TextField);
+    await tester.enterText(campos.at(2), 'planify://invite/f210607e');
+    await tester.enterText(campos.at(3), 'Sofía');
+    await tester.enterText(campos.at(4), 'abc'); // menos de 4 caracteres
+
+    await tester.tap(find.text(l10n.commonConfirm));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(auth.llamadas, isEmpty);
+  });
+
+  // G1 — a diferencia de antes (nunca fallaba, auto-sufijaba en silencio),
+  // unirse como anónimo ahora puede rechazarse — ej. el username ya está en
+  // uso en otro evento activo. El mensaje específico del backend (con la
+  // sugerencia de username) tiene que llegar a la persona.
+  testWidgets(
+      'si el backend rechaza la unión anónima, se muestra el mensaje '
+      'específico (G1)', (tester) async {
+    final auth = FakeAuthRepository(
+      errorAnonimo: 'El username "Sofía" ya está en uso en otro evento activo. '
+          'Probá con "Sofía2".',
+    );
+
+    await tester.pumpWidget(appDePrueba(const LoginScreen(), auth: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.loginContinueAnonymous));
+    await tester.pumpAndSettle();
+
+    final campos = find.byType(TextField);
+    await tester.enterText(campos.at(2), 'planify://invite/f210607e');
+    await tester.enterText(campos.at(3), 'Sofía');
+    await tester.enterText(campos.at(4), 'pin1234');
+
+    await tester.tap(find.text(l10n.commonConfirm));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Sofía2'), findsOneWidget);
   });
 
   testWidgets(

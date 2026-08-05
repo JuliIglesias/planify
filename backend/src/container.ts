@@ -161,7 +161,15 @@ export function createContainer(prisma: PrismaClient): Container {
   const aiEvents = new AiEventsService(eventGenerator, amistades);
   const profileAvailability = new ProfileAvailabilityService(disponibilidadPerfil);
   const locations = new LocationsService(ubicaciones);
-  const participants = new ParticipantsService(participantes, usuarios, eventos, ids, activityLog);
+  const participants = new ParticipantsService(
+    participantes,
+    usuarios,
+    eventos,
+    ids,
+    activityLog,
+    hasher,
+    deudas,
+  );
   const invitations = new InvitationsService(invitaciones, eventos, ids, clock);
   const events = new EventsService(eventos, grupos, participantes, usuarios, activityLog, clock);
   const eventsQuery = new EventsQueryService(eventos, participantes, deudas, tareas, gastos, clock);

@@ -70,11 +70,15 @@ class SessionController extends AsyncNotifier<Session> {
   }
 
   /// HU-01/HU-02/HU-03 — el anónimo se une a un evento existente por link.
-  /// Nunca crea eventos. El username final puede diferir del pedido si el
-  /// backend tuvo que auto-sufijarlo por colisión (ver docs/05-fixes.md).
+  /// Nunca crea eventos. G1: el username + PIN son las credenciales — si ya
+  /// existe una identidad con ese username en ESE evento, el backend
+  /// recupera la MISMA (mismo historial) en vez de crear una nueva; si el
+  /// username está en uso en otro evento todavía activo, rechaza (ver
+  /// docs/adrs/0003-identidad-anonima-por-evento.md).
   Future<void> unirseComoAnonimo({
     required String eventoId,
     required String username,
+    required String pin,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -84,6 +88,7 @@ class SessionController extends AsyncNotifier<Session> {
       final res = await api.unirseComoAnonimo(
         eventoId: eventoId,
         username: username,
+        pin: pin,
       );
 
       await storage.write(StorageKeys.participantToken, res.tokenSesion);

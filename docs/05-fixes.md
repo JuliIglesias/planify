@@ -33,6 +33,23 @@
   `app_shell_layout_test.dart` (49 tests) sin modificar — pasan tal cual.
   Suite completa: 124/124.
 
+## Perfil
+
+- **`profile_screen.dart`:** `bodySmall` con override redundante de
+  `AppColors.textSecondary` eliminado (ya es ese gris por default). El
+  ícono/texto de "Cerrar sesión" pasa de `AppColors.danger` (rojo
+  financiero) a `colorScheme.error` — es una acción destructiva/de salida,
+  no un monto "debo"; son roles distintos a propósito desde Fase 2 (§3.6).
+  Import de `app_colors.dart` eliminado (ya no queda ningún uso directo).
+- **Sin duplicación de componentes que migrar:** la pantalla es
+  mayormente `ListTile`s de navegación (íconos + texto + chevron), ya
+  consistente con Material y sin necesidad de `AppPersonRow` (esa fila es
+  para personas, no para accesos de configuración).
+- **Sin bugs encontrados.**
+- **Tests:** `profile_screen_test.dart` + los casos de `ProfileScreen` en
+  `screens_test.dart` (41 tests en total en esta corrida) sin modificar.
+  Suite completa: 124/124.
+
 ## Login / Registro
 
 - **`login_screen.dart`:** banner de invitación pendiente pasa de

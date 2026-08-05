@@ -451,12 +451,16 @@ class FakeFriendsRepository implements FriendsRepository {
     this.resultadosBusqueda = const [],
     this.amigos = const [],
     this.solicitudes = const [],
+    this.enviadas = const [],
     PerfilAmigo? perfil,
   }) : perfil = perfil ?? perfilDeEjemplo();
 
   List<Persona> resultadosBusqueda;
   List<Persona> amigos;
   List<SolicitudAmistad> solicitudes;
+  /// F1 — semilla de `solicitudesEnviadas()` (nombre distinto al del método
+  /// de la interfaz, que Dart no permite reusar para un campo).
+  List<SolicitudEnviada> enviadas;
   PerfilAmigo perfil;
   final List<String> llamadas = [];
 
@@ -484,6 +488,9 @@ class FakeFriendsRepository implements FriendsRepository {
 
   @override
   Future<List<SolicitudAmistad>> solicitudesPendientes() async => solicitudes;
+
+  @override
+  Future<List<SolicitudEnviada>> solicitudesEnviadas() async => enviadas;
 
   @override
   Future<void> enviarSolicitud(String usuarioId) async {

@@ -201,6 +201,19 @@ export class FakeAmistadRepository implements R.AmistadRepository {
         },
       }));
   }
+
+  async listSolicitudesEnviadas(usuarioId: string): Promise<R.SolicitudEnviada[]> {
+    return this.amistades
+      .filter((a) => a.estado === 'pendiente' && a.usuarioId1 === usuarioId)
+      .map((a) => ({
+        amistadId: a.id,
+        para: {
+          id: a.usuarioId2,
+          username: this.usernameDe(a.usuarioId2),
+          email: this.emailDe(a.usuarioId2),
+        },
+      }));
+  }
 }
 
 export class FakeGrupoRepository implements R.GrupoRepository {

@@ -624,6 +624,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get friendsRequests => 'Solicitudes';
 
   @override
+  String get friendsRequestsReceived => 'Recibidas';
+
+  @override
+  String get friendsRequestsSent => 'Enviadas';
+
+  @override
+  String get friendsPending => 'Pendiente';
+
+  @override
   String get friendsAccept => 'Aceptar';
 
   @override

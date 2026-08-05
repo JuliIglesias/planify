@@ -33,6 +33,48 @@
   `app_shell_layout_test.dart` (49 tests) sin modificar — pasan tal cual.
   Suite completa: 124/124.
 
+## Amigos
+
+Última pantalla explícita de la lista — y donde `AppPersonRow` (construido
+en Fase 2, sin usar hasta ahora) se conecta por primera vez.
+
+- **`friends_screen.dart`:** las 4 filas "persona" duplicadas (resultados de
+  búsqueda, solicitudes recibidas, solicitudes enviadas, lista de amigos —
+  el hallazgo más repetido de la auditoría de Fase 1, §2.2) migradas a
+  `AppPersonRow`. Cambio visual real, no solo de color: pasa de un ícono
+  genérico (`Icons.person_outline`/`.person_add_alt`/etc.) a un avatar con
+  iniciales por persona — es la modernización de UX/UI que pediste, no un
+  efecto secundario accidental. AppBar y overrides de `textSecondary`
+  migrados al tema.
+- **`friend_picker.dart`:** la variante de selección única (`ListTile`) →
+  `AppPersonRow`. La variante múltiple (`CheckboxListTile`) se queda igual
+  — no hay (todavía) una versión con checkbox de `AppPersonRow`, forzarla
+  hubiera significado reconstruir el checkbox a mano adentro; solo se migró
+  el color de su subtítulo. Botón de confirmar selección
+  (`SizedBox`+`FilledButton`) → `AppButton`.
+- **`friend_profile_screen.dart`:** el avatar del encabezado y el de cada
+  "grupo en común" — ambos con su propio `CircleAvatar` + cálculo de
+  iniciales duplicado (un tercer lugar con esa lógica, además de los ya
+  encontrados en `AvatarStack`/Grupos) — migrados a `AppAvatar`. Estos dos
+  usan un estilo "pastel" (fondo claro + iniciales en color, no blanco)
+  distinto del `AppAvatar` sólido de `AvatarStack`/Grupos — se preservó
+  pasando `backgroundColor`/`foregroundColor` explícitos en vez de forzar
+  el default sólido, para no aplanar una diferencia visual que ya existía
+  a propósito. El heatmap comparado (4 colores: coincidimos/solo
+  yo/solo el amigo/ninguno) migrado de `AppColors` sueltos a
+  `colorScheme`/`context.appSemanticColors`. Borde de la leyenda y texto
+  vacío migrados al tema.
+  - **Nota de comportamiento menor, no un bug de negocio:** la función
+    `_iniciales` local que se eliminó calculaba "primera letra + última
+    palabra" para nombres de 3+ palabras; `initialsOf` (la utilidad
+    compartida que ya usa `AppAvatar`) calcula "primera letra + segunda
+    palabra". Para "Juan Carlos Pérez" cambia de "JP" a "JC". Solo afecta
+    la letra de fallback de un avatar decorativo (sin foto), ningún dato ni
+    lógica de negocio — se aplicó sin pedir confirmación aparte por ser
+    puramente cosmético, pero queda documentado por transparencia.
+- **Tests:** `friends_screen_test.dart` (9 casos) y
+  `friend_profile_screen_test.dart` sin modificar. Suite completa: 124/124.
+
 ## Evento (detalle, configuración, crear evento, modales de Gasto/Tarea)
 
 La pantalla más grande de esta fase — 7 archivos, ~2600 líneas. Cambios por

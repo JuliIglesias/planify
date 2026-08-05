@@ -1,3 +1,42 @@
+# Tanda 7 - 12 bugs/UX + reglas de negocio de usernames anónimos
+
+> Orden de implementación acordado con el usuario: B1, B2 (bugs de Flutter,
+> reproducidos antes de tocar código) → C1 (regla de negocio en tareas) →
+> A1, A2 (layout) → C2, D1, E1 (visuales/menores) → F1, F2 (Amigos) → G1
+> (identidad anónima por evento, **diferido** — ver nota al final de este
+> documento).
+
+## Item E1: Grupos — sacar el badge de texto "NUEVO"
+
+**Confirmado con el usuario:** solo ocultarlo visualmente (no eliminar
+`tieneEventoNuevo` del backend/modelo, por si se reutiliza más adelante).
+El usuario aclaró además qué quiere en su lugar: un punto de no-leído
+estilo WhatsApp/Instagram arriba a la derecha del avatar del grupo — y
+notó un bug del mecanismo viejo: "aunque entre al evento y grupo, el
+badge NUEVO no se va". Ese bug tiene explicación en el propio código:
+`tieneEventoNuevo` (`GroupsService.resumenPara`, backend) es
+`eventos.some(e => e.createdAt > corte)` — una ventana de **tiempo** desde
+que se creó el evento, no un estado de leído/no leído — así que entrar al
+grupo nunca lo iba a "apagar", solo que pasen los días.
+
+Lo que el usuario pidió ya existía, construido en una tanda anterior:
+`UnreadDot` con `mostrarNumero: true` sobre el avatar del grupo en el
+carrusel (Tanda 5, Item 2 — "Grupos: Badge de notificaciones", contador de
+actividad sin leer real, que sí se resetea al leer vía
+`ActivityLogService.marcarLeido`). Los dos badges coexistían en la UI
+(punto arriba a la derecha + texto "NUEVO" debajo del nombre), compitiendo
+visualmente. El fix es sacar el segundo, que es el redundante y el que
+tiene el bug de no desaparecer nunca.
+
+- **`groups_screen.dart`:** se saca el `if (grupo.tieneEventoNuevo)
+  StatusBadge.nuevo(...)` de `_CarruselDeGrupos`. `UnreadDot` (ya estaba,
+  sin cambios) queda como única señal de "hay novedad sin leer".
+- **Tests:** `screens_test.dart` — el caso existente que sembraba un grupo
+  con `tieneEventoNuevo: true` ahora verifica que el badge de texto **no**
+  se vea (antes verificaba lo contrario); la fixture sigue trayendo
+  `tieneEventoNuevo: true` a propósito, para confirmar que el flag del
+  backend no rompe nada al seguir existiendo pero no renderizarse.
+
 # Tanda 6 - Rediseño de navegación y limpieza de features
 
 ## Item 3: Historial de eventos — línea de tiempo y bug de avatares

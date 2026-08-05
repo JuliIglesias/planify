@@ -290,7 +290,10 @@ void main() {
       // "Los Fibes" aparece dos veces: en el carrusel y como título del
       // grupo activo.
       expect(find.text('Los Fibes'), findsNWidgets(2));
-      expect(find.text(l10n.groupsNewEvent), findsOneWidget);
+      // E1 — el badge de texto "NUEVO" se sacó de la UI (aunque el grupo
+      // siga trayendo `tieneEventoNuevo: true` del backend): la novedad
+      // ahora se comunica solo con el punto de no-leído sobre el avatar.
+      expect(find.text(l10n.groupsNewEvent), findsNothing);
       expect(find.text('Asado'), findsOneWidget);
       expect(find.text(l10n.groupsConfirmed(4)), findsOneWidget);
       // El evento del otro grupo no se ve todavía.

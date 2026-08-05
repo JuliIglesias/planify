@@ -7,7 +7,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/event_card.dart';
-import '../../core/widgets/status_badge.dart';
 import '../../core/widgets/unread_dot.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../events/event_detail_screen.dart';
@@ -142,8 +141,6 @@ class _CarruselDeGrupos extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-
     return SizedBox(
       height: 116,
       child: ListView.separated(
@@ -202,11 +199,16 @@ class _CarruselDeGrupos extends ConsumerWidget {
                           color: activo ? AppColors.primary : AppColors.textSecondary,
                         ),
                   ),
-                  if (grupo.tieneEventoNuevo)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: StatusBadge.nuevo(l10n.groupsNewEvent),
-                    ),
+                  // E1 — se sacó el badge de texto "NUEVO" (no se iba nunca:
+                  // `tieneEventoNuevo` es una ventana de tiempo desde que se
+                  // creó el evento, no un estado de leído/no leído, así que
+                  // entrar al evento/grupo no lo actualizaba). El punto de
+                  // no-leído de arriba (`UnreadDot`, con contador estilo
+                  // WhatsApp) ya cubre lo que el usuario pidió en su lugar:
+                  // avisar que hay actividad nueva sin leer, y desaparecer
+                  // una vez que se lee. Solo se oculta la UI —
+                  // `tieneEventoNuevo` se mantiene en el modelo/backend por
+                  // si se reutiliza más adelante.
                 ],
               ),
             ),

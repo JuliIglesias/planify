@@ -1022,6 +1022,18 @@ abstract class AppLocalizations {
   /// **'¿Entre quiénes se divide?'**
   String get eventDetailDivideBetween;
 
+  /// No description provided for @eventDetailAmountPerPayer.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto por pagador'**
+  String get eventDetailAmountPerPayer;
+
+  /// No description provided for @eventDetailAmountPerPerson.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto por persona'**
+  String get eventDetailAmountPerPerson;
+
   /// No description provided for @eventDetailSelectAtLeastOne.
   ///
   /// In es, this message translates to:

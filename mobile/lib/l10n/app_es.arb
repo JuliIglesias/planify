@@ -303,6 +303,8 @@
   },
   "eventDetailWhoPaid": "¿Quién pagó?",
   "eventDetailDivideBetween": "¿Entre quiénes se divide?",
+  "eventDetailAmountPerPayer": "Monto por pagador",
+  "eventDetailAmountPerPerson": "Monto por persona",
   "eventDetailSelectAtLeastOne": "Debe seleccionar al menos una persona",
   "eventDetailExpenseInvalid": "Completá una descripción y un monto válido",
   "eventDetailSplitEqually": "Repartir",

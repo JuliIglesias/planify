@@ -1,3 +1,40 @@
+# Design System v2 — Fase 3: aplicación pantalla por pantalla
+
+> Orden acordado: Login/Registro → Home → Perfil → Grupos → Balances →
+> Evento → Amigos → resto. Refactor de presentación puro — sin cambios de
+> comportamiento. Cada pantalla, su propio commit, tests corridos antes de
+> pasar a la siguiente.
+
+## Login / Registro
+
+- **`login_screen.dart`:** banner de invitación pendiente pasa de
+  `AppColors.primary.withValues(alpha: 0.08)` a mano →
+  `colorScheme.primaryContainer`/`onPrimaryContainer` (el par pensado
+  justo para superficies tintadas de marca). Botón "Ingresar"
+  (`ElevatedButton` + spinner manual) → `AppButton` (`loading: cargando`).
+  Botón "Continuar como Anónimo" (`OutlinedButton.icon` con `style:` a
+  mano) → `AppButton(variant: outlined, icon: ...)`. El texto de ayuda del
+  PIN pierde su `color: AppColors.textSecondary` explícito —
+  `bodySmall` ya lo hace por default desde el `TextTheme` nuevo (Fase 2).
+- **`register_screen.dart`:** mismo reemplazo de botón primario
+  (`ElevatedButton` + spinner manual → `AppButton(loading: ...)`). No tenía
+  ningún color hardcodeado.
+- **`auth_scaffold.dart` (`_AuthLogo`):** el placeholder vectorial
+  (`Icons.autorenew`, pendiente desde Tanda 6 Item 6) se reemplaza por el
+  logo real vía `AppLogo` (esquinas redondeadas, `AppSpacing.radiusLg` =
+  20dp) — mismo marco circular blanco con sombra de siempre, ahora con el
+  logo de marca adentro en vez del ícono genérico.
+- **Radios/spacing/tipografía:** ya estaban dentro de la escala (16/24/32,
+  `cardRadius`) — no hubo inconsistencias que corregir en estas 2
+  pantallas más allá de lo de arriba.
+- **Sin bugs encontrados** al tocar estas pantallas.
+- **Tests:** `login_screen_test.dart` (15/15) y `register_screen_test.dart`
+  (3/3) sin modificar — pasan tal cual, ninguno dependía de qué widget de
+  botón se usara por debajo, solo del texto/comportamiento. Suite completa:
+  124/124.
+
+---
+
 # Design System v2 — Fase 2: construcción (sin aplicar a pantallas)
 
 > Fase 1 (auditoría + propuesta) en [06-design-system.md](06-design-system.md).

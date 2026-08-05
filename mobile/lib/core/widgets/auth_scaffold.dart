@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../../l10n/generated/app_localizations.dart';
+import 'app_logo.dart';
 
 /// Item 6 (Tanda 6) — chrome común a Login y Registro: logo + nombre de la
 /// app arriba, y una card blanca flotante abajo con el formulario.
@@ -102,6 +103,10 @@ class _AuthLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Fase 3 (Login/Registro) — reemplaza el placeholder vectorial
+    // (`Icons.autorenew`) por el logo real, redondeado (docs/06-design-system.md
+    // §7): el marco circular blanco con sombra se mantiene igual que antes,
+    // el `AppLogo` de adentro es lo nuevo.
     return Container(
       width: 72,
       height: 72,
@@ -116,7 +121,8 @@ class _AuthLogo extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(Icons.autorenew, color: AppColors.primary, size: 36),
+      alignment: Alignment.center,
+      child: const AppLogo(size: 56),
     );
   }
 }

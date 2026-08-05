@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/auth_scaffold.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -91,18 +92,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: cargando ? null : _registrar,
-              child: cargando
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(l10n.registerSubmit),
-            ),
+          AppButton(
+            label: l10n.registerSubmit,
+            onPressed: cargando ? null : _registrar,
+            loading: cargando,
           ),
         ],
       ),

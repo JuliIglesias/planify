@@ -6,6 +6,19 @@
 > (identidad anónima por evento, **diferido** — ver nota al final de este
 > documento).
 
+## Item C2: Ícono del header del evento — de rueda dentada a calendario con tilde
+
+El ícono que abre disponibilidad y confirmación de asistencia dentro del
+evento (`EventConfigScreen`) era `Icons.settings_outlined` — una rueda
+dentada, ícono genérico de "configuración", que no comunica lo que hay del
+otro lado. Cambia a `Icons.event_available_outlined` (calendario con
+tilde), mismo `onPressed`/navegación, sin tocar nada más del header.
+
+- **`event_detail_screen.dart`:** un solo cambio de ícono en el
+  `IconButton` del `AppBar`.
+- **Tests:** `screens_test.dart` — los dos casos que antes buscaban
+  `Icons.settings_outlined` (que el ícono esté presente, y que tocarlo
+  abra `EventConfigScreen`) ahora verifican `Icons.event_available_outlined`.
 ## Item A1 + A2: Altura de la navbar "hug content" + safe area en las 4 pantallas raíz
 
 **Confirmado con el usuario antes de tocar layout:** la altura de

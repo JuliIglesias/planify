@@ -6,6 +6,46 @@
 > (identidad anónima por evento, **diferido** — ver nota al final de este
 > documento).
 
+## Item B1: No se podía guardar una ubicación — `TextEditingController` usado después de `dispose()`
+
+**Reproducido antes de tocar código** (pedido explícito del usuario, sin
+capturas adjuntas de este bug puntual): un test de widget que ejecuta el
+flujo completo (paso 1 de "Nuevo evento" → "Lugares guardados" → "Guardar
+este lugar" → confirmar) revienta con:
+
+```
+A TextEditingController was used after being disposed.
+Once you have called dispose() on a TextEditingController, it can no longer be used.
+```
+
+seguido de una assertion secundaria en cascada (`_dependents.isEmpty`, la
+misma que aparece en la captura del usuario) porque esa excepción corta el
+rebuild a mitad de camino y deja el árbol de widgets en un estado
+inconsistente. **No es un tema de permisos de ubicación, null-safety, ni de
+un dato mal mapeado al guardar** — el dato de hecho se guarda bien (se
+verificó en el repo fake antes del fix); es un bug de ciclo de vida puro.
+
+**Causa raíz:** `_pedirEtiqueta()` en `create_event_screen.dart` creaba un
+`TextEditingController` local y lo disponía "a mano" (`ctrl.dispose()`)
+apenas el `Future` de `showDialog` resolvía. El problema: `Navigator.pop`
+resuelve ese `Future` en cuanto la ruta se saca de la pila de navegación,
+pero la animación de salida del diálogo sigue corriendo un rato más — y el
+`AppTextField` (con el controller adentro) sigue montado durante esa
+transición.
+
+- **`create_event_screen.dart`:** el contenido del diálogo pasa a ser su
+  propio `StatefulWidget` (`_EtiquetaDialog`), que crea el controller en
+  `initState()` y lo dispone en su propio `dispose()`. Flutter recién llama
+  a `dispose()` cuando el `Element` realmente se desmonta del árbol — nunca
+  antes —, así que no hay forma de que se dispare mientras la transición de
+  salida del diálogo todavía lo necesita. Mismo patrón a seguir si aparece
+  este bug en otro lado del código (no se encontraron más casos del mismo
+  patrón en esta pasada).
+- **Tests:** `create_event_screen_test.dart` — nuevo caso que reproduce el
+  flujo completo con un listener de `FlutterError.onError` para capturar
+  cualquier excepción durante el `pumpAndSettle` posterior al guardado
+  (antes del fix, este test fallaba con la excepción de arriba); además
+  verifica que la ubicación efectivamente haya quedado guardada.
 ## Item B2 + C1: Swipe en tareas — "A dismissed Slidable widget is still part of the tree" + no se podía desasignar una tarea completada
 
 **Reproducido antes de tocar código** (pedido explícito del usuario): un

@@ -491,13 +491,15 @@ void main() {
       expect(find.text(l10n.eventDetailAddTask), findsOneWidget);
       expect(find.text(l10n.eventDetailSettle), findsOneWidget);
       // Asistencia y disponibilidad ya no viven acá — se accede por el
-      // ícono de engranaje a la pantalla de Configuración aparte.
+      // ícono de calendario con tilde a la pantalla de Configuración aparte
+      // (C2 — antes era una rueda dentada genérica de "configuración").
       expect(find.text(l10n.eventDetailGoing), findsNothing);
       expect(find.text(l10n.eventDetailMyAvailability), findsNothing);
-      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.event_available_outlined), findsOneWidget);
     });
 
-    testWidgets('el ícono de engranaje abre la pantalla de Configuración',
+    testWidgets(
+        'el ícono de calendario con tilde abre la pantalla de Configuración (C2)',
         (tester) async {
       usarPantallaAlta(tester);
       await tester.pumpWidget(
@@ -505,7 +507,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.tap(find.byIcon(Icons.event_available_outlined));
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.eventConfigTitle), findsOneWidget);

@@ -128,6 +128,33 @@ describe('SCRUM-14 — amigos (HU-31)', () => {
     expect(amigosDeBruno[0].email).toBe('ana@mail.com');
   });
 
+  // F1 — solicitudes ENVIADAS (distintas de las recibidas, arriba): antes
+  // solo existía `solicitudesPendientes` (recibidas); no había forma de ver
+  // "a quién le mandé una solicitud que todavía no me aceptó".
+  it('solicitudesEnviadas muestra las que mandé yo, no las que me mandaron', async () => {
+    const { friends, usuarios } = armar();
+    const ana = usuarios.agregar({ username: 'Ana', email: 'ana@mail.com' });
+    const bruno = usuarios.agregar({ username: 'Bruno', email: 'bruno@mail.com' });
+    const carla = usuarios.agregar({ username: 'Carla', email: 'carla@mail.com' });
+
+    await friends.enviarSolicitud(ana.id, bruno.id);
+    await friends.enviarSolicitud(carla.id, ana.id);
+
+    const enviadasPorAna = await friends.solicitudesEnviadas(ana.id);
+    expect(enviadasPorAna).toHaveLength(1);
+    expect(enviadasPorAna[0].para.username).toBe('Bruno');
+    expect(enviadasPorAna[0].para.email).toBe('bruno@mail.com');
+
+    // La que Carla le mandó a Ana es una RECIBIDA para Ana, no una enviada.
+    const recibidasPorAna = await friends.solicitudesPendientes(ana.id);
+    expect(recibidasPorAna).toHaveLength(1);
+    expect(recibidasPorAna[0].de.username).toBe('Carla');
+
+    // Una vez aceptada, ya no es "pendiente" — desaparece de ambas listas.
+    await friends.aceptar(bruno.id, enviadasPorAna[0].amistadId);
+    expect(await friends.solicitudesEnviadas(ana.id)).toHaveLength(0);
+  });
+
   it('no permite agregarse a uno mismo ni duplicar la solicitud', async () => {
     const { friends, usuarios } = armar();
     const ana = usuarios.agregar({ username: 'Ana' });

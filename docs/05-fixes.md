@@ -6,6 +6,39 @@
 > (identidad anónima por evento, **diferido** — ver nota al final de este
 > documento).
 
+## Item F1: Amigos — solicitudes enviadas + pull-to-refresh
+
+**El usuario confirmó explícitamente** (contra mi hipótesis inicial de que
+"ya estaba" del Item 3 de dos tandas atrás): la pantalla de Amigos no
+tenía ninguna sección para ver las solicitudes que YO mandé, ni
+pull-to-refresh. Verificado en código antes de tocar nada: las solicitudes
+**recibidas** sí existían (`_requestsProvider`, Item 3), pero el backend
+**no tenía ningún endpoint** para listar las enviadas —
+`AmistadRepository` solo exponía `listSolicitudesRecibidas`.
+
+- **Backend — `listSolicitudesEnviadas` (nuevo):** mismo patrón que
+  `listSolicitudesRecibidas`, mirando la tabla `Amistad` desde el otro
+  lado (`estado: 'pendiente'`, `usuarioId1: usuarioId` en vez de
+  `usuarioId2`). Tipo nuevo `SolicitudEnviada` (`{amistadId, para}`) —
+  mismo shape que `SolicitudAmistad` pero con el campo que indica "a
+  quién", no "de quién", para no confundirlas en el código que las
+  consume. `FriendsService.solicitudesEnviadas()` + ruta nueva
+  `GET /friends/requests/sent` (junto a la ya existente
+  `GET /friends/requests`, que sigue siendo "recibidas").
+- **Mobile — `friends_screen.dart`:** dos secciones separadas y tituladas
+  ("Solicitudes · Recibidas" / "Solicitudes · Enviadas"), cada una con su
+  gente — la recibida con botón "Aceptar" (como antes), la enviada de solo
+  lectura con una etiqueta "Pendiente" (no hay endpoint para cancelar una
+  solicitud enviada; no se agregó esa acción, fuera de lo pedido). La
+  pantalla entera se envuelve en `RefreshIndicator` (mismo
+  patrón/componente que ya usa Home), que invalida y espera a que
+  amigos + ambas listas de solicitudes se recarguen.
+- **Tests:** backend — `scrum14.test.ts`, nuevo caso que verifica que
+  `solicitudesEnviadas` solo trae lo que mandé yo (no lo que me mandaron a
+  mí), y que desaparece de ahí una vez aceptada. Mobile —
+  `friends_screen_test.dart`, dos casos nuevos: las dos secciones conviven
+  y son distinguibles (la enviada sin botón de aceptar), y que deslizar
+  hacia abajo no tira ningún error.
 ## Item E1: Grupos — sacar el badge de texto "NUEVO"
 
 **Confirmado con el usuario:** solo ocultarlo visualmente (no eliminar

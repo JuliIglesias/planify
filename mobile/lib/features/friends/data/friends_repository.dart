@@ -125,11 +125,26 @@ class SolicitudAmistad {
       );
 }
 
+/// F1 — una solicitud de amistad pendiente que envié yo, todavía sin
+/// aceptar (distinta de [SolicitudAmistad], que es la que me mandaron).
+class SolicitudEnviada {
+  const SolicitudEnviada({required this.amistadId, required this.para});
+  final String amistadId;
+  final Persona para;
+
+  factory SolicitudEnviada.fromJson(Map<String, dynamic> json) => SolicitudEnviada(
+        amistadId: json['amistadId'] as String,
+        para: Persona.fromJson(json['para'] as Map<String, dynamic>),
+      );
+}
+
 /// SCRUM-14 — HU-31/HU-32: amigos.
 abstract interface class FriendsRepository {
   Future<List<Persona>> buscar(String query);
   Future<List<Persona>> listar();
   Future<List<SolicitudAmistad>> solicitudesPendientes();
+  /// F1 — las que envié yo (distintas de [solicitudesPendientes], recibidas).
+  Future<List<SolicitudEnviada>> solicitudesEnviadas();
   Future<void> enviarSolicitud(String usuarioId);
   Future<void> aceptar(String amistadId);
 
@@ -166,6 +181,14 @@ class FriendsRepositoryHttp implements FriendsRepository {
         final res = await _dio.get<List<dynamic>>('/friends/requests');
         return (res.data ?? [])
             .map((s) => SolicitudAmistad.fromJson(s as Map<String, dynamic>))
+            .toList();
+      });
+
+  @override
+  Future<List<SolicitudEnviada>> solicitudesEnviadas() => ejecutar(() async {
+        final res = await _dio.get<List<dynamic>>('/friends/requests/sent');
+        return (res.data ?? [])
+            .map((s) => SolicitudEnviada.fromJson(s as Map<String, dynamic>))
             .toList();
       });
 

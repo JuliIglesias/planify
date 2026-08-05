@@ -1208,6 +1208,24 @@ abstract class AppLocalizations {
   /// **'Solicitudes'**
   String get friendsRequests;
 
+  /// No description provided for @friendsRequestsReceived.
+  ///
+  /// In es, this message translates to:
+  /// **'Recibidas'**
+  String get friendsRequestsReceived;
+
+  /// No description provided for @friendsRequestsSent.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviadas'**
+  String get friendsRequestsSent;
+
+  /// No description provided for @friendsPending.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendiente'**
+  String get friendsPending;
+
   /// No description provided for @friendsAccept.
   ///
   /// In es, this message translates to:

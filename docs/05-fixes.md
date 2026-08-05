@@ -5,6 +5,34 @@
 > comportamiento. Cada pantalla, su propio commit, tests corridos antes de
 > pasar a la siguiente.
 
+## Home
+
+- **`app_scaffold.dart` (`AppHeader`):** nuevo prop `showLogo` (default
+  `false`) — agrega `AppLogo` (28dp, ligero ajuste sobre los 24dp
+  propuestos en Fase 1 para balancear mejor con `headlineSmall`) a la
+  izquierda del título. Solo se activa en Home.
+- **`home_screen.dart`:** `showLogo: true` en su `AppHeader`. Colores de
+  "Me deben"/"Debo" pasan de `AppColors.success`/`AppColors.danger`
+  directos a `context.appSemanticColors.success`/`.danger` (vía tema, Fase
+  2). Overrides redundantes de color (`labelMedium`/`bodySmall` +
+  `AppColors.textSecondary`) eliminados — esos roles ya son ese gris por
+  default desde el `TextTheme` nuevo.
+- **Radios/spacing/tipografía:** ya estaban dentro de la escala — el
+  carrusel de eventos usa `EventoResumenCard`/`EventCard` (ya
+  retematizados en Fase 2), sin literales sueltos en la pantalla misma.
+- **Bug encontrado, NO corregido (fuera de alcance de este PR, avisado en
+  vez de mezclado):** el botón "Ver todos" (`home_screen.dart`, sobre
+  "Próximos eventos") tiene el texto **hardcodeado en español**
+  (`Text('Ver todos')`), sin pasar por `AppLocalizations` — viola la
+  política propia del proyecto ("i18n desde el día 1", comentario en
+  `pubspec.yaml`, NFR6). Es un bug de i18n preexistente, no algo que haya
+  tocado este refactor de presentación — **pendiente de confirmación del
+  usuario** para corregirlo (agregar clave `homeViewAll`/`homeSeeAll` a
+  `app_es.arb`/`app_en.arb`) en este mismo PR o en uno aparte.
+- **Tests:** `screens_test.dart`, `activity_grouping_test.dart`,
+  `app_shell_layout_test.dart` (49 tests) sin modificar — pasan tal cual.
+  Suite completa: 124/124.
+
 ## Login / Registro
 
 - **`login_screen.dart`:** banner de invitación pendiente pasa de

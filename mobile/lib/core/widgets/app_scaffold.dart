@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../debug/design_catalog_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import 'app_logo.dart';
 import '../../features/home/home_providers.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -36,11 +37,21 @@ final bottomNavHeightProvider =
 /// La campana muestra un badge con la actividad sin leer (H-17) y, desde el
 /// Item 2 (Tanda 6), abre la pantalla de Notificaciones.
 class AppHeader extends ConsumerWidget {
-  const AppHeader({super.key, required this.titulo, this.subtitulo, this.trailing});
+  const AppHeader({
+    super.key,
+    required this.titulo,
+    this.subtitulo,
+    this.trailing,
+    this.showLogo = false,
+  });
 
   final String titulo;
   final String? subtitulo;
   final Widget? trailing;
+
+  /// Refuerzo de marca (docs/06-design-system.md §7) — solo en Home, para no
+  /// saturar los headers secundarios (Grupos/Balances/Perfil).
+  final bool showLogo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -66,18 +77,29 @@ class AppHeader extends ConsumerWidget {
                         MaterialPageRoute<void>(builder: (_) => const DesignCatalogScreen()),
                       )
                   : null,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  // Color de título: hereda `headlineSmall` del tema (azul
-                  // oscuro, docs/06-design-system.md §3.4) — ya no se pisa
-                  // con `AppColors.primary` a mano.
-                  Text(
-                    titulo,
-                    style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                  if (showLogo) ...[
+                    const AppLogo(size: 28),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Color de título: hereda `headlineSmall` del tema
+                        // (azul oscuro, docs/06-design-system.md §3.4) — ya
+                        // no se pisa con `AppColors.primary` a mano.
+                        Text(
+                          titulo,
+                          style: theme.textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        if (subtitulo != null)
+                          Text(subtitulo!, style: theme.textTheme.bodySmall),
+                      ],
+                    ),
                   ),
-                  if (subtitulo != null)
-                    Text(subtitulo!, style: theme.textTheme.bodySmall),
                 ],
               ),
             ),

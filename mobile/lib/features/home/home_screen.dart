@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/money_format.dart';
 import '../../core/widgets/app_scaffold.dart';
@@ -28,6 +28,7 @@ class HomeScreen extends ConsumerWidget {
 
     final eventos = ref.watch(upcomingEventsProvider);
     final balance = ref.watch(balanceProvider);
+    final semantic = context.appSemanticColors;
     // A2 — la navbar flotante ("hug content", A1) puede tapar el final del
     // scroll si el padding no la tiene en cuenta; se despeja con su altura
     // real medida más un margen propio, no con un número fijo a ojo.
@@ -38,7 +39,11 @@ class HomeScreen extends ConsumerWidget {
       child: ListView(
         padding: EdgeInsets.only(bottom: bottomPad),
         children: [
-          AppHeader(titulo: l10n.homeGreeting(username)),
+          // showLogo: refuerzo de marca (docs/06-design-system.md §7) — Home
+          // es la pantalla a la que se vuelve más seguido, por eso es la
+          // elegida además de Login/Registro (no se repite en Grupos/
+          // Balances/Perfil, para no saturar headers secundarios).
+          AppHeader(titulo: l10n.homeGreeting(username), showLogo: true),
 
           // Resumen de saldos
           Padding(
@@ -49,7 +54,7 @@ class HomeScreen extends ConsumerWidget {
                   child: _ResumenSaldo(
                     label: l10n.homeOwedToMe,
                     monto: balance.value?.meDeben ?? '—',
-                    color: AppColors.success,
+                    color: semantic.success,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -57,7 +62,7 @@ class HomeScreen extends ConsumerWidget {
                   child: _ResumenSaldo(
                     label: l10n.homeIOwe,
                     monto: balance.value?.debo ?? '—',
-                    color: AppColors.danger,
+                    color: semantic.danger,
                   ),
                 ),
               ],
@@ -133,11 +138,8 @@ class HomeScreen extends ConsumerWidget {
                 data: (entradas) => entradas.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                        child: Text(
-                          l10n.homeNoActivity,
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: AppColors.textSecondary),
-                        ),
+                        // `bodySmall` ya usa el gris secundario del tema.
+                        child: Text(l10n.homeNoActivity, style: theme.textTheme.bodySmall),
                       )
                     : Padding(
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -196,12 +198,8 @@ class _ResumenSaldo extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
+            // `labelMedium` ya usa el gris secundario del tema.
+            Text(label, style: theme.textTheme.labelMedium),
             const SizedBox(height: AppSpacing.xs),
             Text(
               monto == '—' ? monto : '\$${MoneyFormat.format(monto)}',

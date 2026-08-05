@@ -48,4 +48,41 @@ void main() {
 
     expect(events.llamadas, contains('crear:Asado:Casa de Nacho:Amigos'));
   });
+
+  // B1 — regresión: guardar una ubicación nueva no debe tirar "A
+  // TextEditingController was used after being disposed" (el controller del
+  // diálogo de etiqueta se disponía a mano justo cuando la ruta todavía
+  // estaba animando su salida).
+  testWidgets('guardar una ubicación nueva desde el paso 1 no tira errores de Flutter',
+      (tester) async {
+    final profile = FakeProfileRepository();
+    final erroresCapturados = <FlutterErrorDetails>[];
+    final onErrorOriginal = FlutterError.onError;
+    FlutterError.onError = erroresCapturados.add;
+    addTearDown(() => FlutterError.onError = onErrorOriginal);
+
+    usarPantallaAlta(tester);
+    await tester.pumpWidget(appDePrueba(const CreateEventScreen(), profile: profile));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(1), 'Casa de Nacho');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.eventSavedPlaces));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.eventSavePlace));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).last, 'Casa');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.commonSave));
+    // Deja correr la animación de salida del diálogo (y cualquier rebuild
+    // posterior) antes de asentar: acá es donde reventaba antes del fix.
+    await tester.pumpAndSettle();
+
+    expect(erroresCapturados, isEmpty);
+    expect(profile.ubicaciones, hasLength(1));
+    expect(profile.ubicaciones.single.texto, 'Casa de Nacho');
+  });
 }

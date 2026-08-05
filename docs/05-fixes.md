@@ -41,6 +41,173 @@ quiénes se divide?"), no solo a la más nueva.
   varios pagadores el monto de cada uno aparezca en el bloque de abajo
   (no al lado de cada fila); y un caso end-to-end que arma el `DatosGasto`
   final con los montos cargados.
+## Item C2: Ícono del header del evento — de rueda dentada a calendario con tilde
+
+El ícono que abre disponibilidad y confirmación de asistencia dentro del
+evento (`EventConfigScreen`) era `Icons.settings_outlined` — una rueda
+dentada, ícono genérico de "configuración", que no comunica lo que hay del
+otro lado. Cambia a `Icons.event_available_outlined` (calendario con
+tilde), mismo `onPressed`/navegación, sin tocar nada más del header.
+
+- **`event_detail_screen.dart`:** un solo cambio de ícono en el
+  `IconButton` del `AppBar`.
+- **Tests:** `screens_test.dart` — los dos casos que antes buscaban
+  `Icons.settings_outlined` (que el ícono esté presente, y que tocarlo
+  abra `EventConfigScreen`) ahora verifican `Icons.event_available_outlined`.
+## Item A1 + A2: Altura de la navbar "hug content" + safe area en las 4 pantallas raíz
+
+**Confirmado con el usuario antes de tocar layout:** la altura de
+`AppBottomNav` estaba hardcodeada (`height: 76`, sin relación con ningún
+otro contenedor) y no había ningún "contenedor de tab" con una altura fija
+comparable — las 4 pantallas raíz son `Scaffold` de altura completa. El
+componente que sí comparte la misma familia visual (pill translúcida) es
+`PillToggle` (usado en Saldos y Notificaciones), que se autodimensiona por
+contenido. El usuario pidió invertir el enfoque: en vez de un número fijo,
+que la navbar también sea "hug content" como `PillToggle` — y que, como
+lleva ícono además de texto, termine más alta que un `PillToggle` sin que
+eso se traduzca en un radio de esquina distinto (nada de `radio = alto/2`
+por separado en cada uno, que dejaría de leerse como "rectángulo
+redondeado").
+
+- **`AppSpacing.barRadius`** (`core/theme/app_spacing.dart`, nuevo) — radio
+  compartido por los contenedores "pill-bar" (24dp, fijo). Reemplaza los
+  `30` (navbar) y `24` (`PillToggle`) hardcodeados por separado, que hasta
+  ahora coincidían por casualidad más que por diseño.
+- **`AppBottomNav`** (`core/widgets/app_scaffold.dart`): se sacó
+  `height: 76` del `Container` — ahora mide lo que necesita su propio
+  contenido (ícono + texto + paddings), igual que `PillToggle`.
+- **`bottomNavHeightProvider`** (nuevo, mismo archivo): la altura real de
+  la navbar ya no es una constante — se **mide** en tiempo de ejecución
+  (`AppShell` le pone un `GlobalKey`, y en un post-frame callback lee
+  `RenderBox.size.height` y la publica acá) y se expone para que las
+  pantallas raíz sepan cuánto padding inferior necesitan. Un número fijo a
+  mano en cada pantalla se hubiera desincronizado apenas cambiara el
+  contenido de la navbar — exactamente el tipo de bug que era A1.
+- **A2 — Home, Grupos, Saldos y Perfil** (las 4 pantallas con bottom nav,
+  no solo Home): el `padding` inferior de su `ListView` pasa a ser
+  `bottomNavHeightProvider + AppSpacing.md`, en vez de un `AppSpacing.xl`
+  fijo (Home) o directamente nada (Grupos, Saldos, Perfil no tenían
+  ningún padding inferior contemplado). Con `extendBody: true` en
+  `AppShell` (así quedó desde antes, para el efecto de navbar flotante),
+  el contenido corre por debajo de la navbar a propósito — sin este
+  padding, el final de cada lista queda tapado.
+- **Tests (`app_shell_layout_test.dart`, nuevo):** A1 — `AppBottomNav` y
+  `PillToggle` comparten el mismo `borderRadius`. A2 — con `AppShell`
+  montado (navbar real, altura medida) y suficiente actividad reciente
+  como para necesitar scroll, se scrollea Home hasta el final y se verifica
+  que el último ítem visible no se solape con el rect de la navbar; se
+  confirmó que este test **falla** si se vuelve al padding fijo de antes
+  (`AppSpacing.xl`), antes de dejarlo con el fix aplicado.
+## Item B1: No se podía guardar una ubicación — `TextEditingController` usado después de `dispose()`
+
+**Reproducido antes de tocar código** (pedido explícito del usuario, sin
+capturas adjuntas de este bug puntual): un test de widget que ejecuta el
+flujo completo (paso 1 de "Nuevo evento" → "Lugares guardados" → "Guardar
+este lugar" → confirmar) revienta con:
+
+```
+A TextEditingController was used after being disposed.
+Once you have called dispose() on a TextEditingController, it can no longer be used.
+```
+
+seguido de una assertion secundaria en cascada (`_dependents.isEmpty`, la
+misma que aparece en la captura del usuario) porque esa excepción corta el
+rebuild a mitad de camino y deja el árbol de widgets en un estado
+inconsistente. **No es un tema de permisos de ubicación, null-safety, ni de
+un dato mal mapeado al guardar** — el dato de hecho se guarda bien (se
+verificó en el repo fake antes del fix); es un bug de ciclo de vida puro.
+
+**Causa raíz:** `_pedirEtiqueta()` en `create_event_screen.dart` creaba un
+`TextEditingController` local y lo disponía "a mano" (`ctrl.dispose()`)
+apenas el `Future` de `showDialog` resolvía. El problema: `Navigator.pop`
+resuelve ese `Future` en cuanto la ruta se saca de la pila de navegación,
+pero la animación de salida del diálogo sigue corriendo un rato más — y el
+`AppTextField` (con el controller adentro) sigue montado durante esa
+transición.
+
+- **`create_event_screen.dart`:** el contenido del diálogo pasa a ser su
+  propio `StatefulWidget` (`_EtiquetaDialog`), que crea el controller en
+  `initState()` y lo dispone en su propio `dispose()`. Flutter recién llama
+  a `dispose()` cuando el `Element` realmente se desmonta del árbol — nunca
+  antes —, así que no hay forma de que se dispare mientras la transición de
+  salida del diálogo todavía lo necesita. Mismo patrón a seguir si aparece
+  este bug en otro lado del código (no se encontraron más casos del mismo
+  patrón en esta pasada).
+- **Tests:** `create_event_screen_test.dart` — nuevo caso que reproduce el
+  flujo completo con un listener de `FlutterError.onError` para capturar
+  cualquier excepción durante el `pumpAndSettle` posterior al guardado
+  (antes del fix, este test fallaba con la excepción de arriba); además
+  verifica que la ubicación efectivamente haya quedado guardada.
+## Item B2 + C1: Swipe en tareas — "A dismissed Slidable widget is still part of the tree" + no se podía desasignar una tarea completada
+
+**Reproducido antes de tocar código** (pedido explícito del usuario): un
+swipe completo (más allá del `dismissThreshold` de `flutter_slidable`, no
+solo abrir el `ActionPane`) sobre una tarea tira:
+
+```
+A dismissed Slidable widget is still part of the tree.
+Make sure to implement the onDismissed handle of the ActionPane and to
+immediately remove the Slidable widget from the application once that
+handler has fired.
+```
+
+Coincide exactamente con la captura del usuario (mensaje literal del
+paquete `flutter_slidable`, `dismissal.dart`).
+
+**Causa raíz** (leído el código fuente de `flutter_slidable` 4.0.3): el
+`onDismissed` de cada `DismissiblePane` (`onTomar`/`onCompletar`/
+`onDescompletar`/`onEliminar` en `_TareaTile`) llamaba a `onAccion`, que
+hace `setState(_ocupado=true)` **inmediatamente** — dispara un rebuild ya
+mismo — y recién saca la tarea de la lista **después** del round-trip de
+red + `invalidateEventData` + refetch. `flutter_slidable` exige que el
+ítem salga del árbol **de inmediato** apenas termina la animación de
+resize del dismiss (lo dice literalmente el mensaje de error): con la
+tarea todavía en la lista, cualquier rebuild posterior de ese mismo
+`Slidable` (misma `Key`) vuelve a pasar por un `_SlidableDismissalState`
+ya marcado `resized = true`, y explota.
+
+- **`event_detail_screen.dart` (`_Contenido` → `_ContenidoState`):** pasa
+  de `ConsumerWidget` a `ConsumerStatefulWidget` para poder llevar un
+  estado local, `_tareasEnVueloDeSwipe` (los ids que están a mitad de un
+  swipe-to-dismiss). El helper nuevo `_accionDeSwipe(tareaId, accion)`:
+  1. esconde la tarea de inmediato (`setState` agregándola al set),
+  2. **espera a que se pinte un frame real** con la tarea ya afuera del
+     árbol (`SchedulerBinding.instance.endOfFrame`) — sin este paso, si el
+     round-trip resuelve muy rápido (pasa siempre con los repos *fake* de
+     los tests, que no tienen latencia real) el ciclo completo
+     esconder→mostrar puede terminar **antes** de que Flutter llegue a
+     pintar un solo frame con la tarea excluida, y el `Element` viejo
+     (con `resized` en `true`) nunca se desmonta — se reproduce la misma
+     excepción. Se encontró este comportamiento reproduciendo el bug con
+     un test instrumentado con `print` en cada paso, no por inspección de
+     código solamente.
+  3. ejecuta la mutación real vía `onAccion` (mismo mecanismo de
+     `_ocupado`/loading/snackbar de error de siempre, sin duplicarlo),
+  4. espera a que `eventTasksProvider` tenga el dato **fresco** de verdad
+     (`ref.read(...future)`) antes de soltar el escondido — así, cuando la
+     tarea reaparece, es un `Slidable` **nuevo** (mismo id/`Key`, pero un
+     `Element` recién creado, con `resized` en `false` de nuevo — no el
+     mismo que ya se había dismisseado), y trae el estado post-mutación
+     (completada/desasignada/eliminada), no uno viejo.
+  - `onAsignarA`/`onDesasignar` (que no van atados a un `DismissiblePane`,
+    solo a un botón/menú) siguen usando `onAccion` directo, sin pasar por
+    este mecanismo — no lo necesitan.
+- **C1 (`_TareaTile`):** el `SlidableAction` de "Desasignar" ahora solo se
+  ofrece si `!tarea.estaSinAsignar && !esCompletada` — antes se mostraba
+  con cualquier tarea asignada, sin mirar si ya estaba completada. El
+  swipe-to-dismiss de esa `ActionPane` sigue disparando "Eliminar" en
+  cualquier caso (es un solo `DismissiblePane` para todo el pane, por
+  diseño ya existente — el gesto de swipe completo siempre borra, tomar
+  la acción puntual de "Desasignar" requiere el tap sobre el botón, no el
+  swipe completo). Se verificó que el toggle completar/descompletar +
+  desasignar/eliminar del Item 5 de la tanda anterior ya estaba
+  implementado — este fix se aplicó sobre esa base, sin tener que
+  reconstruirla.
+- **Tests (`screens_test.dart`):** regresión de B2 — swipe completo sobre
+  una tarea sin capturar ninguna excepción de Flutter (con un listener de
+  `FlutterError.onError`), y que la llamada `eliminar` se dispare. C1 — dos
+  casos: una tarea completada no ofrece "Desasignar" (solo "Eliminar"), y
+  una asignada-pero-no-completada sí la ofrece y dispara `desasignar`.
 
 # Tanda 6 - Rediseño de navegación y limpieza de features
 

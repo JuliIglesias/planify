@@ -201,6 +201,19 @@ export class FakeAmistadRepository implements R.AmistadRepository {
         },
       }));
   }
+
+  async listSolicitudesEnviadas(usuarioId: string): Promise<R.SolicitudEnviada[]> {
+    return this.amistades
+      .filter((a) => a.estado === 'pendiente' && a.usuarioId1 === usuarioId)
+      .map((a) => ({
+        amistadId: a.id,
+        para: {
+          id: a.usuarioId2,
+          username: this.usernameDe(a.usuarioId2),
+          email: this.emailDe(a.usuarioId2),
+        },
+      }));
+  }
 }
 
 export class FakeGrupoRepository implements R.GrupoRepository {
@@ -791,6 +804,47 @@ export class FakeLogActividadRepository implements R.LogActividadRepository {
   /** Atajo para los tests: qué tipos de actividad se registraron. */
   tipos(): string[] {
     return this.entradas.map((e) => e.tipo);
+  }
+}
+
+/** F2 — notificaciones que no cuelgan de ningún evento (ej. solicitud de amistad). */
+export class FakeNotificacionPersonalRepository implements R.NotificacionPersonalRepository {
+  notificaciones: R.NotificacionPersonal[] = [];
+  constructor(private readonly usuarios?: FakeUsuarioRepository) {}
+
+  private usernameDe(usuarioId: string): string {
+    return this.usuarios?.usuarios.find((u) => u.id === usuarioId)?.username ?? usuarioId;
+  }
+
+  async crear(data: R.CrearNotificacionPersonalData): Promise<R.NotificacionPersonal> {
+    const notif: R.NotificacionPersonal = {
+      id: nuevoId('notif'),
+      usuarioId: data.usuarioId,
+      tipo: data.tipo,
+      actorUsuarioId: data.actorUsuarioId,
+      payload: data.payload ?? null,
+      createdAt: new Date(
+        new Date('2026-07-28T12:00:00Z').getTime() + this.notificaciones.length * 1000,
+      ),
+    };
+    this.notificaciones.push(notif);
+    return notif;
+  }
+
+  async listRecientes(
+    usuarioId: string,
+    limite: number,
+    before?: Date,
+  ): Promise<R.NotificacionPersonalConActor[]> {
+    return this.notificaciones
+      .filter((n) => n.usuarioId === usuarioId)
+      .filter((n) => !before || n.createdAt.getTime() < before.getTime())
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limite)
+      .map((n) => ({
+        ...n,
+        actor: { id: n.actorUsuarioId, username: this.usernameDe(n.actorUsuarioId) },
+      }));
   }
 }
 

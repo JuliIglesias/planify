@@ -468,6 +468,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'El rango de fechas del evento se extendió';
 
   @override
+  String activityFriendRequest(String actor) {
+    return '$actor te envió una solicitud de amistad';
+  }
+
+  @override
   String get commonSave => 'Guardar';
 
   @override
@@ -532,6 +537,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventDetailDivideBetween => '¿Entre quiénes se divide?';
+
+  @override
+  String get eventDetailAmountPerPayer => 'Monto por pagador';
+
+  @override
+  String get eventDetailAmountPerPerson => 'Monto por persona';
 
   @override
   String get eventDetailSelectAtLeastOne =>
@@ -632,6 +643,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get friendsRequests => 'Solicitudes';
+
+  @override
+  String get friendsRequestsReceived => 'Recibidas';
+
+  @override
+  String get friendsRequestsSent => 'Enviadas';
+
+  @override
+  String get friendsPending => 'Pendiente';
 
   @override
   String get friendsAccept => 'Aceptar';

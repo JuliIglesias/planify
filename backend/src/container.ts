@@ -19,6 +19,7 @@ import { PrismaTareaRepository } from './infrastructure/prisma/tarea.prisma.repo
 import { PrismaGastoRepository } from './infrastructure/prisma/gasto.prisma.repository';
 import { PrismaDeudaRepository } from './infrastructure/prisma/deuda.prisma.repository';
 import { PrismaLogActividadRepository } from './infrastructure/prisma/log-actividad.prisma.repository';
+import { PrismaNotificacionPersonalRepository } from './infrastructure/prisma/notificacion-personal.prisma.repository';
 import { PrismaProfileAvailabilityRepository } from './infrastructure/prisma/profile-availability.prisma.repository';
 import { PrismaLocationRepository } from './infrastructure/prisma/location.prisma.repository';
 import { S3ImageStorageRepository } from './infrastructure/aws/s3-image-storage.repository';
@@ -108,6 +109,7 @@ export function createContainer(prisma: PrismaClient): Container {
   const gastos = new PrismaGastoRepository(prisma);
   const deudas = new PrismaDeudaRepository(prisma);
   const logs = new PrismaLogActividadRepository(prisma);
+  const notificacionesPersonales = new PrismaNotificacionPersonalRepository(prisma);
 
   // ── Servicios externos de notificaciones (SCRUM-15) ──────────────────────
   // Implementaciones por defecto: loguean el push y guardan devices en memoria.
@@ -130,7 +132,13 @@ export function createContainer(prisma: PrismaClient): Container {
 
   // ── Servicios de negocio ────────────────────────────────────────────────
   const notifications = new NotificationsService(participantes, deviceRegistry, push);
-  const activityLog = new ActivityLogService(logs, participantes, clock, notifications);
+  const activityLog = new ActivityLogService(
+    logs,
+    participantes,
+    clock,
+    notifications,
+    notificacionesPersonales,
+  );
 
   // Generador de eventos por IA (SCRUM-17): Gemini si hay API key, si no la
   // heurística offline. Ambos cumplen el mismo contrato (Duda #21).
@@ -140,7 +148,7 @@ export function createContainer(prisma: PrismaClient): Container {
     : heuristico;
 
   const auth = new AuthService(usuarios, participantes, hasher, tokens);
-  const friends = new FriendsService(amistades, usuarios);
+  const friends = new FriendsService(amistades, usuarios, activityLog);
   const friendProfile = new FriendProfileService(
     amistades,
     usuarios,

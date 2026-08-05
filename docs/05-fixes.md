@@ -58,6 +58,283 @@ reglas confirmadas con el usuario:
   un rechazo del backend muestra su mensaje específico (no uno genérico).
 
 # Tanda 6 - Rediseño de navegación y limpieza de features
+## Item F2: Notificación al recibir una solicitud de amistad
+
+**Confirmado con el usuario antes de implementar:**
+- **Solo in-app por ahora** ("en principio igual in-app porfas") — push
+  queda para más adelante; el punto de entrada ya está pensado para
+  sumarlo sin tocar a quien lo llama (mismo criterio que
+  `ActivityLogService.registrar`, que ya hace ese best-effort con el push
+  de actividad de eventos).
+- **Dónde aparece:** el usuario aclaró cómo funcionan hoy los 3 tabs de
+  Notificaciones — "Eventos" y "Gastos" filtran actividad **de eventos**
+  agrupada; "Todo" es "ahí aparecen gastos, eventos, y amigos, y todo tipo
+  de notificación". Una solicitud de amistad no cuelga de ningún evento,
+  así que solo debía verse en "Todo" — nunca en "Eventos" ni en "Gastos".
+
+**Decisión de arquitectura (evaluada antes de tocar código, documentada acá
+en vez de en un ADR aparte por ser un cambio más chico que G1):**
+`LogActividad`/`ActivityLogService`, el mecanismo de notificaciones que ya
+existe, está construido de punta a punta alrededor de un evento
+(`eventoId` obligatorio, el actor es un `Participante` — una membresía
+DENTRO de un evento). Una solicitud de amistad no tiene ninguno de los
+dos: ni evento, ni participante — el actor y el destinatario son
+`Usuario`s a secas. Forzar `eventoId`/`actorParticipanteId` a nullable en
+`LogActividad` para acomodar esto arriesgaba las queries e índices que ya
+dependen de esa tabla en todos los demás flujos (gastos, tareas,
+asistencia, etc.), a cambio de nada — la mitad de esa tabla nunca la va a
+usar. En cambio: una tabla nueva, chica y separada
+(`NotificacionPersonal`) para "avisos que no cuelgan de un evento", y el
+mismo **servicio** (`ActivityLogService`) mezcla las dos fuentes en
+`recientesDe()` antes de paginar — así el cliente (mobile) sigue viendo un
+único feed, sin enterarse de que por debajo son dos tablas. Esto sí
+reutiliza "el mismo mecanismo" como pidió el usuario, en el sentido que
+importa (un solo feed, una sola pantalla, la misma paginación) sin
+arriesgar el modelo de datos de eventos que ya funciona.
+
+- **Backend:**
+  - **`NotificacionPersonal`** (modelo Prisma nuevo, migración
+    `20260805000000_notificaciones_personales`): `{id, usuarioId
+    (destinatario), tipo, actorUsuarioId, payload, createdAt}` — sin
+    `eventoId` en absoluto.
+  - **`ActivityLogService`** gana `registrarPersonal()` (análogo a
+    `registrar()`, pero sin evento) y `recientesDe()` ahora pide las dos
+    fuentes en paralelo con el mismo cursor `before`, las mezcla por fecha
+    y recorta a 20 — el top-20 combinado siempre sale de entre los dos
+    top-20 parciales (cada fuente ya viene ordenada y acotada), así que no
+    hace falta traer "todo" de ninguna de las dos para paginar bien. La
+    dependencia nueva (`NotificacionPersonalRepository`) es **opcional**
+    en el constructor a propósito: ninguno de los ~10 sitios que ya
+    construían `ActivityLogService` (varios tests) tuvo que tocarse.
+  - **`FriendsService.enviarSolicitud`** gana una dependencia opcional a
+    `ActivityLogService` y, al crear la solicitud, llama a
+    `registrarPersonal()` para el receptor (best-effort — si falla, no
+    tumba la solicitud ya creada).
+  - **`ActivityType.solicitudAmistad`** (`'solicitud_amistad'`), nuevo.
+- **Mobile:**
+  - `activity_presentation.dart`: ícono (`person_add_alt_1`), color
+    (`AppColors.primary`) y texto (`"{actor} te envió una solicitud de
+    amistad"`, clave nueva `activityFriendRequest`) para el tipo nuevo.
+    Como reusa el mismo feed/presentación de siempre, aparece tanto en
+    "Actividad reciente" de Home como en Notificaciones sin código
+    adicional.
+  - `notifications_screen.dart`: `_tiposSinEvento` — un tipo sin evento no
+    cae en el filtro de "Eventos" solo porque no es de gasto (antes
+    `_coincideCategoria` clasificaba "no es gasto" = "es evento", lo cual
+    hubiera sido engañoso acá, ya que no hay ningún evento al que rutear).
+    Tocar la fila lleva a `FriendsScreen` (no hay evento al que ir, pero sí
+    tiene sentido llevar a donde se acepta/rechaza).
+  - **Fuera de alcance, documentado a propósito:** el contador de "no
+    leídos" de la campana (`unreadTotalProvider`) sigue siendo puramente
+    de actividad de eventos (`contarNoLeidasPorEvento`) — una solicitud de
+    amistad nueva no lo incrementa. Ampliar ese contador para incluir
+    notificaciones personales necesitaría su propio concepto de
+    "leído/no leído" (hoy `NotificacionPersonal` no tiene ese estado), que
+    no pidió el usuario y se puede sumar después sin romper nada de esto.
+- **Tests:** backend —
+  `friend-request-notification.test.ts` (nuevo): el receptor ve la
+  notificación, el que la envió no ve nada raro en su propio feed, se
+  mezcla en orden con más de una notificación personal, y que
+  `enviarSolicitud` sigue funcionando si no se inyecta `ActivityLogService`
+  (backward compatibility). Mobile — `notifications_test.dart`: la
+  notificación de solicitud solo aparece en "Todo" (no en "Eventos" ni
+  "Gastos") y tocarla navega a `FriendsScreen`.
+## Item F1: Amigos — solicitudes enviadas + pull-to-refresh
+
+**El usuario confirmó explícitamente** (contra mi hipótesis inicial de que
+"ya estaba" del Item 3 de dos tandas atrás): la pantalla de Amigos no
+tenía ninguna sección para ver las solicitudes que YO mandé, ni
+pull-to-refresh. Verificado en código antes de tocar nada: las solicitudes
+**recibidas** sí existían (`_requestsProvider`, Item 3), pero el backend
+**no tenía ningún endpoint** para listar las enviadas —
+`AmistadRepository` solo exponía `listSolicitudesRecibidas`.
+
+- **Backend — `listSolicitudesEnviadas` (nuevo):** mismo patrón que
+  `listSolicitudesRecibidas`, mirando la tabla `Amistad` desde el otro
+  lado (`estado: 'pendiente'`, `usuarioId1: usuarioId` en vez de
+  `usuarioId2`). Tipo nuevo `SolicitudEnviada` (`{amistadId, para}`) —
+  mismo shape que `SolicitudAmistad` pero con el campo que indica "a
+  quién", no "de quién", para no confundirlas en el código que las
+  consume. `FriendsService.solicitudesEnviadas()` + ruta nueva
+  `GET /friends/requests/sent` (junto a la ya existente
+  `GET /friends/requests`, que sigue siendo "recibidas").
+- **Mobile — `friends_screen.dart`:** dos secciones separadas y tituladas
+  ("Solicitudes · Recibidas" / "Solicitudes · Enviadas"), cada una con su
+  gente — la recibida con botón "Aceptar" (como antes), la enviada de solo
+  lectura con una etiqueta "Pendiente" (no hay endpoint para cancelar una
+  solicitud enviada; no se agregó esa acción, fuera de lo pedido). La
+  pantalla entera se envuelve en `RefreshIndicator` (mismo
+  patrón/componente que ya usa Home), que invalida y espera a que
+  amigos + ambas listas de solicitudes se recarguen.
+- **Tests:** backend — `scrum14.test.ts`, nuevo caso que verifica que
+  `solicitudesEnviadas` solo trae lo que mandé yo (no lo que me mandaron a
+  mí), y que desaparece de ahí una vez aceptada. Mobile —
+  `friends_screen_test.dart`, dos casos nuevos: las dos secciones conviven
+  y son distinguibles (la enviada sin botón de aceptar), y que deslizar
+  hacia abajo no tira ningún error.
+## Item E1: Grupos — sacar el badge de texto "NUEVO"
+
+**Confirmado con el usuario:** solo ocultarlo visualmente (no eliminar
+`tieneEventoNuevo` del backend/modelo, por si se reutiliza más adelante).
+El usuario aclaró además qué quiere en su lugar: un punto de no-leído
+estilo WhatsApp/Instagram arriba a la derecha del avatar del grupo — y
+notó un bug del mecanismo viejo: "aunque entre al evento y grupo, el
+badge NUEVO no se va". Ese bug tiene explicación en el propio código:
+`tieneEventoNuevo` (`GroupsService.resumenPara`, backend) es
+`eventos.some(e => e.createdAt > corte)` — una ventana de **tiempo** desde
+que se creó el evento, no un estado de leído/no leído — así que entrar al
+grupo nunca lo iba a "apagar", solo que pasen los días.
+
+Lo que el usuario pidió ya existía, construido en una tanda anterior:
+`UnreadDot` con `mostrarNumero: true` sobre el avatar del grupo en el
+carrusel (Tanda 5, Item 2 — "Grupos: Badge de notificaciones", contador de
+actividad sin leer real, que sí se resetea al leer vía
+`ActivityLogService.marcarLeido`). Los dos badges coexistían en la UI
+(punto arriba a la derecha + texto "NUEVO" debajo del nombre), compitiendo
+visualmente. El fix es sacar el segundo, que es el redundante y el que
+tiene el bug de no desaparecer nunca.
+
+- **`groups_screen.dart`:** se saca el `if (grupo.tieneEventoNuevo)
+  StatusBadge.nuevo(...)` de `_CarruselDeGrupos`. `UnreadDot` (ya estaba,
+  sin cambios) queda como única señal de "hay novedad sin leer".
+- **Tests:** `screens_test.dart` — el caso existente que sembraba un grupo
+  con `tieneEventoNuevo: true` ahora verifica que el badge de texto **no**
+  se vea (antes verificaba lo contrario); la fixture sigue trayendo
+  `tieneEventoNuevo: true` a propósito, para confirmar que el flag del
+  backend no rompe nada al seguir existiendo pero no renderizarse.
+## Item D1: Modal de Gasto — montos por persona debajo de ambas secciones de selección
+
+**Orden actual confirmado antes de tocar el layout** (no era lo que se
+podría suponer): ya era descripción → monto total → "¿Quién pagó?" →
+"¿Entre quiénes se divide?". El problema real era otro: el input de monto
+por persona (agregado en `0af78aa "split deudor con montos manuales"`, y
+el más viejo de "¿Quién pagó?" multi-acreedor) estaba **intercalado
+dentro de cada fila** de cada sección (checkbox + input `$` en la misma
+fila), no como bloque aparte — con la fila tan angosta, el input quedaba
+apretado al lado del nombre y no se distinguía como "el monto final de
+esta persona". El usuario confirmó que el reordenamiento aplica a
+**ambas** secciones (aportes de "¿Quién pagó?" y montos de "¿Entre
+quiénes se divide?"), no solo a la más nueva.
+
+- **`expense_dialog.dart`:** cada sección de selección ("¿Quién pagó?" /
+  "¿Entre quiénes se divide?") ahora solo tiene checkbox + nombre
+  (`_FilaSeleccion`, nuevo — reemplaza a `_FilaParticipante`, que hacía
+  las dos cosas en una fila). Debajo de AMBAS secciones (nunca
+  intercalado) van dos bloques nuevos, cada uno con su propio título y
+  botón "Repartir": "Monto por pagador" (`_FilaMonto`, uno por acreedor
+  seleccionado — solo si hay más de un pagador, igual que antes) y "Monto
+  por persona" (uno por deudor seleccionado). El resultado final
+  (`DatosGasto`) y toda la lógica de validación/reparto no cambiaron —
+  esto es puramente de layout.
+- **`app_es.arb`/`app_en.arb`:** dos claves nuevas,
+  `eventDetailAmountPerPayer`/`eventDetailAmountPerPerson`, para titular
+  los bloques de montos sin repetir literalmente "¿Quién pagó?"/"¿Entre
+  quiénes se divide?" (esos títulos ya se usaron arriba, para la
+  selección).
+- **Tests (`expense_dialog_test.dart`, nuevo):** el orden vertical real de
+  los 4 títulos de sección (con más de un pagador, para que se pinten
+  los 4); que con un solo pagador no se pida "Monto por pagador"; que con
+  varios pagadores el monto de cada uno aparezca en el bloque de abajo
+  (no al lado de cada fila); y un caso end-to-end que arma el `DatosGasto`
+  final con los montos cargados.
+## Item C2: Ícono del header del evento — de rueda dentada a calendario con tilde
+
+El ícono que abre disponibilidad y confirmación de asistencia dentro del
+evento (`EventConfigScreen`) era `Icons.settings_outlined` — una rueda
+dentada, ícono genérico de "configuración", que no comunica lo que hay del
+otro lado. Cambia a `Icons.event_available_outlined` (calendario con
+tilde), mismo `onPressed`/navegación, sin tocar nada más del header.
+
+- **`event_detail_screen.dart`:** un solo cambio de ícono en el
+  `IconButton` del `AppBar`.
+- **Tests:** `screens_test.dart` — los dos casos que antes buscaban
+  `Icons.settings_outlined` (que el ícono esté presente, y que tocarlo
+  abra `EventConfigScreen`) ahora verifican `Icons.event_available_outlined`.
+## Item A1 + A2: Altura de la navbar "hug content" + safe area en las 4 pantallas raíz
+
+**Confirmado con el usuario antes de tocar layout:** la altura de
+`AppBottomNav` estaba hardcodeada (`height: 76`, sin relación con ningún
+otro contenedor) y no había ningún "contenedor de tab" con una altura fija
+comparable — las 4 pantallas raíz son `Scaffold` de altura completa. El
+componente que sí comparte la misma familia visual (pill translúcida) es
+`PillToggle` (usado en Saldos y Notificaciones), que se autodimensiona por
+contenido. El usuario pidió invertir el enfoque: en vez de un número fijo,
+que la navbar también sea "hug content" como `PillToggle` — y que, como
+lleva ícono además de texto, termine más alta que un `PillToggle` sin que
+eso se traduzca en un radio de esquina distinto (nada de `radio = alto/2`
+por separado en cada uno, que dejaría de leerse como "rectángulo
+redondeado").
+
+- **`AppSpacing.barRadius`** (`core/theme/app_spacing.dart`, nuevo) — radio
+  compartido por los contenedores "pill-bar" (24dp, fijo). Reemplaza los
+  `30` (navbar) y `24` (`PillToggle`) hardcodeados por separado, que hasta
+  ahora coincidían por casualidad más que por diseño.
+- **`AppBottomNav`** (`core/widgets/app_scaffold.dart`): se sacó
+  `height: 76` del `Container` — ahora mide lo que necesita su propio
+  contenido (ícono + texto + paddings), igual que `PillToggle`.
+- **`bottomNavHeightProvider`** (nuevo, mismo archivo): la altura real de
+  la navbar ya no es una constante — se **mide** en tiempo de ejecución
+  (`AppShell` le pone un `GlobalKey`, y en un post-frame callback lee
+  `RenderBox.size.height` y la publica acá) y se expone para que las
+  pantallas raíz sepan cuánto padding inferior necesitan. Un número fijo a
+  mano en cada pantalla se hubiera desincronizado apenas cambiara el
+  contenido de la navbar — exactamente el tipo de bug que era A1.
+- **A2 — Home, Grupos, Saldos y Perfil** (las 4 pantallas con bottom nav,
+  no solo Home): el `padding` inferior de su `ListView` pasa a ser
+  `bottomNavHeightProvider + AppSpacing.md`, en vez de un `AppSpacing.xl`
+  fijo (Home) o directamente nada (Grupos, Saldos, Perfil no tenían
+  ningún padding inferior contemplado). Con `extendBody: true` en
+  `AppShell` (así quedó desde antes, para el efecto de navbar flotante),
+  el contenido corre por debajo de la navbar a propósito — sin este
+  padding, el final de cada lista queda tapado.
+- **Tests (`app_shell_layout_test.dart`, nuevo):** A1 — `AppBottomNav` y
+  `PillToggle` comparten el mismo `borderRadius`. A2 — con `AppShell`
+  montado (navbar real, altura medida) y suficiente actividad reciente
+  como para necesitar scroll, se scrollea Home hasta el final y se verifica
+  que el último ítem visible no se solape con el rect de la navbar; se
+  confirmó que este test **falla** si se vuelve al padding fijo de antes
+  (`AppSpacing.xl`), antes de dejarlo con el fix aplicado.
+## Item B1: No se podía guardar una ubicación — `TextEditingController` usado después de `dispose()`
+
+**Reproducido antes de tocar código** (pedido explícito del usuario, sin
+capturas adjuntas de este bug puntual): un test de widget que ejecuta el
+flujo completo (paso 1 de "Nuevo evento" → "Lugares guardados" → "Guardar
+este lugar" → confirmar) revienta con:
+
+```
+A TextEditingController was used after being disposed.
+Once you have called dispose() on a TextEditingController, it can no longer be used.
+```
+
+seguido de una assertion secundaria en cascada (`_dependents.isEmpty`, la
+misma que aparece en la captura del usuario) porque esa excepción corta el
+rebuild a mitad de camino y deja el árbol de widgets en un estado
+inconsistente. **No es un tema de permisos de ubicación, null-safety, ni de
+un dato mal mapeado al guardar** — el dato de hecho se guarda bien (se
+verificó en el repo fake antes del fix); es un bug de ciclo de vida puro.
+
+**Causa raíz:** `_pedirEtiqueta()` en `create_event_screen.dart` creaba un
+`TextEditingController` local y lo disponía "a mano" (`ctrl.dispose()`)
+apenas el `Future` de `showDialog` resolvía. El problema: `Navigator.pop`
+resuelve ese `Future` en cuanto la ruta se saca de la pila de navegación,
+pero la animación de salida del diálogo sigue corriendo un rato más — y el
+`AppTextField` (con el controller adentro) sigue montado durante esa
+transición.
+
+- **`create_event_screen.dart`:** el contenido del diálogo pasa a ser su
+  propio `StatefulWidget` (`_EtiquetaDialog`), que crea el controller en
+  `initState()` y lo dispone en su propio `dispose()`. Flutter recién llama
+  a `dispose()` cuando el `Element` realmente se desmonta del árbol — nunca
+  antes —, así que no hay forma de que se dispare mientras la transición de
+  salida del diálogo todavía lo necesita. Mismo patrón a seguir si aparece
+  este bug en otro lado del código (no se encontraron más casos del mismo
+  patrón en esta pasada).
+- **Tests:** `create_event_screen_test.dart` — nuevo caso que reproduce el
+  flujo completo con un listener de `FlutterError.onError` para capturar
+  cualquier excepción durante el `pumpAndSettle` posterior al guardado
+  (antes del fix, este test fallaba con la excepción de arriba); además
+  verifica que la ubicación efectivamente haya quedado guardada.
+## Item B2 + C1: Swipe en tareas — "A dismissed Slidable widget is still part of the tree" + no se podía desasignar una tarea completada
 
 **Reproducido antes de tocar código** (pedido explícito del usuario): un
 swipe completo (más allá del `dismissThreshold` de `flutter_slidable`, no

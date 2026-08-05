@@ -266,6 +266,12 @@
     }
   },
   "activityRangeExtended": "The event's date range was extended",
+  "activityFriendRequest": "{actor} sent you a friend request",
+  "@activityFriendRequest": {
+    "placeholders": {
+      "actor": { "type": "String" }
+    }
+  },
   "commonSave": "Save",
   "commonCancel": "Cancel",
   "commonAdd": "Add",
@@ -297,6 +303,8 @@
   },
   "eventDetailWhoPaid": "Who paid?",
   "eventDetailDivideBetween": "Divide between:",
+  "eventDetailAmountPerPayer": "Amount per payer",
+  "eventDetailAmountPerPerson": "Amount per person",
   "eventDetailSelectAtLeastOne": "Select at least one person",
   "eventDetailExpenseInvalid": "Enter a description and a valid amount",
   "eventDetailSplitEqually": "Split",
@@ -343,6 +351,9 @@
   "friendsSearchHint": "Search by username or email",
   "friendsAdd": "Add",
   "friendsRequests": "Requests",
+  "friendsRequestsReceived": "Received",
+  "friendsRequestsSent": "Sent",
+  "friendsPending": "Pending",
   "friendsAccept": "Accept",
   "friendsRequestSent": "Request sent",
   "friendsNoResults": "No results",

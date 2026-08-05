@@ -91,7 +91,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             onPressed: !(detalle.value?.estaCancelado ?? false) ? _invitar : null,
           ),
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
+            // C2 — antes era una rueda dentada (ícono de "configuración"
+            // genérica); esta pantalla en realidad abre disponibilidad y
+            // confirmación de asistencia, no ajustes del evento en general,
+            // así que un calendario con un tilde comunica mejor qué hay ahí.
+            icon: const Icon(Icons.event_available_outlined),
             tooltip: l10n.eventConfigTitle,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(

@@ -920,6 +920,12 @@ abstract class AppLocalizations {
   /// **'El rango de fechas del evento se extendió'**
   String get activityRangeExtended;
 
+  /// No description provided for @activityFriendRequest.
+  ///
+  /// In es, this message translates to:
+  /// **'{actor} te envió una solicitud de amistad'**
+  String activityFriendRequest(String actor);
+
   /// No description provided for @commonSave.
   ///
   /// In es, this message translates to:
@@ -1039,6 +1045,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'¿Entre quiénes se divide?'**
   String get eventDetailDivideBetween;
+
+  /// No description provided for @eventDetailAmountPerPayer.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto por pagador'**
+  String get eventDetailAmountPerPayer;
+
+  /// No description provided for @eventDetailAmountPerPerson.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto por persona'**
+  String get eventDetailAmountPerPerson;
 
   /// No description provided for @eventDetailSelectAtLeastOne.
   ///
@@ -1213,6 +1231,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Solicitudes'**
   String get friendsRequests;
+
+  /// No description provided for @friendsRequestsReceived.
+  ///
+  /// In es, this message translates to:
+  /// **'Recibidas'**
+  String get friendsRequestsReceived;
+
+  /// No description provided for @friendsRequestsSent.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviadas'**
+  String get friendsRequestsSent;
+
+  /// No description provided for @friendsPending.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendiente'**
+  String get friendsPending;
 
   /// No description provided for @friendsAccept.
   ///

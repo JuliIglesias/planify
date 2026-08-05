@@ -28,11 +28,15 @@ class HomeScreen extends ConsumerWidget {
 
     final eventos = ref.watch(upcomingEventsProvider);
     final balance = ref.watch(balanceProvider);
+    // A2 — la navbar flotante ("hug content", A1) puede tapar el final del
+    // scroll si el padding no la tiene en cuenta; se despeja con su altura
+    // real medida más un margen propio, no con un número fijo a ojo.
+    final bottomPad = ref.watch(bottomNavHeightProvider) + AppSpacing.md;
 
     return RefreshIndicator(
       onRefresh: () async => invalidateListas(ref),
       child: ListView(
-        padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+        padding: EdgeInsets.only(bottom: bottomPad),
         children: [
           AppHeader(titulo: l10n.homeGreeting(username)),
 

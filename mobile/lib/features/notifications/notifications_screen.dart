@@ -10,18 +10,25 @@ import '../../core/widgets/pill_toggle.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../events/event_detail_screen.dart';
 import '../events/widgets/activity_presentation.dart';
+import '../friends/friends_screen.dart';
 import 'notifications_providers.dart';
 
 enum _Categoria { todo, eventos, gastos }
 
-/// Tipos que cuentan como "Gasto" en el filtro; el resto (eventos, tareas,
-/// asistencia, disponibilidad) cae bajo "Eventos".
+/// Tipos que cuentan como "Gasto" en el filtro; el resto de lo que cuelga de
+/// un evento (tareas, asistencia, disponibilidad) cae bajo "Eventos".
 const _tiposDeGasto = {'gasto_agregado', 'deuda_saldada', 'gastos_cerrados'};
+
+/// F2 — tipos que NO cuelgan de ningún evento (ej. una solicitud de
+/// amistad): solo aparecen en "Todo", nunca en "Eventos" ni en "Gastos" —
+/// aunque no sean de gasto, meterlos en "Eventos" sería engañoso, porque no
+/// hay ningún evento al que puedan rutear.
+const _tiposSinEvento = {'solicitud_amistad'};
 
 bool _coincideCategoria(_Categoria cat, String tipo) => switch (cat) {
       _Categoria.todo => true,
       _Categoria.gastos => _tiposDeGasto.contains(tipo),
-      _Categoria.eventos => !_tiposDeGasto.contains(tipo),
+      _Categoria.eventos => !_tiposDeGasto.contains(tipo) && !_tiposSinEvento.contains(tipo),
     };
 
 /// Item 2 (Tanda 6) — pantalla de Notificaciones: se entra desde la campana
@@ -140,14 +147,23 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             titulo: textoActividad(l10n, entrada),
                             subtitulo: entrada.eventoNombre,
                             trailing: DateFormat('HH:mm').format(entrada.createdAt),
-                            onTap: entrada.eventoId == null
-                                ? null
-                                : () => Navigator.of(context).push(
+                            // F2 — una solicitud de amistad no tiene evento
+                            // al que rutear; en cambio, lleva a Amigos (ahí
+                            // se acepta/rechaza).
+                            onTap: entrada.tipo == 'solicitud_amistad'
+                                ? () => Navigator.of(context).push(
                                       MaterialPageRoute<void>(
-                                        builder: (_) =>
-                                            EventDetailScreen(eventoId: entrada.eventoId!),
+                                        builder: (_) => const FriendsScreen(),
                                       ),
-                                    ),
+                                    )
+                                : entrada.eventoId == null
+                                    ? null
+                                    : () => Navigator.of(context).push(
+                                          MaterialPageRoute<void>(
+                                            builder: (_) =>
+                                                EventDetailScreen(eventoId: entrada.eventoId!),
+                                          ),
+                                        ),
                           ),
                         ),
                       ],

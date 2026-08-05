@@ -275,6 +275,12 @@
     }
   },
   "activityRangeExtended": "El rango de fechas del evento se extendió",
+  "activityFriendRequest": "{actor} te envió una solicitud de amistad",
+  "@activityFriendRequest": {
+    "placeholders": {
+      "actor": { "type": "String" }
+    }
+  },
   "commonSave": "Guardar",
   "commonCancel": "Cancelar",
   "commonAdd": "Agregar",
@@ -306,6 +312,8 @@
   },
   "eventDetailWhoPaid": "¿Quién pagó?",
   "eventDetailDivideBetween": "¿Entre quiénes se divide?",
+  "eventDetailAmountPerPayer": "Monto por pagador",
+  "eventDetailAmountPerPerson": "Monto por persona",
   "eventDetailSelectAtLeastOne": "Debe seleccionar al menos una persona",
   "eventDetailExpenseInvalid": "Completá una descripción y un monto válido",
   "eventDetailSplitEqually": "Repartir",
@@ -353,6 +361,9 @@
   "friendsSearchHint": "Buscar por username o email",
   "friendsAdd": "Agregar",
   "friendsRequests": "Solicitudes",
+  "friendsRequestsReceived": "Recibidas",
+  "friendsRequestsSent": "Enviadas",
+  "friendsPending": "Pendiente",
   "friendsAccept": "Aceptar",
   "friendsRequestSent": "Solicitud enviada",
   "friendsNoResults": "Sin resultados",

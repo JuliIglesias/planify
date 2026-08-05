@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Amistad, PersonaBusqueda } from '../../domain/entities';
-import { AmistadRepository, SolicitudAmistad } from '../../domain/repositories';
+import { AmistadRepository, SolicitudAmistad, SolicitudEnviada } from '../../domain/repositories';
 
 function toAmistad(row: {
   id: string;
@@ -78,6 +78,17 @@ export class PrismaAmistadRepository implements AmistadRepository {
     return rows.map((a) => ({
       amistadId: a.id,
       de: { id: a.usuario1.id, username: a.usuario1.username, email: a.usuario1.email },
+    }));
+  }
+
+  async listSolicitudesEnviadas(usuarioId: string): Promise<SolicitudEnviada[]> {
+    const rows = await this.prisma.amistad.findMany({
+      where: { estado: 'pendiente', usuarioId1: usuarioId },
+      include: { usuario2: { select: { id: true, username: true, email: true } } },
+    });
+    return rows.map((a) => ({
+      amistadId: a.id,
+      para: { id: a.usuario2.id, username: a.usuario2.username, email: a.usuario2.email },
     }));
   }
 }
